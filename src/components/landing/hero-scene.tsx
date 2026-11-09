@@ -55,7 +55,7 @@ export function SloganHero({ children }: { children: ReactNode }) {
   }
 
   return (
-    <section className="relative overflow-hidden">
+    <section className="relative flex min-h-[calc(100svh-var(--site-header-height))] overflow-hidden">
       <div className="absolute inset-0" aria-hidden="true">
         {slides.map((slide, slideIndex) => (
           <Image
@@ -75,8 +75,8 @@ export function SloganHero({ children }: { children: ReactNode }) {
         <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-night to-transparent" />
       </div>
 
-      <div className="relative z-10 mx-auto grid min-h-[38rem] max-w-7xl items-center gap-10 px-5 py-14 sm:min-h-[42rem] lg:min-h-[46rem] lg:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)_minmax(4rem,0.72fr)] lg:py-16">
-        <div>
+      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 items-center px-5 py-10 lg:py-12">
+        <div className="w-full max-w-xl lg:max-w-2xl">
           <h1 className="font-serif leading-[0.85] text-burgundy">
             <span className="block text-6xl tracking-[0.06em] sm:text-7xl lg:text-8xl xl:text-[6.5rem]">
               BERRO
@@ -85,7 +85,10 @@ export function SloganHero({ children }: { children: ReactNode }) {
               TRAVEL
             </span>
           </h1>
-          <div className="mt-8 flex items-center gap-2" role="tablist" aria-label={dictionary.hero.scenes}>
+
+          <div className="mt-8 lg:mt-10">{children}</div>
+
+          <div className="mt-6 flex items-center gap-2" role="tablist" aria-label={dictionary.hero.scenes}>
             {slides.map((slide, slideIndex) => {
               const selected = slideIndex === index;
               return (
@@ -104,7 +107,6 @@ export function SloganHero({ children }: { children: ReactNode }) {
             })}
           </div>
         </div>
-        {children}
       </div>
     </section>
   );

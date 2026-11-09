@@ -36,6 +36,11 @@ export function PlaceField({
 
   useEffect(() => () => clearTimeout(debounce.current), []);
 
+  useEffect(() => {
+    setText(defaultText);
+    setPlaceId(defaultPlaceId);
+  }, [defaultText, defaultPlaceId]);
+
   async function load(query: string) {
     const requestId = ++latestRequest.current;
     const params = new URLSearchParams({ q: query, locale: dictionary.locale });

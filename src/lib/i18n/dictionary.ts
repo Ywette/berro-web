@@ -272,6 +272,18 @@ export const en = {
     free: "Free",
     noDrivers: "No drivers to show on the calendar.",
   },
+  crmDemo: {
+    pageTitle: "Order received",
+    syncTitle: "Sending to CRM…",
+    syncBody: "Creating a new order for dispatch and quote processing.",
+    successEyebrow: "CRM demo",
+    successTitle: "New order created",
+    successBody:
+      "The trip request is now in Pasūtījumi with status New. Add contact details next, or open the staff board if you are signed in.",
+    continueContact: "Continue to contact",
+    openOrders: "Open Pasūtījumi",
+    signInToCrm: "Sign in to view CRM",
+  },
   tripTypes: {
     Local: "Local",
     "Day excursion": "Day excursion",
@@ -296,14 +308,19 @@ export const en = {
     requestBody: "This is what a customer sends. The price uses only the fields this trip type needs.",
     planPlaceholder: "Day 1: Riga to Sigulda. Day 2: Cēsis and return.",
     planDocument: "Excursion plan document",
-    planDocumentHint: "PDF, Word, or text file, up to 4 MB.",
-    chooseDocument: "Add document",
+    planDocumentHint: "For automatic form fill. PDF, Word, or text file, up to 4 MB. Or fill the fields below yourself.",
+    chooseDocument: "Add excursion plan document",
     removeDocument: "Remove",
-    readWithAi: "Read with AI",
+    readWithAi: "Read document",
     readingWithAi: "Reading…",
-    aiDemoNote:
-      "Demo: AI fills the trip fields from a matching sample. Reading the document itself comes with the AI connection.",
-    aiFilled: (sample: string) => `AI filled the fields from the plan. Closest trip: ${sample}. Check them before sending.`,
+    aiDemoNote: "Fields were filled from the document. Check them before sending.",
+    aiFilled: (detail: string) =>
+      detail
+        ? `Filled trip fields from the document (${detail}). Check them before sending.`
+        : "Filled trip fields from the document. Check them before sending.",
+    documentReadError: "Could not read the document.",
+    documentEmpty: "The document had no readable text.",
+    documentLegacyDoc: "Legacy .doc is not supported. Use .docx, PDF, or a text file.",
     documentTooLarge: "The document is larger than 4 MB.",
     documentType: "Use a PDF, Word, or text file.",
     agentTitle: "Agent calculation",
@@ -631,6 +648,18 @@ export const lv: Dictionary = {
     free: "Brīvs",
     noDrivers: "Kalendārā nav šoferu.",
   },
+  crmDemo: {
+    pageTitle: "Pasūtījums saņemts",
+    syncTitle: "Nosūtām uz CRM…",
+    syncBody: "Veidojam jaunu pasūtījumu dispečeriem un cenas apstrādei.",
+    successEyebrow: "CRM demonstrācija",
+    successTitle: "Izveidots jauns pasūtījums",
+    successBody:
+      "Brauciena pieprasījums tagad ir sadaļā Pasūtījumi ar statusu Jauns. Tālāk pievienojiet kontaktus vai atveriet personāla dēli, ja esat pierakstījies.",
+    continueContact: "Turpināt uz kontaktiem",
+    openOrders: "Atvērt Pasūtījumus",
+    signInToCrm: "Pierakstīties, lai redzētu CRM",
+  },
   tripTypes: {
     Local: "Vietējais",
     "Day excursion": "Dienas ekskursija",
@@ -655,14 +684,19 @@ export const lv: Dictionary = {
     requestBody: "To nosūta klients. Cena izmanto tikai laukus, kas šim brauciena veidam ir vajadzīgi.",
     planPlaceholder: "1. diena: Rīga–Sigulda. 2. diena: Cēsis un atpakaļ.",
     planDocument: "Ekskursijas plāna dokuments",
-    planDocumentHint: "PDF, Word vai teksta fails, līdz 4 MB.",
-    chooseDocument: "Pievienot dokumentu",
+    planDocumentHint: "Formas automātiskai aizpildei. PDF, Word vai teksta fails, līdz 4 MB. Vai aizpildiet laukus zemāk pats.",
+    chooseDocument: "Pievieno ekskursijas plāna dokumentu",
     removeDocument: "Noņemt",
-    readWithAi: "Nolasīt ar AI",
+    readWithAi: "Nolasīt dokumentu",
     readingWithAi: "Nolasa…",
-    aiDemoNote:
-      "Demonstrācija: AI aizpilda brauciena laukus no līdzīgākā parauga. Paša dokumenta nolasīšana būs pieejama pēc AI pieslēgšanas.",
-    aiFilled: (sample) => `AI aizpildīja laukus no plāna. Līdzīgākais brauciens: ${sample}. Pārbaudiet tos pirms nosūtīšanas.`,
+    aiDemoNote: "Lauki aizpildīti no dokumenta. Pārbaudiet tos pirms nosūtīšanas.",
+    aiFilled: (detail) =>
+      detail
+        ? `Brauciena lauki aizpildīti no dokumenta (${detail}). Pārbaudiet tos pirms nosūtīšanas.`
+        : "Brauciena lauki aizpildīti no dokumenta. Pārbaudiet tos pirms nosūtīšanas.",
+    documentReadError: "Neizdevās nolasīt dokumentu.",
+    documentEmpty: "Dokumentā nebija nolasāma teksta.",
+    documentLegacyDoc: "Vecais .doc formāts netiek atbalstīts. Izmantojiet .docx, PDF vai teksta failu.",
     documentTooLarge: "Dokuments ir lielāks par 4 MB.",
     documentType: "Izmantojiet PDF, Word vai teksta failu.",
     agentTitle: "Aģenta aprēķins",

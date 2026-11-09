@@ -13,6 +13,8 @@ import {
   type QuoteResult,
 } from "@/lib/pricing/calculate";
 import type { Dictionary } from "@/lib/i18n/dictionary";
+import type { ExtractedPlanFields, PlanTripKind } from "@/lib/plan-document/types";
+import { parsePlanDocument } from "@/lib/plan-document/client";
 
 type Draft = QuoteNumbers & {
   pickupDate: string;
@@ -36,18 +38,7 @@ const openingSample = pricing.scenarios[0];
 const maxDocumentBytes = 4 * 1024 * 1024;
 const documentTypes = [".pdf", ".doc", ".docx", ".txt"];
 
-const sampleKeywords: Array<[string, string[]]> = [
-  ["T10", ["paris", "parīze", "parize"]],
-  ["T09", ["baltic", "baltij", "vilnius", "viļņa"]],
-  ["T08", ["tallinn", "tallin"]],
-  ["T07", ["latgale", "daugavpils", "rēzekne", "rezekne"]],
-  ["T05", ["rundāle", "rundale", "bauska"]],
-  ["T03", ["jūrmala", "jurmala"]],
-  ["T04", ["sigulda", "cēsis", "cesis"]],
-  ["T01", ["wedding", "kāzas", "kazas"]],
-];
-
-type PlanDocument = { name: string; size: number };
+type PlanDocument = { name: string; size: number; file: File };
 
 export function PriceSimulator() {
   const dictionary = useDictionary();
@@ -172,18 +163,20 @@ export function PriceSimulator() {
           {mode === "plan" ? (
             <PlanDocumentField
               document={planDocument}
-              planText={draft.travelPlan}
-              onDocument={(document, text) => {
+              onDocument={(document) => {
                 setPlanDocument(document);
-                if (text !== null) {
-                  update({ travelPlan: text });
-                }
               }}
-              onRead={(sampleIdFound) => {
-                setSampleId(sampleIdFound);
+              onFields={(fields) => {
+                setSampleId("");
                 setDraft((current) => ({
-                  ...draftFromSample(sampleIdFound),
-                  travelPlan: current.travelPlan,
+                  ...current,
+                  tripType: mapQuoteTripType(fields.trip, fields.departure, fields.returnAt),
+                  passengers: fields.passengers ?? current.passengers,
+                  pickupDate: fields.pickupDate || current.pickupDate,
+                  pickupLocation: fields.pickup || current.pickupLocation,
+                  dropoffLocation: fields.dropoff || current.dropoffLocation,
+                  travelPlan: fields.travelPlan || current.travelPlan,
+                  days: estimateDays(fields.pickupDate, fields.returnAt, current.days),
                 }));
               }}
             />
@@ -349,29 +342,31 @@ function Breakdown({ result }: { result: QuoteResult }) {
 
 function PlanDocumentField({
   document,
-  planText,
   onDocument,
-  onRead,
+  onFields,
 }: {
   document: PlanDocument | null;
-  planText: string;
-  onDocument: (document: PlanDocument | null, text: string | null) => void;
-  onRead: (sampleId: string) => void;
+  onDocument: (document: PlanDocument | null) => void;
+  onFields: (fields: ExtractedPlanFields) => void;
 }) {
   const dictionary = useDictionary();
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
   const [reading, setReading] = useState(false);
-  const [filledFrom, setFilledFrom] = useState("");
+  const [filled, setFilled] = useState(false);
 
   async function choose(file: File | undefined) {
     setError("");
-    setFilledFrom("");
+    setFilled(false);
     if (!file) {
       return;
     }
 
     const extension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+    if (extension === ".doc") {
+      setError(dictionary.pricing.documentLegacyDoc);
+      return;
+    }
     if (!documentTypes.includes(extension)) {
       setError(dictionary.pricing.documentType);
       return;
@@ -381,28 +376,34 @@ function PlanDocumentField({
       return;
     }
 
-    const text = extension === ".txt" ? (await file.text()).trim() : null;
-    onDocument({ name: file.name, size: file.size }, text);
+    onDocument({ name: file.name, size: file.size, file });
   }
 
   function remove() {
-    onDocument(null, null);
-    setFilledFrom("");
+    onDocument(null);
+    setFilled(false);
+    setError("");
     if (inputRef.current) {
       inputRef.current.value = "";
     }
   }
 
-  function read() {
+  async function read() {
+    if (!document) return;
     setReading(true);
-    setFilledFrom("");
-    window.setTimeout(() => {
-      const id = closestSample(`${document?.name ?? ""} ${planText}`);
-      const sample = pricing.scenarios.find((scenario) => scenario.id === id);
-      onRead(id);
-      setFilledFrom(sample ? `${sample.id} · ${sample.scenario}` : id);
+    setError("");
+    setFilled(false);
+    try {
+      const result = await parsePlanDocument(document.file);
+      onFields(result.fields);
+      setFilled(true);
+    } catch (caught) {
+      const message =
+        caught instanceof Error ? caught.message : dictionary.pricing.documentReadError;
+      setError(message || dictionary.pricing.documentReadError);
+    } finally {
       setReading(false);
-    }, 900);
+    }
   }
 
   return (
@@ -419,7 +420,7 @@ function PlanDocumentField({
             type="file"
             accept={documentTypes.join(",")}
             className="sr-only"
-            onChange={(event) => choose(event.target.files?.[0])}
+            onChange={(event) => void choose(event.target.files?.[0])}
           />
         </label>
       </div>
@@ -432,7 +433,7 @@ function PlanDocumentField({
           <span className="flex items-center gap-2">
             <button
               type="button"
-              onClick={read}
+              onClick={() => void read()}
               disabled={reading}
               className="rounded-full bg-burgundy px-4 py-1.5 text-white hover:bg-burgundy-deep disabled:opacity-60"
             >
@@ -446,16 +447,30 @@ function PlanDocumentField({
       ) : null}
 
       {error ? <p className="text-ivory">{error}</p> : null}
-      {filledFrom ? <p className="text-pine">{dictionary.pricing.aiFilled(filledFrom)}</p> : null}
-      {document ? <p className="text-xs text-mist">{dictionary.pricing.aiDemoNote}</p> : null}
+      {filled ? <p className="text-pine">{dictionary.pricing.aiFilled(document?.name ?? "")}</p> : null}
     </div>
   );
 }
 
-function closestSample(text: string) {
-  const haystack = text.toLowerCase();
-  const match = sampleKeywords.find(([, words]) => words.some((word) => haystack.includes(word)));
-  return match ? match[0] : "T04";
+function mapQuoteTripType(
+  trip: PlanTripKind | undefined,
+  departure?: string,
+  returnAt?: string,
+): (typeof tripTypeNames)[number] {
+  if (trip === "Hourly Charter") return "Local";
+  const days = estimateDays(departure?.slice(0, 10), returnAt, 1);
+  if (days > 1 || trip === "Round Trip") return days > 1 ? "Long excursion" : "Day excursion";
+  return "Day excursion";
+}
+
+function estimateDays(pickupDate: string | undefined, returnAt: string | undefined, fallback: number) {
+  if (!pickupDate || !returnAt) return fallback;
+  const start = new Date(`${pickupDate.slice(0, 10)}T00:00:00Z`);
+  const end = new Date(`${returnAt.slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+    return fallback;
+  }
+  return Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1);
 }
 
 function formatSize(bytes: number) {

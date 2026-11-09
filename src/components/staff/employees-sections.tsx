@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AvailabilityForm } from "@/components/drivers/availability-form";
 import { DriverCalendar } from "@/components/staff/driver-calendar";
+import { mergeOrdersWithSession } from "@/lib/orders/session-orders";
 import type { StaffOrder } from "@/types/dashboard";
 import type { DriverAvailability, DriverStatus, Employee } from "@/types/staff";
 
@@ -51,8 +52,13 @@ export function EmployeesSections({
   labels: Labels;
 }) {
   const [section, setSection] = useState<Section>("personnel");
+  const [mergedOrders, setMergedOrders] = useState(orders);
   const driversById = new Map(drivers.map((driver) => [driver.id, driver]));
   const driverEmployees = employees.filter((employee) => employee.role === "driver");
+
+  useEffect(() => {
+    setMergedOrders(mergeOrdersWithSession(orders));
+  }, [orders]);
 
   return (
     <div className="space-y-5">
@@ -121,7 +127,7 @@ export function EmployeesSections({
         <div className="space-y-5">
           <DriverCalendar
             drivers={drivers}
-            orders={orders}
+            orders={mergedOrders}
             locale={locale}
             labels={{
               monthPrev: labels.monthPrev,

@@ -13,6 +13,19 @@ const fieldClass =
 
 const maxDocumentBytes = 4 * 1024 * 1024;
 const documentTypes = [".pdf", ".doc", ".docx", ".txt"];
+const passengerOptions = [1, 4, 8, 14, 20, 36, 56];
+const readingDelayMs = 2000;
+
+/** Demo fill until AI extraction is connected. */
+const demoDocumentFields = {
+  trip: "Round Trip" as Trip,
+  pickup: "Riga Airport",
+  dropoff: "Roga Hotel, Sigulda",
+  departure: "2026-11-15T05:00",
+  returnAt: "2026-11-15T20:00",
+  returnPlace: "Riga Hotel",
+  passengers: "8",
+};
 
 type PlanDocument = { name: string; size: number };
 
@@ -24,6 +37,7 @@ export type QuoteDefaults = {
   dropoffPlace?: string;
   departure?: string;
   returnAt?: string;
+  passengers?: string;
 };
 
 type QuoteCardProps = {
@@ -47,9 +61,19 @@ export function QuoteCard({
     "Hourly Charter": dictionary.quote.hourly,
   };
   const [trip, setTrip] = useState<Trip>(defaults?.trip ?? "One-Way");
+  const [pickup, setPickup] = useState(defaults?.pickup ?? "");
+  const [pickupPlace, setPickupPlace] = useState(defaults?.pickupPlace ?? "");
+  const [dropoff, setDropoff] = useState(defaults?.dropoff ?? "");
+  const [dropoffPlace, setDropoffPlace] = useState(defaults?.dropoffPlace ?? "");
   const [departure, setDeparture] = useState(defaults?.departure ?? "");
   const [returnAt, setReturnAt] = useState(defaults?.returnAt ?? "");
+  const [passengers, setPassengers] = useState(
+    defaults?.passengers ?? (requirePassengerChoice ? "" : "8"),
+  );
   const [planDocument, setPlanDocument] = useState<PlanDocument | null>(null);
+  const [documentNote, setDocumentNote] = useState("");
+  const [documentError, setDocumentError] = useState("");
+  const [reading, setReading] = useState(false);
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -60,7 +84,26 @@ export function QuoteCard({
       if (value) params.set(field, value);
     }
     if (planDocument) params.set("planDocument", planDocument.name);
-    router.push(`/contact?${params.toString()}`);
+    router.push(`/order-received?${params.toString()}`);
+  }
+
+  function applyDemoDocument(fileName: string) {
+    setReading(true);
+    setDocumentError("");
+    setDocumentNote("");
+
+    window.setTimeout(() => {
+      setTrip(demoDocumentFields.trip);
+      setPickup(demoDocumentFields.pickup);
+      setPickupPlace("");
+      setDropoff(`${demoDocumentFields.dropoff} → ${demoDocumentFields.returnPlace}`);
+      setDropoffPlace("");
+      setDeparture(demoDocumentFields.departure);
+      setReturnAt(demoDocumentFields.returnAt);
+      setPassengers(demoDocumentFields.passengers);
+      setDocumentNote(dictionary.pricing.aiFilled(fileName));
+      setReading(false);
+    }, readingDelayMs);
   }
 
   return (
@@ -69,7 +112,20 @@ export function QuoteCard({
       onSubmit={onSubmit}
       className="rounded-2xl border border-white/20 bg-white/5 p-4 shadow-[0_30px_80px_-36px_rgba(0,0,0,0.85)] backdrop-blur-md sm:p-5"
     >
-      <div className="flex flex-wrap items-center gap-1">
+      {showDocument ? (
+        <PlanDocumentAttach
+          document={planDocument}
+          reading={reading}
+          note={documentNote}
+          error={documentError}
+          onDocument={setPlanDocument}
+          onError={setDocumentError}
+          onNote={setDocumentNote}
+          onRead={(file) => applyDemoDocument(file.name)}
+        />
+      ) : null}
+
+      <div className={`${showDocument ? "mt-4" : ""} flex flex-wrap items-center gap-1`}>
         {trips.map((option) => {
           const active = option === trip;
           return (
@@ -89,26 +145,26 @@ export function QuoteCard({
         })}
       </div>
 
-      <PlaceField
-        name="pickup"
-        label={dictionary.quote.pickup}
-        placeholder={dictionary.quote.pickupPlaceholder}
-        inputClassName={fieldClass}
-        className="mt-4"
-        defaultText={defaults?.pickup}
-        defaultPlaceId={defaults?.pickupPlace}
-      />
-      <PlaceField
-        name="dropoff"
-        label={dictionary.quote.dropoff}
-        placeholder={dictionary.quote.dropoffPlaceholder}
-        inputClassName={fieldClass}
-        className="mt-3"
-        defaultText={defaults?.dropoff}
-        defaultPlaceId={defaults?.dropoffPlace}
-      />
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <PlaceField
+          name="pickup"
+          label={dictionary.quote.pickup}
+          placeholder={dictionary.quote.pickupPlaceholder}
+          inputClassName={fieldClass}
+          defaultText={pickup}
+          defaultPlaceId={pickupPlace}
+        />
+        <PlaceField
+          name="dropoff"
+          label={dictionary.quote.dropoff}
+          placeholder={dictionary.quote.dropoffPlaceholder}
+          inputClassName={fieldClass}
+          defaultText={dropoff}
+          defaultPlaceId={dropoffPlace}
+        />
+      </div>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <div className="mt-3 grid gap-3 sm:grid-cols-3">
         <label className="grid min-w-0 gap-1.5 text-xs text-ivory/70">
           {dictionary.quote.departure}
           <input
@@ -136,30 +192,28 @@ export function QuoteCard({
             className={`${fieldClass} min-w-0 [color-scheme:light] disabled:cursor-not-allowed disabled:opacity-50`}
           />
         </label>
+        <label className="grid min-w-0 gap-1.5 text-xs text-ivory/70">
+          {dictionary.quote.passengers}
+          <select
+            name="passengers"
+            required
+            value={passengers}
+            onChange={(event) => setPassengers(event.target.value)}
+            className={fieldClass}
+          >
+            {requirePassengerChoice ? (
+              <option value="" disabled>
+                {dictionary.excursions.choosePassengers}
+              </option>
+            ) : null}
+            {passengerOptions.map((count) => (
+              <option key={count} value={String(count)}>
+                {count}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
-
-      <label className="mt-3 grid gap-1.5 text-xs text-ivory/70">
-        {dictionary.quote.passengers}
-        <select
-          name="passengers"
-          required
-          defaultValue={requirePassengerChoice ? "" : "8"}
-          className={fieldClass}
-        >
-          {requirePassengerChoice ? (
-            <option value="" disabled>
-              {dictionary.excursions.choosePassengers}
-            </option>
-          ) : null}
-          {["1", "4", "8", "14", "20", "36", "56"].map((count) => (
-            <option key={count} value={count}>
-              {count}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      {showDocument ? <PlanDocumentAttach document={planDocument} onDocument={setPlanDocument} /> : null}
 
       <button
         type="submit"
@@ -173,52 +227,79 @@ export function QuoteCard({
 
 function PlanDocumentAttach({
   document,
+  reading,
+  note,
+  error,
   onDocument,
+  onError,
+  onNote,
+  onRead,
 }: {
   document: PlanDocument | null;
+  reading: boolean;
+  note: string;
+  error: string;
   onDocument: (document: PlanDocument | null) => void;
+  onError: (error: string) => void;
+  onNote: (note: string) => void;
+  onRead: (file: File) => void;
 }) {
   const dictionary = useDictionary();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [error, setError] = useState("");
 
   function choose(file: File | undefined) {
-    setError("");
+    onError("");
+    onNote("");
     if (!file) return;
 
     const extension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+    if (extension === ".doc") {
+      onError(dictionary.pricing.documentLegacyDoc);
+      return;
+    }
     if (!documentTypes.includes(extension)) {
-      setError(dictionary.pricing.documentType);
+      onError(dictionary.pricing.documentType);
       return;
     }
     if (file.size > maxDocumentBytes) {
-      setError(dictionary.pricing.documentTooLarge);
+      onError(dictionary.pricing.documentTooLarge);
       return;
     }
 
     onDocument({ name: file.name, size: file.size });
+    onRead(file);
   }
 
   function remove() {
     onDocument(null);
-    setError("");
+    onError("");
+    onNote("");
     if (inputRef.current) inputRef.current.value = "";
   }
 
   return (
-    <div className="mt-3 grid gap-2 rounded-xl border border-dashed border-white/25 bg-white/5 p-3 text-xs text-ivory/80">
+    <div className="grid gap-2 rounded-xl border border-dashed border-white/25 bg-white/5 p-3 text-xs text-ivory/80">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <p className="font-medium text-ivory">{dictionary.pricing.planDocument}</p>
-          <p className="text-[11px] text-ivory/60">{dictionary.pricing.planDocumentHint}</p>
-        </div>
-        <label className="cursor-pointer rounded-full border border-white/30 px-3 py-1.5 text-ivory hover:border-white/60">
-          {dictionary.pricing.chooseDocument}
+        <p className="text-[11px] text-ivory/60">{dictionary.pricing.planDocumentHint}</p>
+        <label
+          className={`inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/30 px-3 py-1.5 text-ivory hover:border-white/60 ${
+            reading ? "pointer-events-none opacity-80" : ""
+          }`}
+        >
+          {reading ? (
+            <>
+              <span className="doc-read-spinner" aria-hidden="true" />
+              <span>{dictionary.pricing.readingWithAi}</span>
+            </>
+          ) : (
+            dictionary.pricing.chooseDocument
+          )}
           <input
             ref={inputRef}
             type="file"
             accept={documentTypes.join(",")}
             className="sr-only"
+            disabled={reading}
             onChange={(event) => choose(event.target.files?.[0])}
           />
         </label>
@@ -229,12 +310,24 @@ function PlanDocumentAttach({
             {document.name}{" "}
             <span className="text-ivory/55">· {formatSize(document.size)}</span>
           </span>
-          <button type="button" onClick={remove} className="text-ivory/70 hover:text-white">
+          <button
+            type="button"
+            onClick={remove}
+            disabled={reading}
+            className="text-ivory/70 hover:text-white disabled:opacity-50"
+          >
             {dictionary.pricing.removeDocument}
           </button>
         </div>
       ) : null}
+      {reading ? (
+        <p className="inline-flex items-center gap-2 text-ivory/80">
+          <span className="doc-read-spinner" aria-hidden="true" />
+          {dictionary.pricing.readingWithAi}
+        </p>
+      ) : null}
       {error ? <p className="text-ivory">{error}</p> : null}
+      {!reading && note ? <p className="text-pine">{note}</p> : null}
     </div>
   );
 }

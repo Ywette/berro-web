@@ -12,6 +12,15 @@
   --mist: #a9a9b2;
   --line: #2e2e34;
   --pine: #8dcea8;
+  /* Sticky header: main row + mobile secondary nav */
+  --site-header-height: 7.25rem;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    /* Sticky header: single desktop row */
+    --site-header-height: 4.5rem;
+  }
 }
 
 @theme inline {
@@ -75,6 +84,29 @@ html {
     filter: none;
     transform: none;
     animation: none;
+  }
+}
+
+@keyframes doc-read-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.doc-read-spinner {
+  display: inline-block;
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 2px solid rgba(244, 241, 236, 0.25);
+  border-top-color: var(--ivory);
+  border-radius: 9999px;
+  animation: doc-read-spin 0.7s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .doc-read-spinner {
+    animation: none;
+    border-top-color: rgba(244, 241, 236, 0.55);
   }
 }
 
