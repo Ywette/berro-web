@@ -6,26 +6,22 @@ const fleet = [
   {
     name: "Executive Mercedes Sprinter",
     passengers: 8,
-    price: "$1,350",
     image: "/fleet/sprinter-black.jpg",
   },
   {
     name: "Van Hool CX45 Luxury Coach",
     passengers: 56,
-    price: "$1,250",
     image: "/fleet/coach-white.jpg",
   },
   {
     name: "Van Hool CX45 Luxury Coach",
     passengers: 14,
-    price: "$1,250",
     image: "/fleet/sprinter-silver.jpg",
   },
   {
-    name: "Luxury Mini Luxury Coach",
-    passengers: 8,
-    price: "$1,250",
-    image: "/fleet/mini-black.jpg",
+    name: "Mercedes-Benz S-Class",
+    passengers: 4,
+    image: "/fleet/mercedes-s-class-black.jpg",
   },
 ] as const;
 
@@ -76,10 +72,7 @@ export async function FleetSection() {
                   <SnowIcon /> {dictionary.fleet.ac}
                 </li>
               </ul>
-              <div className="mt-4 flex items-center justify-between gap-3">
-                <p className="text-sm text-ivory">
-                  {vehicle.price} <span className="text-mist">{dictionary.fleet.perTrip}</span>
-                </p>
+              <div className="mt-4 flex justify-end">
                 <Link
                   href="/#book"
                   className="rounded-md border border-white/15 px-2.5 py-1 text-[11px] text-ivory/80 hover:border-white/40"

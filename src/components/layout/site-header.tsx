@@ -11,6 +11,8 @@ export async function SiteHeader() {
   const links = [
     { href: "/#fleet", label: dictionary.nav.fleet },
     { href: "/#services", label: dictionary.nav.services },
+    { href: "/excursions", label: dictionary.nav.excursions },
+    { href: "/blog", label: dictionary.nav.blog },
     { href: "/#about", label: dictionary.nav.about },
     { href: "/contact", label: dictionary.nav.contact },
   ] as const;
@@ -41,12 +43,6 @@ export async function SiteHeader() {
               className="rounded-full border border-white/25 px-3 py-2 text-sm text-ivory hover:border-white/60 sm:px-4"
             >
               {dictionary.nav.members}
-            </Link>
-            <Link
-              href="/#book"
-              className="rounded-full bg-burgundy px-3 py-2 text-sm font-medium text-white hover:bg-burgundy-deep sm:px-4"
-            >
-              {dictionary.nav.book}
             </Link>
             <Suspense fallback={null}>
               <AccountSlot staffLabel={dictionary.nav.staff} />

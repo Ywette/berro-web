@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useDictionary } from "@/components/i18n/locale-provider";
 import {
   calculateQuote,
@@ -33,19 +33,36 @@ const fieldClass =
 
 const openingSample = pricing.scenarios[0];
 
+const maxDocumentBytes = 4 * 1024 * 1024;
+const documentTypes = [".pdf", ".doc", ".docx", ".txt"];
+
+const sampleKeywords: Array<[string, string[]]> = [
+  ["T10", ["paris", "parīze", "parize"]],
+  ["T09", ["baltic", "baltij", "vilnius", "viļņa"]],
+  ["T08", ["tallinn", "tallin"]],
+  ["T07", ["latgale", "daugavpils", "rēzekne", "rezekne"]],
+  ["T05", ["rundāle", "rundale", "bauska"]],
+  ["T03", ["jūrmala", "jurmala"]],
+  ["T04", ["sigulda", "cēsis", "cesis"]],
+  ["T01", ["wedding", "kāzas", "kazas"]],
+];
+
+type PlanDocument = { name: string; size: number };
+
 export function PriceSimulator() {
   const dictionary = useDictionary();
   const labels = dictionary.pricing.fields;
   const [mode, setMode] = useState<"form" | "plan">("form");
   const [sampleId, setSampleId] = useState(openingSample.id);
   const [draft, setDraft] = useState<Draft>(() => draftFromSample(openingSample.id));
+  const [planDocument, setPlanDocument] = useState<PlanDocument | null>(null);
 
   const spec = tripSpec(draft.tripType);
   const result = useMemo(() => calculateQuote(draft), [draft]);
   const agentFields = [...spec.required, ...spec.optional].filter(
     (field) => field !== "tripType" && !requestFields.includes(field as (typeof requestFields)[number]),
   );
-  const missing = missingRequestFields(draft, mode, labels);
+  const missing = missingRequestFields(draft, mode, labels, planDocument !== null);
 
   function update(patch: Partial<Draft>) {
     setSampleId("");
@@ -143,7 +160,7 @@ export function PriceSimulator() {
                 {labels.travelPlan} <RequiredMark />
               </span>
               <textarea
-                required
+                required={planDocument === null}
                 rows={5}
                 value={draft.travelPlan}
                 onChange={(event) => update({ travelPlan: event.target.value })}
@@ -151,6 +168,25 @@ export function PriceSimulator() {
                 className="rounded-lg border border-black/5 bg-white px-3 py-3 text-sm text-neutral-900 outline-none focus:ring-2 focus:ring-burgundy/30"
               />
             </label>
+          ) : null}
+          {mode === "plan" ? (
+            <PlanDocumentField
+              document={planDocument}
+              planText={draft.travelPlan}
+              onDocument={(document, text) => {
+                setPlanDocument(document);
+                if (text !== null) {
+                  update({ travelPlan: text });
+                }
+              }}
+              onRead={(sampleIdFound) => {
+                setSampleId(sampleIdFound);
+                setDraft((current) => ({
+                  ...draftFromSample(sampleIdFound),
+                  travelPlan: current.travelPlan,
+                }));
+              }}
+            />
           ) : null}
         </section>
 
@@ -182,7 +218,14 @@ export function PriceSimulator() {
         </section>
       </form>
 
-      <Proposal draft={draft} mode={mode} result={result} missing={missing} sampleId={sampleId} />
+      <Proposal
+        draft={draft}
+        mode={mode}
+        result={result}
+        missing={missing}
+        sampleId={sampleId}
+        planDocument={planDocument}
+      />
     </div>
   );
 }
@@ -193,12 +236,14 @@ function Proposal({
   result,
   missing,
   sampleId,
+  planDocument,
 }: {
   draft: Draft;
   mode: "form" | "plan";
   result: QuoteResult | null;
   missing: string[];
   sampleId: string;
+  planDocument: PlanDocument | null;
 }) {
   const dictionary = useDictionary();
   const sample = pricing.scenarios.find((scenario) => scenario.id === sampleId);
@@ -218,6 +263,9 @@ function Proposal({
             <dt className="text-mist">{dictionary.pricing.fields.travelPlan}</dt>
             <dd className="mt-1 whitespace-pre-wrap text-ivory">{draft.travelPlan}</dd>
           </div>
+        ) : null}
+        {mode === "plan" && planDocument ? (
+          <Row label={dictionary.pricing.planDocument} value={planDocument.name} />
         ) : null}
       </dl>
 
@@ -297,6 +345,121 @@ function Breakdown({ result }: { result: QuoteResult }) {
       </div>
     </div>
   );
+}
+
+function PlanDocumentField({
+  document,
+  planText,
+  onDocument,
+  onRead,
+}: {
+  document: PlanDocument | null;
+  planText: string;
+  onDocument: (document: PlanDocument | null, text: string | null) => void;
+  onRead: (sampleId: string) => void;
+}) {
+  const dictionary = useDictionary();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState("");
+  const [reading, setReading] = useState(false);
+  const [filledFrom, setFilledFrom] = useState("");
+
+  async function choose(file: File | undefined) {
+    setError("");
+    setFilledFrom("");
+    if (!file) {
+      return;
+    }
+
+    const extension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+    if (!documentTypes.includes(extension)) {
+      setError(dictionary.pricing.documentType);
+      return;
+    }
+    if (file.size > maxDocumentBytes) {
+      setError(dictionary.pricing.documentTooLarge);
+      return;
+    }
+
+    const text = extension === ".txt" ? (await file.text()).trim() : null;
+    onDocument({ name: file.name, size: file.size }, text);
+  }
+
+  function remove() {
+    onDocument(null, null);
+    setFilledFrom("");
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
+  }
+
+  function read() {
+    setReading(true);
+    setFilledFrom("");
+    window.setTimeout(() => {
+      const id = closestSample(`${document?.name ?? ""} ${planText}`);
+      const sample = pricing.scenarios.find((scenario) => scenario.id === id);
+      onRead(id);
+      setFilledFrom(sample ? `${sample.id} · ${sample.scenario}` : id);
+      setReading(false);
+    }, 900);
+  }
+
+  return (
+    <div className="grid gap-3 rounded-xl border border-dashed border-white/15 p-4 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="font-medium text-ivory/80">{dictionary.pricing.planDocument}</p>
+          <p className="text-xs text-mist">{dictionary.pricing.planDocumentHint}</p>
+        </div>
+        <label className="cursor-pointer rounded-full border border-white/25 px-4 py-2 text-ivory hover:border-white/60">
+          {dictionary.pricing.chooseDocument}
+          <input
+            ref={inputRef}
+            type="file"
+            accept={documentTypes.join(",")}
+            className="sr-only"
+            onChange={(event) => choose(event.target.files?.[0])}
+          />
+        </label>
+      </div>
+
+      {document ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white/5 px-3 py-2">
+          <span className="min-w-0 truncate">
+            {document.name} <span className="text-mist">· {formatSize(document.size)}</span>
+          </span>
+          <span className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={read}
+              disabled={reading}
+              className="rounded-full bg-burgundy px-4 py-1.5 text-white hover:bg-burgundy-deep disabled:opacity-60"
+            >
+              {reading ? dictionary.pricing.readingWithAi : dictionary.pricing.readWithAi}
+            </button>
+            <button type="button" onClick={remove} className="px-2 py-1.5 text-mist hover:text-white">
+              {dictionary.pricing.removeDocument}
+            </button>
+          </span>
+        </div>
+      ) : null}
+
+      {error ? <p className="text-ivory">{error}</p> : null}
+      {filledFrom ? <p className="text-pine">{dictionary.pricing.aiFilled(filledFrom)}</p> : null}
+      {document ? <p className="text-xs text-mist">{dictionary.pricing.aiDemoNote}</p> : null}
+    </div>
+  );
+}
+
+function closestSample(text: string) {
+  const haystack = text.toLowerCase();
+  const match = sampleKeywords.find(([, words]) => words.some((word) => haystack.includes(word)));
+  return match ? match[0] : "T04";
+}
+
+function formatSize(bytes: number) {
+  return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function AgentField({
@@ -511,13 +674,14 @@ function missingRequestFields(
   draft: Draft,
   mode: "form" | "plan",
   labels: Dictionary["pricing"]["fields"],
+  hasDocument: boolean,
 ) {
   const missing: string[] = [];
   if (!draft.pickupDate) missing.push(labels.pickupDate);
   if (!draft.pickupLocation.trim()) missing.push(labels.pickupLocation);
   if (!draft.dropoffLocation.trim()) missing.push(labels.dropoffLocation);
   if (draft.passengers <= 0) missing.push(labels.passengers);
-  if (mode === "plan" && !draft.travelPlan.trim()) missing.push(labels.travelPlan);
+  if (mode === "plan" && !draft.travelPlan.trim() && !hasDocument) missing.push(labels.travelPlan);
   return missing;
 }
 

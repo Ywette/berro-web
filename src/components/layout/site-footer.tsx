@@ -18,9 +18,15 @@ export async function SiteFooter() {
           />
           <p className="mt-2 text-sm text-mist">{dictionary.footer.tagline}</p>
         </div>
-        <div className="flex gap-5 text-sm text-mist">
+        <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-mist">
           <Link href="/#fleet" className="hover:text-white">
             {dictionary.nav.fleet}
+          </Link>
+          <Link href="/excursions" className="hover:text-white">
+            {dictionary.nav.excursions}
+          </Link>
+          <Link href="/blog" className="hover:text-white">
+            {dictionary.nav.blog}
           </Link>
           <Link href="/pricing" className="hover:text-white">
             {dictionary.nav.pricing}
