@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0c0c0e;
+  --foreground: #f4f1ec;
+  --night: #0c0c0e;
+  --panel: #121214;
+  --card: #1a1a1e;
+  --burgundy: #8e243f;
+  --burgundy-deep: #721d33;
+  --ivory: #f4f1ec;
+  --mist: #a9a9b2;
+  --line: #2e2e34;
+  --pine: #8dcea8;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-night: var(--night);
+  --color-panel: var(--panel);
+  --color-card: var(--card);
+  --color-burgundy: var(--burgundy);
+  --color-burgundy-deep: var(--burgundy-deep);
+  --color-ivory: var(--ivory);
+  --color-mist: var(--mist);
+  --color-line: var(--line);
+  --color-pine: var(--pine);
+  --font-sans: var(--font-geist-sans);
+  --font-serif: var(--font-playfair);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), sans-serif;
+}
+
+input,
+select,
+textarea {
+  color-scheme: light;
+}

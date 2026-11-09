@@ -1,0 +1,111 @@
+"use client";
+
+import Image from "next/image";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useDictionary } from "@/components/i18n/locale-provider";
+
+const FADE_MS = 900;
+const HOLD_MS = 5200;
+
+export function SloganHero({ children }: { children: ReactNode }) {
+  const dictionary = useDictionary();
+  const slides = [
+    { src: "/hero/luxembourg.jpg", label: dictionary.hero.luxembourg },
+    { src: "/hero/airport.jpg", label: dictionary.hero.airport },
+    { src: "/hero/paris.jpg", label: dictionary.hero.paris },
+    { src: "/hero/mountains.jpg", label: dictionary.hero.mountains },
+    { src: "/hero/berlin.jpg", label: dictionary.hero.berlin },
+  ] as const;
+  const [index, setIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+  const fadeTimer = useRef<number | null>(null);
+  const reducedMotion = useRef(false);
+
+  useEffect(() => {
+    reducedMotion.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    return () => {
+      if (fadeTimer.current !== null) window.clearTimeout(fadeTimer.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!visible || reducedMotion.current) return;
+    const hold = window.setTimeout(() => {
+      reveal((index + 1) % slides.length);
+    }, HOLD_MS);
+    return () => window.clearTimeout(hold);
+  }, [index, visible]);
+
+  function reveal(next: number) {
+    if (next === index && visible) return;
+    if (fadeTimer.current !== null) window.clearTimeout(fadeTimer.current);
+    if (reducedMotion.current) {
+      setIndex(next);
+      setVisible(true);
+      return;
+    }
+    setVisible(false);
+    fadeTimer.current = window.setTimeout(() => {
+      setIndex(next);
+      fadeTimer.current = window.setTimeout(() => {
+        setVisible(true);
+        fadeTimer.current = null;
+      }, 40);
+    }, FADE_MS);
+  }
+
+  return (
+    <section className="relative overflow-hidden">
+      <div className="absolute inset-0" aria-hidden="true">
+        {slides.map((slide, slideIndex) => (
+          <Image
+            key={slide.src}
+            src={slide.src}
+            alt=""
+            fill
+            priority={slideIndex === 0}
+            sizes="100vw"
+            className={`object-cover object-center transition-opacity ease-in-out ${
+              slideIndex === index && visible ? "opacity-100" : "opacity-0"
+            }`}
+            style={{ transitionDuration: reducedMotion.current ? "0ms" : `${FADE_MS}ms` }}
+          />
+        ))}
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.78)_0%,rgba(0,0,0,0.45)_40%,rgba(0,0,0,0.12)_68%,rgba(0,0,0,0.28)_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-night to-transparent" />
+      </div>
+
+      <div className="relative z-10 mx-auto grid min-h-[38rem] max-w-7xl items-center gap-10 px-5 py-14 sm:min-h-[42rem] lg:min-h-[46rem] lg:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)_minmax(4rem,0.72fr)] lg:py-16">
+        <div>
+          <h1 className="font-serif leading-[0.85] text-burgundy">
+            <span className="block text-6xl tracking-[0.06em] sm:text-7xl lg:text-8xl xl:text-[6.5rem]">
+              BERRO
+            </span>
+            <span className="mt-3 block text-xl tracking-[0.34em] text-ivory sm:text-2xl lg:text-3xl">
+              TRAVEL
+            </span>
+          </h1>
+          <div className="mt-8 flex items-center gap-2" role="tablist" aria-label={dictionary.hero.scenes}>
+            {slides.map((slide, slideIndex) => {
+              const selected = slideIndex === index;
+              return (
+                <button
+                  key={slide.src}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  aria-label={slide.label}
+                  onClick={() => reveal(slideIndex)}
+                  className={`h-2 rounded-full transition-all ${
+                    selected ? "w-6 bg-ivory" : "w-2 bg-ivory/45 hover:bg-ivory/75"
+                  }`}
+                />
+              );
+            })}
+          </div>
+        </div>
+        {children}
+      </div>
+    </section>
+  );
+}
