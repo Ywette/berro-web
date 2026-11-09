@@ -19,10 +19,6 @@ export function AvailabilityForm({ drivers }: { drivers: DriverAvailability[] })
 
   return (
     <form action={action} className="grid gap-4 rounded-2xl border border-line bg-card p-5">
-      <div>
-        <h2 className="text-lg font-semibold">{dictionary.drivers.updateTitle}</h2>
-        <p className="mt-1 text-sm text-mist">{dictionary.drivers.updateBody}</p>
-      </div>
       <label className="grid gap-1.5 text-sm">
         <span className="font-medium text-ivory/80">{dictionary.drivers.driver}</span>
         <select

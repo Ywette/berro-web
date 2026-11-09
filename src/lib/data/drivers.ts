@@ -1,5 +1,5 @@
-import { hasSupabaseEnv } from "@/lib/env";
-import { createClient } from "@/lib/supabase/server";
+import { demoDrivers } from "@/lib/data/demo-dashboard";
+import { createStaffClient, hasSupabaseStaffEnv } from "@/lib/supabase/staff";
 import {
   isDriverStatus,
   type DriverAvailability,
@@ -13,11 +13,11 @@ type AvailabilityRow = {
 };
 
 export async function listDriverAvailability(): Promise<DriverAvailability[]> {
-  if (!hasSupabaseEnv()) {
-    return [];
+  if (!hasSupabaseStaffEnv()) {
+    return demoDrivers;
   }
 
-  const supabase = await createClient();
+  const supabase = createStaffClient();
   const { data, error } = await supabase
     .from("employees")
     .select("id, full_name, phone, driver_availability(status, note, updated_at)")

@@ -1,3 +1,4 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
@@ -41,9 +42,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-night text-ivory">
-        <Suspense fallback={<div className="min-h-full flex-1" />}>
-          <LocalizedApp>{children}</LocalizedApp>
-        </Suspense>
+        <ClerkProvider>
+          <Suspense fallback={<div className="min-h-full flex-1" />}>
+            <LocalizedApp>{children}</LocalizedApp>
+          </Suspense>
+        </ClerkProvider>
       </body>
     </html>
   );

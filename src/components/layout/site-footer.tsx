@@ -1,9 +1,23 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { StaffModeGate } from "@/components/layout/header-nav";
 
 export async function SiteFooter() {
   const dictionary = await getDictionary();
+  const publicLinks = [
+    { href: "/#fleet", label: dictionary.nav.fleet },
+    { href: "/excursions", label: dictionary.nav.excursions },
+    { href: "/blog", label: dictionary.nav.blog },
+    { href: "/pricing", label: dictionary.nav.pricing },
+    { href: "/contact", label: dictionary.nav.contact },
+    { href: "/sign-in", label: dictionary.nav.members },
+  ] as const;
+  const staffLinks = [
+    { href: "/staff/orders", label: dictionary.staffDashboard.orders },
+    { href: "/staff/fleet", label: dictionary.staffDashboard.fleet },
+    { href: "/staff/employees", label: dictionary.staffDashboard.employees },
+  ] as const;
 
   return (
     <footer className="mt-auto border-t border-white/8 bg-panel">
@@ -19,24 +33,18 @@ export async function SiteFooter() {
           <p className="mt-2 text-sm text-mist">{dictionary.footer.tagline}</p>
         </div>
         <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-mist">
-          <Link href="/#fleet" className="hover:text-white">
-            {dictionary.nav.fleet}
-          </Link>
-          <Link href="/excursions" className="hover:text-white">
-            {dictionary.nav.excursions}
-          </Link>
-          <Link href="/blog" className="hover:text-white">
-            {dictionary.nav.blog}
-          </Link>
-          <Link href="/pricing" className="hover:text-white">
-            {dictionary.nav.pricing}
-          </Link>
-          <Link href="/contact" className="hover:text-white">
-            {dictionary.nav.contact}
-          </Link>
-          <Link href="/login" className="hover:text-white">
-            {dictionary.nav.members}
-          </Link>
+          <StaffModeGate
+            staff={staffLinks.map((link) => (
+              <Link key={link.href} href={link.href} className="hover:text-white">
+                {link.label}
+              </Link>
+            ))}
+            public={publicLinks.map((link) => (
+              <Link key={link.href} href={link.href} className="hover:text-white">
+                {link.label}
+              </Link>
+            ))}
+          />
         </div>
       </div>
     </footer>

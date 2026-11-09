@@ -1,16 +1,16 @@
-import { hasSupabaseEnv } from "@/lib/env";
-import { createClient } from "@/lib/supabase/server";
+import { demoEmployees } from "@/lib/data/demo-dashboard";
+import { createStaffClient, hasSupabaseStaffEnv } from "@/lib/supabase/staff";
 import {
   isEmployeeRole,
   type Employee,
 } from "@/types/staff";
 
 export async function listEmployees(): Promise<Employee[]> {
-  if (!hasSupabaseEnv()) {
-    return [];
+  if (!hasSupabaseStaffEnv()) {
+    return demoEmployees;
   }
 
-  const supabase = await createClient();
+  const supabase = createStaffClient();
   const { data, error } = await supabase
     .from("employees")
     .select("id, full_name, email, phone, role, is_active")

@@ -1,21 +1,25 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
+import { Show, UserButton } from "@clerk/nextjs";
 import { setLocale } from "@/actions/locale";
-import { getOptionalUser } from "@/lib/auth/session";
 import { getDictionary, getLocale } from "@/lib/i18n/get-dictionary";
-import { SignOutButton } from "@/components/auth/sign-out-button";
-import { NavLinks } from "@/components/layout/nav-links";
+import { HeaderNav, StaffModeGate } from "@/components/layout/header-nav";
 
 export async function SiteHeader() {
   const [dictionary, locale] = await Promise.all([getDictionary(), getLocale()]);
-  const links = [
+  const publicLinks = [
     { href: "/#fleet", label: dictionary.nav.fleet },
     { href: "/#services", label: dictionary.nav.services },
     { href: "/excursions", label: dictionary.nav.excursions },
     { href: "/blog", label: dictionary.nav.blog },
     { href: "/#about", label: dictionary.nav.about },
     { href: "/contact", label: dictionary.nav.contact },
+  ] as const;
+  const staffLinks = [
+    { href: "/staff/orders", label: dictionary.staffDashboard.orders },
+    { href: "/staff/fleet", label: dictionary.staffDashboard.fleet },
+    { href: "/staff/employees", label: dictionary.staffDashboard.employees },
   ] as const;
 
   return (
@@ -32,29 +36,48 @@ export async function SiteHeader() {
           />
         </Link>
         <div className="flex items-center gap-3 sm:gap-7">
-          <nav className="hidden items-center gap-6 text-sm text-ivory/85 lg:flex">
-            <NavLinks links={links} />
-          </nav>
+          <div className="hidden items-center lg:flex">
+            <HeaderNav publicLinks={publicLinks} staffLinks={staffLinks} />
+          </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <div className="hidden lg:block">
               <LanguageSwitch locale={locale} label={dictionary.nav.language} />
             </div>
-            <Link
-              href="/login"
-              className="rounded-full border border-white/25 px-3 py-2 text-sm text-ivory hover:border-white/60 sm:px-4"
-            >
-              {dictionary.nav.members}
-            </Link>
             <Suspense fallback={null}>
-              <AccountSlot staffLabel={dictionary.nav.staff} />
+              <Show when="signed-out">
+                <Link
+                  href="/sign-in"
+                  className="rounded-full border border-white/25 px-3 py-2 text-sm text-ivory hover:border-white/60 sm:px-4"
+                >
+                  {dictionary.nav.members}
+                </Link>
+              </Show>
+              <Show when="signed-in">
+                <StaffModeGate
+                  staff={null}
+                  public={
+                    <Link
+                      href="/staff"
+                      className="hidden text-sm text-mist hover:text-white sm:inline"
+                    >
+                      {dictionary.nav.staff}
+                    </Link>
+                  }
+                />
+                <UserButton />
+              </Show>
             </Suspense>
           </div>
         </div>
       </div>
-      <nav className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 pb-3 text-sm text-ivory/75 lg:hidden">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 pb-3 text-sm text-ivory/75 lg:hidden">
         <LanguageSwitch locale={locale} label={dictionary.nav.language} />
-        <NavLinks links={links} />
-      </nav>
+        <HeaderNav
+          publicLinks={publicLinks}
+          staffLinks={staffLinks}
+          variant="mobile"
+        />
+      </div>
     </header>
   );
 }
@@ -84,22 +107,5 @@ function LocaleButton({ locale, active }: { locale: "lv" | "en"; active: boolean
         {locale.toUpperCase()}
       </button>
     </form>
-  );
-}
-
-async function AccountSlot({ staffLabel }: { staffLabel: string }) {
-  const user = await getOptionalUser();
-
-  if (!user) {
-    return null;
-  }
-
-  return (
-    <span className="flex items-center gap-2">
-      <Link href="/employees" className="hidden text-sm text-mist hover:text-white sm:inline">
-        {staffLabel}
-      </Link>
-      <SignOutButton />
-    </span>
   );
 }

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth/session";
-import { createClient } from "@/lib/supabase/server";
+import { createStaffClient } from "@/lib/supabase/staff";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { isDriverStatus } from "@/types/staff";
 
@@ -37,7 +37,7 @@ export async function updateDriverAvailability(
     return { error: dictionary.drivers.noteTooLong };
   }
 
-  const supabase = await createClient();
+  const supabase = createStaffClient();
   const { data: employee, error: employeeError } = await supabase
     .from("employees")
     .select("id, role, is_active")

@@ -1,12 +1,44 @@
-import { type NextRequest } from "next/server";
-import { updateSession } from "@/lib/supabase/proxy";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 
-export async function proxy(request: NextRequest) {
-  return updateSession(request);
+function isProtectedPath(pathname: string) {
+  return (
+    pathname.startsWith("/staff") ||
+    pathname.startsWith("/employees") ||
+    pathname.startsWith("/drivers")
+  );
 }
+
+function isAuthPath(pathname: string) {
+  return (
+    pathname === "/login" ||
+    pathname.startsWith("/login/") ||
+    pathname.startsWith("/sign-in") ||
+    pathname.startsWith("/sign-up")
+  );
+}
+
+export default clerkMiddleware(async (auth, request) => {
+  const { pathname } = request.nextUrl;
+
+  if (isProtectedPath(pathname)) {
+    await auth.protect({
+      unauthenticatedUrl: new URL("/sign-in", request.url).toString(),
+    });
+    return;
+  }
+
+  if (isAuthPath(pathname)) {
+    const { userId } = await auth();
+    if (userId) {
+      return Response.redirect(new URL("/staff", request.url));
+    }
+  }
+});
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/(api|trpc)(.*)",
+    "/__clerk/(.*)",
   ],
 };

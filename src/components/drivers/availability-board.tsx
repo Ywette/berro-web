@@ -1,9 +1,9 @@
-import { hasSupabaseEnv } from "@/lib/env";
 import { requireUser } from "@/lib/auth/session";
 import { listDriverAvailability } from "@/lib/data/drivers";
 import { SetupNotice } from "@/components/layout/setup-notice";
 import { AvailabilityForm } from "@/components/drivers/availability-form";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { hasSupabaseStaffEnv } from "@/lib/supabase/staff";
 import type { DriverStatus } from "@/types/staff";
 
 const statusTone: Record<DriverStatus, string> = {
@@ -16,13 +16,13 @@ const statusTone: Record<DriverStatus, string> = {
 export async function AvailabilityBoard() {
   const dictionary = await getDictionary();
 
-  if (!hasSupabaseEnv()) {
+  await requireUser();
+
+  if (!hasSupabaseStaffEnv()) {
     return (
       <SetupNotice title={dictionary.drivers.connectTitle} body={dictionary.drivers.connectBody} />
     );
   }
-
-  await requireUser();
 
   let drivers;
 

@@ -1,29 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
+import { fleetModels } from "@/lib/content/fleet";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
-
-const fleet = [
-  {
-    name: "Executive Mercedes Sprinter",
-    passengers: 8,
-    image: "/fleet/sprinter-black.jpg",
-  },
-  {
-    name: "Van Hool CX45 Luxury Coach",
-    passengers: 56,
-    image: "/fleet/coach-white.jpg",
-  },
-  {
-    name: "Van Hool CX45 Luxury Coach",
-    passengers: 14,
-    image: "/fleet/sprinter-silver.jpg",
-  },
-  {
-    name: "Mercedes-Benz S-Class",
-    passengers: 4,
-    image: "/fleet/mercedes-s-class-black.jpg",
-  },
-] as const;
 
 export async function FleetSection() {
   const dictionary = await getDictionary();
@@ -41,9 +19,9 @@ export async function FleetSection() {
           </Link>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {fleet.map((vehicle) => (
+          {fleetModels.map((vehicle) => (
             <article
-              key={vehicle.image}
+              key={vehicle.id}
               className="relative rounded-2xl border border-white/10 bg-[#141418] p-3.5"
             >
               <span className="absolute top-3.5 right-3.5 z-10 h-2 w-2 rounded-full bg-red-600" />

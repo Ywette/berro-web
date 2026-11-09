@@ -1,7 +1,6 @@
 import { cache } from "react";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { hasSupabaseEnv } from "@/lib/env";
-import { createClient } from "@/lib/supabase/server";
 
 export type SessionUser = {
   id: string;
@@ -9,28 +8,25 @@ export type SessionUser = {
 };
 
 export const getOptionalUser = cache(async (): Promise<SessionUser | null> => {
-  if (!hasSupabaseEnv()) {
+  const { userId } = await auth();
+  if (!userId) {
     return null;
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.getClaims();
-
-  if (error || !data?.claims?.sub) {
-    return null;
-  }
-
+  const user = await currentUser();
   const email =
-    typeof data.claims.email === "string" ? data.claims.email : null;
+    user?.primaryEmailAddress?.emailAddress ??
+    user?.emailAddresses[0]?.emailAddress ??
+    null;
 
-  return { id: data.claims.sub, email };
+  return { id: userId, email };
 });
 
 export async function requireUser() {
   const user = await getOptionalUser();
 
   if (!user) {
-    redirect("/login");
+    redirect("/sign-in");
   }
 
   return user;
