@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { RevealList } from "@/components/ui/reveal-list";
 import { blogPosts } from "@/lib/content/blog";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { formatPostDate } from "@/lib/content/format-date";
@@ -17,12 +18,11 @@ export default async function BlogPage() {
   return (
     <section className="mx-auto w-full px-5 py-12 md:w-[75vw] md:px-0">
       <div className="mb-8 max-w-3xl">
-        <p className="text-xs tracking-[0.22em] text-burgundy uppercase">{dictionary.blog.kicker}</p>
-        <h1 className="mt-3 font-serif text-5xl tracking-wide">{dictionary.blog.title}</h1>
+        <h1 className="font-serif text-5xl tracking-wide">{dictionary.blog.title}</h1>
         <p className="mt-3 text-sm leading-6 text-mist">{dictionary.blog.intro}</p>
       </div>
 
-      <div className="flex flex-col gap-6">
+      <RevealList className="flex flex-col gap-6">
         {blogPosts.map((post, index) => {
           const imageRight = index % 2 === 1;
 
@@ -65,7 +65,7 @@ export default async function BlogPage() {
             </article>
           );
         })}
-      </div>
+      </RevealList>
     </section>
   );
 }

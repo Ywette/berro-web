@@ -18,8 +18,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <section className="mx-auto grid max-w-6xl gap-10 px-5 py-16 lg:grid-cols-[minmax(0,0.9fr)_24rem] lg:items-start">
       <div>
-        <p className="text-xs tracking-[0.22em] text-burgundy uppercase">{dictionary.nav.members}</p>
-        <h1 className="mt-3 font-serif text-5xl tracking-wide">{dictionary.login.title}</h1>
+        <h1 className="font-serif text-5xl tracking-wide">{dictionary.login.title}</h1>
         <p className="mt-4 max-w-md text-sm leading-6 text-mist">{dictionary.login.body}</p>
       </div>
       <div className="rounded-2xl border border-white/10 bg-card p-6">

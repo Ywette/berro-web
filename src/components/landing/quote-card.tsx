@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useDictionary } from "@/components/i18n/locale-provider";
+import { PlaceField } from "@/components/landing/place-field";
 
 const trips = ["One-Way", "Round Trip", "Hourly Charter"] as const;
 type Trip = (typeof trips)[number];
@@ -10,7 +11,34 @@ type Trip = (typeof trips)[number];
 const fieldClass =
   "h-10 w-full rounded-md border border-black/5 bg-white px-3 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 focus:ring-2 focus:ring-burgundy/30";
 
-export function QuoteCard() {
+const maxDocumentBytes = 4 * 1024 * 1024;
+const documentTypes = [".pdf", ".doc", ".docx", ".txt"];
+
+type PlanDocument = { name: string; size: number };
+
+export type QuoteDefaults = {
+  trip?: Trip;
+  pickup?: string;
+  pickupPlace?: string;
+  dropoff?: string;
+  dropoffPlace?: string;
+  departure?: string;
+  returnAt?: string;
+};
+
+type QuoteCardProps = {
+  defaults?: QuoteDefaults;
+  requirePassengerChoice?: boolean;
+  showDocument?: boolean;
+  formId?: string;
+};
+
+export function QuoteCard({
+  defaults,
+  requirePassengerChoice = false,
+  showDocument = true,
+  formId = "book",
+}: QuoteCardProps = {}) {
   const router = useRouter();
   const dictionary = useDictionary();
   const tripLabels: Record<Trip, string> = {
@@ -18,27 +46,28 @@ export function QuoteCard() {
     "Round Trip": dictionary.quote.roundTrip,
     "Hourly Charter": dictionary.quote.hourly,
   };
-  const [trip, setTrip] = useState<Trip>("One-Way");
+  const [trip, setTrip] = useState<Trip>(defaults?.trip ?? "One-Way");
+  const [departure, setDeparture] = useState(defaults?.departure ?? "");
+  const [returnAt, setReturnAt] = useState(defaults?.returnAt ?? "");
+  const [planDocument, setPlanDocument] = useState<PlanDocument | null>(null);
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const params = new URLSearchParams({
-      trip,
-      pickup: String(form.get("pickup") ?? ""),
-      dropoff: String(form.get("dropoff") ?? ""),
-      departure: String(form.get("departure") ?? ""),
-      returnAt: String(form.get("returnAt") ?? ""),
-      passengers: String(form.get("passengers") ?? ""),
-    });
+    const params = new URLSearchParams({ trip });
+    for (const field of ["pickup", "pickupPlace", "dropoff", "dropoffPlace", "departure", "returnAt", "passengers"]) {
+      const value = String(form.get(field) ?? "");
+      if (value) params.set(field, value);
+    }
+    if (planDocument) params.set("planDocument", planDocument.name);
     router.push(`/contact?${params.toString()}`);
   }
 
   return (
     <form
-      id="book"
+      id={formId}
       onSubmit={onSubmit}
-      className="rounded-2xl border border-white/30 bg-white/15 p-4 shadow-[0_30px_80px_-36px_rgba(0,0,0,0.85)] backdrop-blur-2xl sm:p-5"
+      className="rounded-2xl border border-white/20 bg-white/5 p-4 shadow-[0_30px_80px_-36px_rgba(0,0,0,0.85)] backdrop-blur-md sm:p-5"
     >
       <div className="flex flex-wrap items-center gap-1">
         {trips.map((option) => {
@@ -60,72 +89,77 @@ export function QuoteCard() {
         })}
       </div>
 
-      <label className="mt-4 grid gap-1.5 text-xs text-ivory/70">
-        {dictionary.quote.pickup}
-        <span className="relative">
-          <Pin />
-          <input
-            name="pickup"
-            required
-            placeholder={dictionary.quote.pickupPlaceholder}
-            className={`${fieldClass} pl-9`}
-          />
-        </span>
-      </label>
+      <PlaceField
+        name="pickup"
+        label={dictionary.quote.pickup}
+        placeholder={dictionary.quote.pickupPlaceholder}
+        inputClassName={fieldClass}
+        className="mt-4"
+        defaultText={defaults?.pickup}
+        defaultPlaceId={defaults?.pickupPlace}
+      />
+      <PlaceField
+        name="dropoff"
+        label={dictionary.quote.dropoff}
+        placeholder={dictionary.quote.dropoffPlaceholder}
+        inputClassName={fieldClass}
+        className="mt-3"
+        defaultText={defaults?.dropoff}
+        defaultPlaceId={defaults?.dropoffPlace}
+      />
 
-      <label className="mt-3 grid gap-1.5 text-xs text-ivory/70">
-        {dictionary.quote.dropoff}
-        <span className="relative">
-          <Pin />
-          <input
-            name="dropoff"
-            required
-            placeholder={dictionary.quote.dropoffPlaceholder}
-            className={`${fieldClass} pl-9`}
-          />
-        </span>
-      </label>
-
-      <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_7.5rem]">
-        <fieldset className="grid min-w-0 gap-1.5">
-          <legend className="text-xs text-ivory/70">{dictionary.quote.dateTime}</legend>
-          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5">
-            <span className="relative">
-              <Calendar />
-              <input
-                name="departure"
-                required
-                placeholder={dictionary.quote.departure}
-                aria-label={dictionary.quote.departure}
-                className={`${fieldClass} min-w-0 pl-8`}
-              />
-            </span>
-            <span className="text-sm text-ivory/50" aria-hidden="true">
-              +
-            </span>
-            <span className="relative">
-              <Calendar />
-              <input
-                name="returnAt"
-                placeholder={dictionary.quote.return}
-                aria-label={dictionary.quote.return}
-                disabled={trip !== "Round Trip"}
-                className={`${fieldClass} min-w-0 pl-8 disabled:cursor-not-allowed disabled:opacity-50`}
-              />
-            </span>
-          </div>
-        </fieldset>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <label className="grid min-w-0 gap-1.5 text-xs text-ivory/70">
-          {dictionary.quote.passengers}
-          <select name="passengers" defaultValue="8" className={`${fieldClass} min-w-0`}>
-            {["1", "4", "8", "14", "20", "36", "56"].map((count) => (
-              <option key={count} value={count}>
-                {count}
-              </option>
-            ))}
-          </select>
+          {dictionary.quote.departure}
+          <input
+            type="datetime-local"
+            name="departure"
+            required
+            value={departure}
+            onChange={(event) => setDeparture(event.target.value)}
+            onFocus={(event) => {
+              event.currentTarget.min = localNow();
+            }}
+            className={`${fieldClass} min-w-0 [color-scheme:light]`}
+          />
+        </label>
+        <label className="grid min-w-0 gap-1.5 text-xs text-ivory/70">
+          {dictionary.quote.return}
+          <input
+            type="datetime-local"
+            name="returnAt"
+            required={trip === "Round Trip"}
+            disabled={trip !== "Round Trip"}
+            min={departure || undefined}
+            value={trip === "Round Trip" ? returnAt : ""}
+            onChange={(event) => setReturnAt(event.target.value)}
+            className={`${fieldClass} min-w-0 [color-scheme:light] disabled:cursor-not-allowed disabled:opacity-50`}
+          />
         </label>
       </div>
+
+      <label className="mt-3 grid gap-1.5 text-xs text-ivory/70">
+        {dictionary.quote.passengers}
+        <select
+          name="passengers"
+          required
+          defaultValue={requirePassengerChoice ? "" : "8"}
+          className={fieldClass}
+        >
+          {requirePassengerChoice ? (
+            <option value="" disabled>
+              {dictionary.excursions.choosePassengers}
+            </option>
+          ) : null}
+          {["1", "4", "8", "14", "20", "36", "56"].map((count) => (
+            <option key={count} value={count}>
+              {count}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {showDocument ? <PlanDocumentAttach document={planDocument} onDocument={setPlanDocument} /> : null}
 
       <button
         type="submit"
@@ -137,30 +171,80 @@ export function QuoteCard() {
   );
 }
 
-function Calendar() {
+function PlanDocumentAttach({
+  document,
+  onDocument,
+}: {
+  document: PlanDocument | null;
+  onDocument: (document: PlanDocument | null) => void;
+}) {
+  const dictionary = useDictionary();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState("");
+
+  function choose(file: File | undefined) {
+    setError("");
+    if (!file) return;
+
+    const extension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+    if (!documentTypes.includes(extension)) {
+      setError(dictionary.pricing.documentType);
+      return;
+    }
+    if (file.size > maxDocumentBytes) {
+      setError(dictionary.pricing.documentTooLarge);
+      return;
+    }
+
+    onDocument({ name: file.name, size: file.size });
+  }
+
+  function remove() {
+    onDocument(null);
+    setError("");
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
   return (
-    <svg
-      viewBox="0 0 24 24"
-      className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400"
-      aria-hidden="true"
-    >
-      <rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="currentColor" strokeWidth="1.7" />
-      <path d="M8 3.5v3M16 3.5v3M4 10h16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-    </svg>
+    <div className="mt-3 grid gap-2 rounded-xl border border-dashed border-white/25 bg-white/5 p-3 text-xs text-ivory/80">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="font-medium text-ivory">{dictionary.pricing.planDocument}</p>
+          <p className="text-[11px] text-ivory/60">{dictionary.pricing.planDocumentHint}</p>
+        </div>
+        <label className="cursor-pointer rounded-full border border-white/30 px-3 py-1.5 text-ivory hover:border-white/60">
+          {dictionary.pricing.chooseDocument}
+          <input
+            ref={inputRef}
+            type="file"
+            accept={documentTypes.join(",")}
+            className="sr-only"
+            onChange={(event) => choose(event.target.files?.[0])}
+          />
+        </label>
+      </div>
+      {document ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-black/20 px-2.5 py-1.5">
+          <span className="min-w-0 truncate text-ivory">
+            {document.name}{" "}
+            <span className="text-ivory/55">· {formatSize(document.size)}</span>
+          </span>
+          <button type="button" onClick={remove} className="text-ivory/70 hover:text-white">
+            {dictionary.pricing.removeDocument}
+          </button>
+        </div>
+      ) : null}
+      {error ? <p className="text-ivory">{error}</p> : null}
+    </div>
   );
 }
 
-function Pin() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-400"
-      aria-hidden="true"
-    >
-      <path
-        fill="currentColor"
-        d="M12 2.5a6.2 6.2 0 0 0-6.2 6.2c0 4.7 6.2 12.8 6.2 12.8s6.2-8.1 6.2-12.8A6.2 6.2 0 0 0 12 2.5Zm0 8.4a2.2 2.2 0 1 1 0-4.4 2.2 2.2 0 0 1 0 4.4Z"
-      />
-    </svg>
-  );
+function formatSize(bytes: number) {
+  return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function localNow() {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  return now.toISOString().slice(0, 16);
 }

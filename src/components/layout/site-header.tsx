@@ -5,6 +5,7 @@ import { setLocale } from "@/actions/locale";
 import { getOptionalUser } from "@/lib/auth/session";
 import { getDictionary, getLocale } from "@/lib/i18n/get-dictionary";
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import { NavLinks } from "@/components/layout/nav-links";
 
 export async function SiteHeader() {
   const [dictionary, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -56,14 +57,6 @@ export async function SiteHeader() {
       </nav>
     </header>
   );
-}
-
-function NavLinks({ links }: { links: readonly { href: string; label: string }[] }) {
-  return links.map((link) => (
-    <Link key={link.href} href={link.href} className="hover:text-white">
-      {link.label}
-    </Link>
-  ));
 }
 
 function LanguageSwitch({ locale, label }: { locale: "lv" | "en"; label: string }) {

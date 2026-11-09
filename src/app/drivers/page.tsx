@@ -14,8 +14,7 @@ export default async function DriversPage() {
   return (
     <section className="mx-auto max-w-6xl px-5 py-12">
       <div className="mb-8">
-        <p className="text-xs tracking-[0.22em] text-burgundy uppercase">{dictionary.nav.members}</p>
-        <h1 className="mt-3 font-serif text-5xl tracking-wide">{dictionary.drivers.title}</h1>
+        <h1 className="font-serif text-5xl tracking-wide">{dictionary.drivers.title}</h1>
         <p className="mt-3 max-w-xl text-sm leading-6 text-mist">{dictionary.drivers.body}</p>
       </div>
       <Suspense fallback={<p className="text-sm text-mist">{dictionary.drivers.loading}</p>}>

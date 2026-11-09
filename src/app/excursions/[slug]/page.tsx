@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AvailabilityButton } from "@/components/excursions/availability-button";
 import { bookingContact, excursions, findExcursion } from "@/lib/content/excursions";
 import { formatEuro } from "@/lib/content/format-price";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
@@ -161,6 +162,19 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
           />
           <ContactItem label={text.website} href={`https://${bookingContact.website}`} value={bookingContact.website} />
         </dl>
+        <AvailabilityButton
+          title={excursion.title[locale]}
+          destination={
+            excursion.destination ??
+            (excursion.slug === "moulin-rouge"
+              ? "Moulin Rouge"
+              : excursion.slug === "disneyland"
+                ? "Disneyland Paris"
+                : undefined)
+          }
+          days={excursion.days}
+          image={excursion.image}
+        />
         {details.closing ? <p className="mt-4 text-sm text-ivory/90">{details.closing[locale]}</p> : null}
       </section>
     </article>
