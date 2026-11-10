@@ -57,7 +57,7 @@ export function SloganHero({ children }: { children: ReactNode }) {
   return (
     <section
       id="book"
-      className="relative flex min-h-[calc(100svh-var(--site-header-height))] scroll-mt-[var(--site-header-height)] overflow-hidden"
+      className="relative flex min-h-[calc(100svh-var(--site-header-height))] scroll-mt-[var(--site-header-height)] overflow-x-hidden"
     >
       <div className="absolute inset-0" aria-hidden="true">
         {slides.map((slide, slideIndex) => (
@@ -74,40 +74,46 @@ export function SloganHero({ children }: { children: ReactNode }) {
             style={{ transitionDuration: reducedMotion.current ? "0ms" : `${FADE_MS}ms` }}
           />
         ))}
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.78)_0%,rgba(0,0,0,0.45)_40%,rgba(0,0,0,0.12)_68%,rgba(0,0,0,0.28)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.72)_0%,rgba(0,0,0,0.5)_42%,rgba(0,0,0,0.22)_72%,rgba(0,0,0,0.4)_100%)]" />
         <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-night to-transparent" />
       </div>
 
-      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 items-center px-5 py-10 lg:py-12">
-        <div className="w-full max-w-xl lg:max-w-2xl">
-          <h1 className="font-serif leading-[0.85] text-burgundy">
-            <span className="block text-6xl tracking-[0.06em] sm:text-7xl lg:text-8xl xl:text-[6.5rem]">
-              BERRO
-            </span>
-            <span className="mt-3 block text-xl tracking-[0.34em] text-ivory sm:text-2xl lg:text-3xl">
-              TRAVEL
-            </span>
-          </h1>
-
-          <div className="mt-8 lg:mt-10">{children}</div>
-
-          <div className="mt-6 flex items-center gap-2" role="tablist" aria-label={dictionary.hero.scenes}>
-            {slides.map((slide, slideIndex) => {
-              const selected = slideIndex === index;
-              return (
-                <button
-                  key={slide.src}
-                  type="button"
-                  role="tab"
-                  aria-selected={selected}
-                  aria-label={slide.label}
-                  onClick={() => reveal(slideIndex)}
-                  className={`h-2 rounded-full transition-all ${
-                    selected ? "w-6 bg-ivory" : "w-2 bg-ivory/45 hover:bg-ivory/75"
-                  }`}
-                />
-              );
-            })}
+      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 items-center px-4 py-8 sm:px-6">
+        <div className="grid w-full items-center gap-8 lg:grid-cols-[36rem_minmax(0,1fr)] lg:gap-10">
+          <div className="w-full max-w-[36rem] justify-self-start lg:w-[36rem] lg:max-w-[36rem] lg:min-w-[36rem]">
+            {children}
+          </div>
+          <div className="flex flex-col items-end lg:justify-self-end">
+            <h1 className="text-right font-serif leading-[0.85] text-burgundy lg:text-left">
+              <span className="block text-5xl tracking-[0.06em] sm:text-6xl xl:text-7xl">
+                BERRO
+              </span>
+              <span className="mt-3 block text-lg tracking-[0.34em] text-ivory sm:text-xl xl:text-2xl">
+                TRAVEL
+              </span>
+            </h1>
+            <div
+              className="mt-6 flex items-center gap-2"
+              role="tablist"
+              aria-label={dictionary.hero.scenes}
+            >
+              {slides.map((slide, slideIndex) => {
+                const selected = slideIndex === index;
+                return (
+                  <button
+                    key={slide.src}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    aria-label={slide.label}
+                    onClick={() => reveal(slideIndex)}
+                    className={`h-2 rounded-full transition-all ${
+                      selected ? "w-6 bg-ivory" : "w-2 bg-ivory/45 hover:bg-ivory/75"
+                    }`}
+                  />
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
