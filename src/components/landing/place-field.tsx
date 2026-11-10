@@ -94,14 +94,14 @@ export function PlaceField({
   }
 
   return (
-    <div className={`relative grid gap-1.5 text-xs text-ivory/70 ${className}`}>
-      <label htmlFor={inputId}>{label}</label>
+    <div className={`relative min-w-0 ${className}`}>
       <span className="relative">
         <Pin />
         <input
           id={inputId}
           name={name}
           value={text}
+          aria-label={label}
           aria-invalid={invalid || undefined}
           aria-required="true"
           onChange={(event) => onType(event.target.value)}
@@ -117,7 +117,7 @@ export function PlaceField({
           aria-expanded={open}
           aria-controls={listId}
           aria-activedescendant={open && active >= 0 ? `${listId}-${active}` : undefined}
-          className={`${inputClassName} pl-9`}
+          className={`${inputClassName} !px-2 !pl-8`}
         />
       </span>
       <input type="hidden" name={`${name}Place`} value={placeId} />
@@ -155,7 +155,7 @@ function Pin() {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-400"
+      className="pointer-events-none absolute top-1/2 left-2 h-4 w-4 -translate-y-1/2 text-neutral-400"
       aria-hidden="true"
     >
       <path

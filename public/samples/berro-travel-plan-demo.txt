@@ -1,0 +1,15 @@
+Berro Travel — demo excursion plan
+
+Contact name: Anna Bērziņa
+Email: anna.berzina@example.com
+Phone: +371 2000 1234
+Passengers: 28
+
+Trip: Round trip school group
+Departure from: Rīgas lidosta
+Return to: Sigulda
+
+Departure: 2026-11-18 08:30
+Return: 2026-11-18 18:00
+
+Notes: Airport pickup, day trip to Sigulda, return same evening.

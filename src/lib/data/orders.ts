@@ -68,6 +68,8 @@ export async function listOrders(): Promise<StaffOrder[]> {
         status: row.status,
         departureOn: row.departure_on,
         returnOn: row.return_on,
+        stops: null,
+        waitingMinutes: null,
         assignedDriverId: row.assigned_driver_id,
         assignedDriverName: employee?.full_name ?? null,
         assignedGuideId: null,

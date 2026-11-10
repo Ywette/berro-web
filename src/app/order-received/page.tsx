@@ -21,6 +21,9 @@ type OrderReceivedPageProps = {
     returnAt?: string | string[];
     passengers?: string | string[];
     planDocument?: string | string[];
+    stops?: string | string[];
+    otherWaitingMinutes?: string | string[];
+    waitingMinutes?: string | string[];
   }>;
 };
 
@@ -55,6 +58,9 @@ async function OrderReceivedContent({
     returnAt: first(params.returnAt),
     passengers: first(params.passengers),
     planDocument: first(params.planDocument),
+    stops: first(params.stops),
+    otherWaitingMinutes: first(params.otherWaitingMinutes),
+    waitingMinutes: first(params.waitingMinutes),
   };
 
   return <CrmHandoff input={input} />;

@@ -21,6 +21,8 @@ export type StaffOrder = {
   status: OrderStatus;
   departureOn: string | null;
   returnOn: string | null;
+  stops: Array<{ name: string; waitMinutes: number }> | null;
+  waitingMinutes: number | null;
   assignedDriverId: string | null;
   assignedDriverName: string | null;
   assignedGuideId: string | null;

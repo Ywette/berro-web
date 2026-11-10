@@ -5,9 +5,13 @@ export type PlanDocumentApiError = {
   message?: string;
 };
 
-export async function parsePlanDocument(file: File): Promise<PlanDocumentResult> {
+export async function parsePlanDocument(
+  file: File,
+  locale: "en" | "lv" = "lv",
+): Promise<PlanDocumentResult> {
   const body = new FormData();
   body.set("file", file);
+  body.set("locale", locale);
 
   const response = await fetch("/api/plan-document", {
     method: "POST",
@@ -17,13 +21,19 @@ export async function parsePlanDocument(file: File): Promise<PlanDocumentResult>
   const data = (await response.json()) as PlanDocumentResult & PlanDocumentApiError;
 
   if (!response.ok) {
-    throw new Error(data.message || "Could not read the document.");
+    const error = new Error(data.message || "Could not read the document.") as Error & {
+      code?: string;
+    };
+    error.code = data.error;
+    throw error;
   }
 
   return {
     fields: data.fields ?? {},
     text: data.text ?? "",
     warnings: data.warnings ?? [],
+    summary: data.summary ?? "",
+    source: "ai",
   };
 }
 
@@ -38,6 +48,7 @@ export function hasExtractedFields(fields: ExtractedPlanFields) {
     fields.trip ||
       fields.name ||
       fields.email ||
+      fields.phone ||
       fields.pickup ||
       fields.dropoff ||
       fields.departure ||

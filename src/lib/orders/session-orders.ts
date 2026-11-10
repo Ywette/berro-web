@@ -1,3 +1,4 @@
+import { decodeStops, totalWaitingMinutes } from "@/lib/orders/stops";
 import type { StaffOrder } from "@/types/dashboard";
 
 export const SESSION_ORDERS_KEY = "berro-crm-demo-orders";
@@ -13,6 +14,10 @@ export type QuoteOrderInput = {
   returnAt?: string;
   passengers?: string;
   planDocument?: string;
+  /** JSON array of { name, waitMinutes }. */
+  stops?: string;
+  otherWaitingMinutes?: string;
+  waitingMinutes?: string;
 };
 
 export type QuoteRequiredField =
@@ -108,6 +113,11 @@ export function orderFromQuoteInput(input: QuoteOrderInput): StaffOrder {
   const { destination, returnTo } = splitDropoff(input.dropoff);
   const stamp = Date.now();
   const reference = `ORD-${String(stamp).slice(-4)}`;
+  const stops = decodeStops(input.stops);
+  const otherWaiting = Number(input.otherWaitingMinutes ?? "");
+  const waiting =
+    Number(input.waitingMinutes ?? "") ||
+    totalWaitingMinutes(stops, Number.isFinite(otherWaiting) ? otherWaiting : 0);
 
   return {
     id: `session-order-${stamp}`,
@@ -122,6 +132,8 @@ export function orderFromQuoteInput(input: QuoteOrderInput): StaffOrder {
     status: "new",
     departureOn: toDateOnly(input.departure),
     returnOn: toDateOnly(input.returnAt),
+    stops: stops.map((stop) => ({ name: stop.name, waitMinutes: stop.waitMinutes })),
+    waitingMinutes: waiting > 0 ? waiting : null,
     assignedDriverId: null,
     assignedDriverName: null,
     assignedGuideId: null,

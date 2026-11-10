@@ -353,11 +353,11 @@ function PlanDocumentField({
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
   const [reading, setReading] = useState(false);
-  const [filled, setFilled] = useState(false);
+  const [summary, setSummary] = useState("");
 
   async function choose(file: File | undefined) {
     setError("");
-    setFilled(false);
+    setSummary("");
     if (!file) {
       return;
     }
@@ -381,7 +381,7 @@ function PlanDocumentField({
 
   function remove() {
     onDocument(null);
-    setFilled(false);
+    setSummary("");
     setError("");
     if (inputRef.current) {
       inputRef.current.value = "";
@@ -392,11 +392,11 @@ function PlanDocumentField({
     if (!document) return;
     setReading(true);
     setError("");
-    setFilled(false);
+    setSummary("");
     try {
-      const result = await parsePlanDocument(document.file);
+      const result = await parsePlanDocument(document.file, dictionary.locale);
       onFields(result.fields);
-      setFilled(true);
+      setSummary(result.summary?.trim() || dictionary.pricing.aiFilled(document.name));
     } catch (caught) {
       const message =
         caught instanceof Error ? caught.message : dictionary.pricing.documentReadError;
@@ -447,7 +447,7 @@ function PlanDocumentField({
       ) : null}
 
       {error ? <p className="text-ivory">{error}</p> : null}
-      {filled ? <p className="text-pine">{dictionary.pricing.aiFilled(document?.name ?? "")}</p> : null}
+      {summary ? <p className="text-pine">{summary}</p> : null}
     </div>
   );
 }

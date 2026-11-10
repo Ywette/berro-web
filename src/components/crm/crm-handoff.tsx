@@ -118,6 +118,24 @@ export function CrmHandoff({ input }: { input: QuoteOrderInput }) {
             <dt className="text-mist">{dictionary.quote.email}</dt>
             <dd className="mt-1 text-ivory">{order.requestorEmail}</dd>
           </div>
+          {order.stops && order.stops.length > 0 ? (
+            <div className="sm:col-span-2">
+              <dt className="text-mist">{dictionary.quote.stopsTitle}</dt>
+              <dd className="mt-1 text-ivory">
+                {order.stops
+                  .map((stop) => `${stop.name} (${stop.waitMinutes} ${dictionary.quote.minutesShort})`)
+                  .join(" · ")}
+              </dd>
+            </div>
+          ) : null}
+          {order.waitingMinutes ? (
+            <div>
+              <dt className="text-mist">{dictionary.quote.waitingTotal}</dt>
+              <dd className="mt-1 text-ivory">
+                {order.waitingMinutes} {dictionary.quote.minutesShort}
+              </dd>
+            </div>
+          ) : null}
         </dl>
       </article>
 
