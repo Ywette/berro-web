@@ -80,8 +80,18 @@ export const en = {
       body: "Keep the vehicle and driver for the hours you need, in the city or beyond.",
     },
   ],
-  about:
-    "Executive sprinters and luxury coaches for airport runs, vineyard days, and private charters. Members sign in to see the employee list and who is available to drive.",
+  about: {
+    title: "The journey begins with the right choice.",
+    lead: "Comfort that inspires. Service you can rely on.",
+    paragraphs: [
+      "Whether you are planning an airport transfer, a business trip, a group excursion, or an unforgettable journey across Europe, we will make sure every kilometre is part of a pleasant experience.",
+      "We offer comfortable coaches, minibuses, and exclusive VIP transport, shaping each trip around your wishes, the route, and the number of travellers.",
+      "From individually planned transfers to engaging excursions in Latvia and abroad, we combine a professional approach, careful logistics, and high standards of comfort.",
+    ],
+    closing: "You choose the destination. We take care of the road.",
+    planTrip: "Plan a trip",
+    viewFleet: "View the fleet",
+  },
   excursions: {
     kicker: "Excursions",
     title: "Travel with Berro",
@@ -456,8 +466,18 @@ export const lv: Dictionary = {
       body: "Autobuss un šoferis uz tik stundām, cik vajag, pilsētā vai ārpus tās.",
     },
   ],
-  about:
-    "Ekskluzīvi mikroautobusi un luksusa autobusi lidostas braucieniem, vīna dienas izbraukumiem un privātām nomām. Biedri pierakstās, lai redzētu darbinieku sarakstu un to, kurš šoferis ir pieejams.",
+  about: {
+    title: "Ceļojums sākas ar pareizo izvēli.",
+    lead: "Komforts, kas iedvesmo. Serviss, uz kuru var paļauties.",
+    paragraphs: [
+      "Neatkarīgi no tā, vai plānojat lidostas transfēru, biznesa braucienu, grupas ekskursiju vai neaizmirstamu ceļojumu pa Eiropu — mēs parūpēsimies, lai katrs kilometrs būtu daļa no patīkamas pieredzes.",
+      "Piedāvājam komfortablus autobusus, mikroautobusus un ekskluzīvu VIP transportu, pielāgojot katru braucienu jūsu vēlmēm, maršrutam un ceļotāju skaitam.",
+      "No individuāli plānotiem transfēriem līdz aizraujošām ekskursijām Latvijā un ārvalstīs — mēs apvienojam profesionālu pieeju, pārdomātu loģistiku un augstus komforta standartus.",
+    ],
+    closing: "Jūs izvēlaties galamērķi. Mēs parūpējamies par ceļu.",
+    planTrip: "Plānot braucienu",
+    viewFleet: "Apskatīt transportu",
+  },
   excursions: {
     kicker: "Ekskursijas",
     title: "Ceļo ar Berro",

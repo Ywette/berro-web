@@ -55,7 +55,10 @@ export function SloganHero({ children }: { children: ReactNode }) {
   }
 
   return (
-    <section className="relative flex min-h-[calc(100svh-var(--site-header-height))] overflow-hidden">
+    <section
+      id="book"
+      className="relative flex min-h-[calc(100svh-var(--site-header-height))] scroll-mt-[var(--site-header-height)] overflow-hidden"
+    >
       <div className="absolute inset-0" aria-hidden="true">
         {slides.map((slide, slideIndex) => (
           <Image

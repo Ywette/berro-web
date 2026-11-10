@@ -7,7 +7,7 @@ export async function FleetSection() {
   const dictionary = await getDictionary();
 
   return (
-    <section id="fleet" className="bg-night">
+    <section id="fleet" className="scroll-mt-[var(--site-header-height)] bg-night">
       <div className="mx-auto max-w-7xl px-5 py-14">
         <div className="mb-6 flex items-center justify-between gap-4">
           <h2 className="text-2xl font-medium text-ivory sm:text-3xl">{dictionary.fleet.title}</h2>
