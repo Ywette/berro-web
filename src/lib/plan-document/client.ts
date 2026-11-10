@@ -36,6 +36,8 @@ export function nearestPassengerOption(value: number, options: number[] = [1, 4,
 export function hasExtractedFields(fields: ExtractedPlanFields) {
   return Boolean(
     fields.trip ||
+      fields.name ||
+      fields.email ||
       fields.pickup ||
       fields.dropoff ||
       fields.departure ||

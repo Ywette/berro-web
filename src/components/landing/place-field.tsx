@@ -12,6 +12,8 @@ type PlaceFieldProps = {
   className?: string;
   defaultText?: string;
   defaultPlaceId?: string;
+  invalid?: boolean;
+  onTextChange?: (value: string) => void;
 };
 
 export function PlaceField({
@@ -22,6 +24,8 @@ export function PlaceField({
   className = "",
   defaultText = "",
   defaultPlaceId = "",
+  invalid = false,
+  onTextChange,
 }: PlaceFieldProps) {
   const dictionary = useDictionary();
   const inputId = useId();
@@ -56,13 +60,16 @@ export function PlaceField({
   function onType(value: string) {
     setText(value);
     setPlaceId("");
+    onTextChange?.(value);
     clearTimeout(debounce.current);
     debounce.current = setTimeout(() => void load(value), 200);
   }
 
   function choose(suggestion: PlaceSuggestion) {
-    setText(suggestion.secondary ? `${suggestion.label}, ${suggestion.secondary}` : suggestion.label);
+    const next = suggestion.secondary ? `${suggestion.label}, ${suggestion.secondary}` : suggestion.label;
+    setText(next);
     setPlaceId(suggestion.id);
+    onTextChange?.(next);
     setOpen(false);
   }
 
@@ -94,8 +101,9 @@ export function PlaceField({
         <input
           id={inputId}
           name={name}
-          required
           value={text}
+          aria-invalid={invalid || undefined}
+          aria-required="true"
           onChange={(event) => onType(event.target.value)}
           onFocus={() => {
             if (!placeId) void load(text);

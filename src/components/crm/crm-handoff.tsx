@@ -7,6 +7,7 @@ import { useDictionary } from "@/components/i18n/locale-provider";
 import {
   orderFromQuoteInput,
   prependSessionOrder,
+  quoteFieldErrors,
   type QuoteOrderInput,
 } from "@/lib/orders/session-orders";
 import type { StaffOrder } from "@/types/dashboard";
@@ -18,6 +19,8 @@ export function CrmHandoff({ input }: { input: QuoteOrderInput }) {
   const [phase, setPhase] = useState<"syncing" | "done">("syncing");
   const [order, setOrder] = useState<StaffOrder | null>(null);
 
+  const errors = useMemo(() => quoteFieldErrors(input), [input]);
+
   const contactHref = useMemo(() => {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(input)) {
@@ -28,6 +31,7 @@ export function CrmHandoff({ input }: { input: QuoteOrderInput }) {
   }, [input]);
 
   useEffect(() => {
+    if (errors.length > 0) return;
     const created = orderFromQuoteInput(input);
     const timer = window.setTimeout(() => {
       prependSessionOrder(created);
@@ -35,7 +39,24 @@ export function CrmHandoff({ input }: { input: QuoteOrderInput }) {
       setPhase("done");
     }, syncMs);
     return () => window.clearTimeout(timer);
-  }, [input]);
+  }, [errors, input]);
+
+  if (errors.length > 0) {
+    return (
+      <div className="mx-auto max-w-xl px-5 py-16 text-center">
+        <h1 className="font-serif text-3xl tracking-wide text-ivory sm:text-4xl">
+          {dictionary.quote.incompleteTitle}
+        </h1>
+        <p className="mt-3 text-sm leading-6 text-mist">{dictionary.quote.incompleteBody}</p>
+        <Link
+          href="/#book"
+          className="mt-8 inline-flex rounded-full bg-burgundy px-5 py-2.5 text-sm font-medium text-white hover:bg-burgundy-deep"
+        >
+          {dictionary.quote.backToQuote}
+        </Link>
+      </div>
+    );
+  }
 
   if (phase === "syncing" || !order) {
     return (
@@ -89,6 +110,14 @@ export function CrmHandoff({ input }: { input: QuoteOrderInput }) {
           <div>
             <dt className="text-mist">{dictionary.staffDashboard.passengers}</dt>
             <dd className="mt-1 text-ivory">{order.passengerCount}</dd>
+          </div>
+          <div>
+            <dt className="text-mist">{dictionary.quote.name}</dt>
+            <dd className="mt-1 text-ivory">{order.requestorName}</dd>
+          </div>
+          <div>
+            <dt className="text-mist">{dictionary.quote.email}</dt>
+            <dd className="mt-1 text-ivory">{order.requestorEmail}</dd>
           </div>
         </dl>
       </article>

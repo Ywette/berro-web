@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useDictionary } from "@/components/i18n/locale-provider";
-import { mergeOrdersWithSession } from "@/lib/orders/session-orders";
+import {
+  mergeOrdersWithSession,
+  removeSessionOrderByReference,
+} from "@/lib/orders/session-orders";
 import type { OrderStatus, StaffOrder } from "@/types/dashboard";
 
 const statusTone: Record<OrderStatus, string> = {
@@ -12,6 +15,10 @@ const statusTone: Record<OrderStatus, string> = {
   approved: "bg-pine/15 text-pine",
   paid: "bg-pine/25 text-pine",
 };
+
+function isSessionOrder(order: StaffOrder) {
+  return order.id.startsWith("session-order-");
+}
 
 export function OrdersTableClient({
   initialOrders,
@@ -24,8 +31,14 @@ export function OrdersTableClient({
   const [orders, setOrders] = useState(initialOrders);
 
   useEffect(() => {
+    removeSessionOrderByReference("ORD-0417");
     setOrders(mergeOrdersWithSession(initialOrders));
   }, [initialOrders]);
+
+  function onDelete(reference: string) {
+    removeSessionOrderByReference(reference);
+    setOrders(mergeOrdersWithSession(initialOrders));
+  }
 
   return (
     <div className="space-y-4">
@@ -49,6 +62,9 @@ export function OrdersTableClient({
                 <th className="px-4 py-3 font-medium">{dictionary.staffDashboard.state}</th>
                 <th className="hidden px-4 py-3 font-medium lg:table-cell">
                   {dictionary.staffDashboard.assignedDriver}
+                </th>
+                <th className="px-4 py-3 font-medium">
+                  <span className="sr-only">{dictionary.staffDashboard.deleteOrder}</span>
                 </th>
               </tr>
             </thead>
@@ -89,6 +105,17 @@ export function OrdersTableClient({
                   </td>
                   <td className="hidden px-4 py-3 text-mist lg:table-cell">
                     {order.assignedDriverName ?? dictionary.staffDashboard.unassigned}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {isSessionOrder(order) ? (
+                      <button
+                        type="button"
+                        onClick={() => onDelete(order.reference)}
+                        className="text-xs text-mist hover:text-rose-200"
+                      >
+                        {dictionary.staffDashboard.deleteOrder}
+                      </button>
+                    ) : null}
                   </td>
                 </tr>
               ))}

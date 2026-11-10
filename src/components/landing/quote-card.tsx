@@ -1,36 +1,25 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useDictionary } from "@/components/i18n/locale-provider";
 import { PlaceField } from "@/components/landing/place-field";
+import { parsePlanDocument } from "@/lib/plan-document/client";
+import type { ExtractedPlanFields } from "@/lib/plan-document/types";
+import { quoteFieldErrors, type QuoteOrderInput, type QuoteRequiredField } from "@/lib/orders/session-orders";
 
 const trips = ["One-Way", "Round Trip", "Hourly Charter"] as const;
 type Trip = (typeof trips)[number];
 
-const fieldClass =
-  "h-10 w-full rounded-md border border-black/5 bg-white px-3 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 focus:ring-2 focus:ring-burgundy/30";
-
 const maxDocumentBytes = 4 * 1024 * 1024;
 const documentTypes = [".pdf", ".doc", ".docx", ".txt"];
-const passengerOptions = [1, 4, 8, 14, 20, 36, 56];
-const readingDelayMs = 2000;
-
-/** Demo fill until AI extraction is connected. */
-const demoDocumentFields = {
-  trip: "Round Trip" as Trip,
-  pickup: "Riga Airport",
-  dropoff: "Roga Hotel, Sigulda",
-  departure: "2026-11-15T05:00",
-  returnAt: "2026-11-15T20:00",
-  returnPlace: "Riga Hotel",
-  passengers: "8",
-};
 
 type PlanDocument = { name: string; size: number };
 
 export type QuoteDefaults = {
   trip?: Trip;
+  name?: string;
+  email?: string;
   pickup?: string;
   pickupPlace?: string;
   dropoff?: string;
@@ -42,14 +31,12 @@ export type QuoteDefaults = {
 
 type QuoteCardProps = {
   defaults?: QuoteDefaults;
-  requirePassengerChoice?: boolean;
   showDocument?: boolean;
   formId?: string;
 };
 
 export function QuoteCard({
   defaults,
-  requirePassengerChoice = false,
   showDocument = true,
   formId = "book",
 }: QuoteCardProps = {}) {
@@ -60,55 +47,143 @@ export function QuoteCard({
     "Round Trip": dictionary.quote.roundTrip,
     "Hourly Charter": dictionary.quote.hourly,
   };
+  const initialDeparture = splitDateTime(defaults?.departure);
+  const initialReturn = splitDateTime(defaults?.returnAt);
   const [trip, setTrip] = useState<Trip>(defaults?.trip ?? "One-Way");
+  const [name, setName] = useState(defaults?.name ?? "");
+  const [email, setEmail] = useState(defaults?.email ?? "");
   const [pickup, setPickup] = useState(defaults?.pickup ?? "");
   const [pickupPlace, setPickupPlace] = useState(defaults?.pickupPlace ?? "");
   const [dropoff, setDropoff] = useState(defaults?.dropoff ?? "");
   const [dropoffPlace, setDropoffPlace] = useState(defaults?.dropoffPlace ?? "");
-  const [departure, setDeparture] = useState(defaults?.departure ?? "");
-  const [returnAt, setReturnAt] = useState(defaults?.returnAt ?? "");
-  const [passengers, setPassengers] = useState(
-    defaults?.passengers ?? (requirePassengerChoice ? "" : "8"),
-  );
+  const [departureDate, setDepartureDate] = useState(initialDeparture.date);
+  const [departureTime, setDepartureTime] = useState(initialDeparture.time);
+  const [returnDate, setReturnDate] = useState(initialReturn.date);
+  const [returnTime, setReturnTime] = useState(initialReturn.time);
+  const [passengers, setPassengers] = useState(defaults?.passengers ?? "");
   const [planDocument, setPlanDocument] = useState<PlanDocument | null>(null);
   const [documentNote, setDocumentNote] = useState("");
   const [documentError, setDocumentError] = useState("");
   const [reading, setReading] = useState(false);
+  const [invalid, setInvalid] = useState<Set<QuoteRequiredField>>(new Set());
+
+  function clearInvalid(field: QuoteRequiredField) {
+    setInvalid((current) => {
+      if (!current.has(field)) return current;
+      const next = new Set(current);
+      next.delete(field);
+      return next;
+    });
+  }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (reading) return;
+
     const form = new FormData(event.currentTarget);
-    const params = new URLSearchParams({ trip });
-    for (const field of ["pickup", "pickupPlace", "dropoff", "dropoffPlace", "departure", "returnAt", "passengers"]) {
-      const value = String(form.get(field) ?? "");
-      if (value) params.set(field, value);
+    const input: QuoteOrderInput = {
+      trip,
+      name: String(form.get("name") ?? ""),
+      email: String(form.get("email") ?? ""),
+      pickup: String(form.get("pickup") ?? ""),
+      dropoff: String(form.get("dropoff") ?? ""),
+      departure: joinDateTime(String(form.get("departureDate") ?? ""), String(form.get("departureTime") ?? "")),
+      returnAt:
+        trip === "Round Trip"
+          ? joinDateTime(String(form.get("returnDate") ?? ""), String(form.get("returnTime") ?? ""))
+          : "",
+      passengers: String(form.get("passengers") ?? ""),
+    };
+    const errors = quoteFieldErrors(input);
+    if (errors.length > 0) {
+      setInvalid(new Set(errors));
+      return;
     }
+
+    const params = new URLSearchParams({ trip });
+    for (const [key, value] of Object.entries(input)) {
+      if (key !== "trip" && value) params.set(key, value);
+    }
+    const pickupPlaceId = String(form.get("pickupPlace") ?? "");
+    const dropoffPlaceId = String(form.get("dropoffPlace") ?? "");
+    if (pickupPlaceId) params.set("pickupPlace", pickupPlaceId);
+    if (dropoffPlaceId) params.set("dropoffPlace", dropoffPlaceId);
     if (planDocument) params.set("planDocument", planDocument.name);
     router.push(`/order-received?${params.toString()}`);
   }
 
-  function applyDemoDocument(fileName: string) {
+  async function readDocument(file: File) {
     setReading(true);
     setDocumentError("");
     setDocumentNote("");
 
-    window.setTimeout(() => {
-      setTrip(demoDocumentFields.trip);
-      setPickup(demoDocumentFields.pickup);
-      setPickupPlace("");
-      setDropoff(`${demoDocumentFields.dropoff} → ${demoDocumentFields.returnPlace}`);
-      setDropoffPlace("");
-      setDeparture(demoDocumentFields.departure);
-      setReturnAt(demoDocumentFields.returnAt);
-      setPassengers(demoDocumentFields.passengers);
-      setDocumentNote(dictionary.pricing.aiFilled(fileName));
+    try {
+      const result = await parsePlanDocument(file);
+      const populated = applyExtracted(result.fields);
+      setDocumentNote(
+        populated ? dictionary.pricing.aiFilled(file.name) : dictionary.quote.documentIncomplete,
+      );
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : dictionary.pricing.documentReadError;
+      setDocumentError(message || dictionary.pricing.documentReadError);
+    } finally {
       setReading(false);
-    }, readingDelayMs);
+    }
   }
+
+  function applyExtracted(fields: ExtractedPlanFields) {
+    const filled = new Set<QuoteRequiredField>();
+    if (fields.trip) setTrip(fields.trip);
+    if (fields.name) {
+      setName(fields.name);
+      filled.add("name");
+    }
+    if (fields.email) {
+      setEmail(fields.email);
+      filled.add("email");
+    }
+    if (fields.pickup) {
+      setPickup(fields.pickup);
+      setPickupPlace("");
+      filled.add("pickup");
+    }
+    if (fields.dropoff) {
+      setDropoff(fields.dropoff);
+      setDropoffPlace("");
+      filled.add("dropoff");
+    }
+    if (fields.passengers) {
+      setPassengers(String(fields.passengers));
+      filled.add("passengers");
+    }
+    const departure = splitDateTime(fields.departure || fields.pickupDate);
+    if (departure.date) {
+      setDepartureDate(departure.date);
+      filled.add("departure");
+    }
+    if (departure.time) setDepartureTime(departure.time);
+    const returning = splitDateTime(fields.returnAt);
+    if (returning.date) {
+      setReturnDate(returning.date);
+      filled.add("return");
+    }
+    if (returning.time) setReturnTime(returning.time);
+    if (filled.size > 0) {
+      setInvalid((current) => {
+        const next = new Set(current);
+        for (const field of filled) next.delete(field);
+        return next;
+      });
+    }
+    return filled.size > 0;
+  }
+
+  const roundTrip = trip === "Round Trip";
 
   return (
     <form
       id={formId}
+      noValidate
       onSubmit={onSubmit}
       className="rounded-2xl border border-white/20 bg-white/5 p-4 shadow-[0_30px_80px_-36px_rgba(0,0,0,0.85)] backdrop-blur-md sm:p-5"
     >
@@ -121,7 +196,7 @@ export function QuoteCard({
           onDocument={setPlanDocument}
           onError={setDocumentError}
           onNote={setDocumentNote}
-          onRead={(file) => applyDemoDocument(file.name)}
+          onRead={(file) => void readDocument(file)}
         />
       ) : null}
 
@@ -146,83 +221,169 @@ export function QuoteCard({
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <Field label={dictionary.quote.name} invalid={invalid.has("name")}>
+          <input
+            name="name"
+            autoComplete="name"
+            value={name}
+            aria-invalid={invalid.has("name") || undefined}
+            onChange={(event) => {
+              setName(event.target.value);
+              clearInvalid("name");
+            }}
+            className={controlClass(invalid.has("name"))}
+          />
+        </Field>
+        <Field label={dictionary.quote.email} invalid={invalid.has("email")}>
+          <input
+            name="email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            aria-invalid={invalid.has("email") || undefined}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              clearInvalid("email");
+            }}
+            className={controlClass(invalid.has("email"))}
+          />
+        </Field>
+      </div>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <PlaceField
           name="pickup"
           label={dictionary.quote.pickup}
           placeholder={dictionary.quote.pickupPlaceholder}
-          inputClassName={fieldClass}
+          inputClassName={controlClass(invalid.has("pickup"))}
           defaultText={pickup}
           defaultPlaceId={pickupPlace}
+          invalid={invalid.has("pickup")}
+          onTextChange={() => clearInvalid("pickup")}
         />
         <PlaceField
           name="dropoff"
           label={dictionary.quote.dropoff}
           placeholder={dictionary.quote.dropoffPlaceholder}
-          inputClassName={fieldClass}
+          inputClassName={controlClass(invalid.has("dropoff"))}
           defaultText={dropoff}
           defaultPlaceId={dropoffPlace}
+          invalid={invalid.has("dropoff")}
+          onTextChange={() => clearInvalid("dropoff")}
         />
       </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
-        <label className="grid min-w-0 gap-1.5 text-xs text-ivory/70">
-          {dictionary.quote.departure}
+        <Field label={dictionary.quote.departureDate} invalid={invalid.has("departure")}>
           <input
-            type="datetime-local"
-            name="departure"
-            required
-            value={departure}
-            onChange={(event) => setDeparture(event.target.value)}
-            onFocus={(event) => {
-              event.currentTarget.min = localNow();
+            type="date"
+            name="departureDate"
+            value={departureDate}
+            aria-invalid={invalid.has("departure") || undefined}
+            onChange={(event) => {
+              setDepartureDate(event.target.value);
+              clearInvalid("departure");
             }}
-            className={`${fieldClass} min-w-0 [color-scheme:light]`}
+            className={controlClass(invalid.has("departure"))}
           />
-        </label>
-        <label className="grid min-w-0 gap-1.5 text-xs text-ivory/70">
-          {dictionary.quote.return}
+        </Field>
+        <Field label={dictionary.quote.departureTime} hint={dictionary.quote.timeOptional}>
           <input
-            type="datetime-local"
-            name="returnAt"
-            required={trip === "Round Trip"}
-            disabled={trip !== "Round Trip"}
-            min={departure || undefined}
-            value={trip === "Round Trip" ? returnAt : ""}
-            onChange={(event) => setReturnAt(event.target.value)}
-            className={`${fieldClass} min-w-0 [color-scheme:light] disabled:cursor-not-allowed disabled:opacity-50`}
+            type="time"
+            name="departureTime"
+            value={departureTime}
+            onChange={(event) => setDepartureTime(event.target.value)}
+            className={controlClass(false)}
           />
-        </label>
-        <label className="grid min-w-0 gap-1.5 text-xs text-ivory/70">
-          {dictionary.quote.passengers}
-          <select
+        </Field>
+        <Field label={dictionary.quote.passengers} invalid={invalid.has("passengers")}>
+          <input
             name="passengers"
-            required
+            inputMode="numeric"
+            min={1}
+            max={80}
             value={passengers}
-            onChange={(event) => setPassengers(event.target.value)}
-            className={fieldClass}
-          >
-            {requirePassengerChoice ? (
-              <option value="" disabled>
-                {dictionary.excursions.choosePassengers}
-              </option>
-            ) : null}
-            {passengerOptions.map((count) => (
-              <option key={count} value={String(count)}>
-                {count}
-              </option>
-            ))}
-          </select>
-        </label>
+            aria-invalid={invalid.has("passengers") || undefined}
+            onChange={(event) => {
+              setPassengers(event.target.value.replace(/[^\d]/g, "").slice(0, 2));
+              clearInvalid("passengers");
+            }}
+            className={controlClass(invalid.has("passengers"))}
+          />
+        </Field>
       </div>
+
+      {roundTrip ? (
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <Field label={dictionary.quote.returnDate} invalid={invalid.has("return")}>
+            <input
+              type="date"
+              name="returnDate"
+              min={departureDate || undefined}
+              value={returnDate}
+              aria-invalid={invalid.has("return") || undefined}
+              onChange={(event) => {
+                setReturnDate(event.target.value);
+                clearInvalid("return");
+              }}
+              className={controlClass(invalid.has("return"))}
+            />
+          </Field>
+          <Field label={dictionary.quote.returnTime} hint={dictionary.quote.timeOptional}>
+            <input
+              type="time"
+              name="returnTime"
+              value={returnTime}
+              onChange={(event) => setReturnTime(event.target.value)}
+              className={controlClass(false)}
+            />
+          </Field>
+        </div>
+      ) : null}
+
+      {invalid.size > 0 ? (
+        <p role="alert" className="mt-3 text-xs text-red-300">
+          {dictionary.quote.missingFields}
+        </p>
+      ) : null}
 
       <button
         type="submit"
-        className="mt-4 h-10 w-full rounded-md bg-burgundy text-sm font-medium text-white hover:bg-burgundy-deep"
+        disabled={reading}
+        className="mt-4 h-10 w-full rounded-md bg-burgundy text-sm font-medium text-white hover:bg-burgundy-deep disabled:opacity-60"
       >
         {dictionary.quote.search}
       </button>
     </form>
   );
+}
+
+function Field({
+  label,
+  hint,
+  invalid = false,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  invalid?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <label className={`grid min-w-0 gap-1.5 text-xs ${invalid ? "text-red-200" : "text-ivory/70"}`}>
+      <span>
+        {label}
+        {hint ? <span className="ml-1 text-[10px] text-ivory/45">{hint}</span> : null}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+function controlClass(invalid: boolean) {
+  return `h-10 w-full min-w-0 rounded-md border bg-white px-3 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 focus:ring-2 [color-scheme:light] ${
+    invalid ? "border-red-600 focus:ring-red-500/40" : "border-black/5 focus:ring-burgundy/30"
+  }`;
 }
 
 function PlanDocumentAttach({
@@ -307,8 +468,7 @@ function PlanDocumentAttach({
       {document ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-black/20 px-2.5 py-1.5">
           <span className="min-w-0 truncate text-ivory">
-            {document.name}{" "}
-            <span className="text-ivory/55">· {formatSize(document.size)}</span>
+            {document.name} <span className="text-ivory/55">· {formatSize(document.size)}</span>
           </span>
           <button
             type="button"
@@ -336,8 +496,14 @@ function formatSize(bytes: number) {
   return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-function localNow() {
-  const now = new Date();
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-  return now.toISOString().slice(0, 16);
+function splitDateTime(value: string | undefined) {
+  const match = value?.match(/^(\d{4}-\d{2}-\d{2})(?:T(\d{2}:\d{2}))?/);
+  return { date: match?.[1] ?? "", time: match?.[2] ?? "" };
+}
+
+function joinDateTime(date: string, time: string) {
+  const day = date.trim();
+  const clock = time.trim();
+  if (!day) return "";
+  return clock ? `${day}T${clock}` : day;
 }

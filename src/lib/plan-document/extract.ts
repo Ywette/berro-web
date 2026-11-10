@@ -36,6 +36,12 @@ export function extractPlanFields(rawText: string): PlanDocumentResult {
     fields.trip = trip;
   }
 
+  const name = detectName(text);
+  if (name) fields.name = name;
+
+  const email = detectEmail(text);
+  if (email) fields.email = email;
+
   const passengers = detectPassengers(text);
   if (passengers !== null) {
     fields.passengers = passengers;
@@ -135,6 +141,20 @@ function classifyTripPhrase(phrase: string): PlanTripKind | undefined {
     return "One-Way";
   }
   return undefined;
+}
+
+function detectName(text: string) {
+  const labeled = text.match(
+    /(?:^|[^\p{L}])(?:contact\s*name|full\s*name|client\s*name|passenger\s*name|kontaktpersona|klienta\s*vārds|klients|vārds|name)\s*[:\-–]\s*([^\n@]{2,80})/iu,
+  );
+  if (!labeled) return undefined;
+  const name = labeled[1].replace(/[,;].*$/, "").replace(/\s+/g, " ").trim();
+  if (name.length < 2 || name.length > 80 || /\d{3,}/.test(name)) return undefined;
+  return name;
+}
+
+function detectEmail(text: string) {
+  return text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
 }
 
 function detectPassengers(text: string): number | null {

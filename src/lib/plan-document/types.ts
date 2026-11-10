@@ -2,6 +2,8 @@ export type PlanTripKind = "One-Way" | "Round Trip" | "Hourly Charter";
 
 export type ExtractedPlanFields = {
   trip?: PlanTripKind;
+  name?: string;
+  email?: string;
   pickup?: string;
   dropoff?: string;
   departure?: string;

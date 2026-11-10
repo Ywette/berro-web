@@ -73,12 +73,7 @@ export function AvailabilityButton({ title, destination, days, image }: Availabi
               </button>
             </div>
             <p className="mb-3 line-clamp-2 text-sm text-ivory/80">{title}</p>
-            <QuoteCard
-              formId="excursion-availability"
-              defaults={defaults}
-              requirePassengerChoice
-              showDocument={false}
-            />
+            <QuoteCard formId="excursion-availability" defaults={defaults} showDocument={false} />
           </div>
         </div>
       </dialog>
