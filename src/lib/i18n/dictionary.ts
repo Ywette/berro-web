@@ -25,6 +25,8 @@ export const en = {
     staff: "Staff",
     signOut: "Sign out",
     language: "Language",
+    menu: "Menu",
+    closeMenu: "Close menu",
   },
   footer: {
     tagline: "Luxury ground transport.",
@@ -435,6 +437,8 @@ export const lv: Dictionary = {
     staff: "Personāls",
     signOut: "Iziet",
     language: "Valoda",
+    menu: "Izvēlne",
+    closeMenu: "Aizvērt izvēlni",
   },
   footer: {
     tagline: "Luksusa pasažieru pārvadājumi.",

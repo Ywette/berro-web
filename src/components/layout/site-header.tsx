@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { setLocale } from "@/actions/locale";
 import { getDictionary, getLocale } from "@/lib/i18n/get-dictionary";
-import { HeaderNav, StaffUserSwitch } from "@/components/layout/header-nav";
+import { HeaderNav, MobileMenu, StaffUserSwitch } from "@/components/layout/header-nav";
 
 export async function SiteHeader() {
   const [dictionary, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -22,7 +22,7 @@ export async function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-white/10 bg-night">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3.5 sm:px-6">
+      <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3.5 sm:px-6">
         <Link href="/" aria-label="Berro Travel" className="shrink-0">
           <Image
             src="/brand/berro-travel-logo.png"
@@ -38,20 +38,16 @@ export async function SiteHeader() {
             <HeaderNav publicLinks={publicLinks} staffLinks={staffLinks} />
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <div className="hidden lg:block">
-              <LanguageSwitch locale={locale} label={dictionary.nav.language} />
-            </div>
+            <LanguageSwitch locale={locale} label={dictionary.nav.language} />
             <StaffUserSwitch label={dictionary.nav.staff} />
+            <MobileMenu
+              publicLinks={publicLinks}
+              staffLinks={staffLinks}
+              menuLabel={dictionary.nav.menu}
+              closeLabel={dictionary.nav.closeMenu}
+            />
           </div>
         </div>
-      </div>
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 pb-3 text-sm text-ivory/75 lg:hidden">
-        <LanguageSwitch locale={locale} label={dictionary.nav.language} />
-        <HeaderNav
-          publicLinks={publicLinks}
-          staffLinks={staffLinks}
-          variant="mobile"
-        />
       </div>
     </header>
   );
