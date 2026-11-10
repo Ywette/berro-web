@@ -1,13 +1,5 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 
-function isProtectedPath(pathname: string) {
-  return (
-    pathname.startsWith("/staff") ||
-    pathname.startsWith("/employees") ||
-    pathname.startsWith("/drivers")
-  );
-}
-
 function isAuthPath(pathname: string) {
   return (
     pathname === "/login" ||
@@ -19,13 +11,6 @@ function isAuthPath(pathname: string) {
 
 export default clerkMiddleware(async (auth, request) => {
   const { pathname } = request.nextUrl;
-
-  if (isProtectedPath(pathname)) {
-    await auth.protect({
-      unauthenticatedUrl: new URL("/sign-in", request.url).toString(),
-    });
-    return;
-  }
 
   if (isAuthPath(pathname)) {
     const { userId } = await auth();

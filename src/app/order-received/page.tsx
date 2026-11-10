@@ -14,6 +14,7 @@ type OrderReceivedPageProps = {
     trip?: string | string[];
     name?: string | string[];
     email?: string | string[];
+    phone?: string | string[];
     pickup?: string | string[];
     dropoff?: string | string[];
     departure?: string | string[];
@@ -47,6 +48,7 @@ async function OrderReceivedContent({
     trip: first(params.trip),
     name: first(params.name),
     email: first(params.email),
+    phone: first(params.phone),
     pickup: first(params.pickup),
     dropoff: first(params.dropoff),
     departure: first(params.departure),

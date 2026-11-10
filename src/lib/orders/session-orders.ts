@@ -6,6 +6,7 @@ export type QuoteOrderInput = {
   trip?: string;
   name?: string;
   email?: string;
+  phone?: string;
   pickup?: string;
   dropoff?: string;
   departure?: string;
@@ -117,12 +118,14 @@ export function orderFromQuoteInput(input: QuoteOrderInput): StaffOrder {
     passengerCount: Number(input.passengers),
     requestorName: input.name?.trim() || null,
     requestorEmail: input.email?.trim() || null,
-    requestorPhone: null,
+    requestorPhone: input.phone?.trim() || null,
     status: "new",
     departureOn: toDateOnly(input.departure),
     returnOn: toDateOnly(input.returnAt),
     assignedDriverId: null,
     assignedDriverName: null,
+    assignedGuideId: null,
+    assignedGuideName: null,
     assignedVehicleId: null,
   };
 }

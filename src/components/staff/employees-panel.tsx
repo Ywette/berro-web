@@ -42,7 +42,7 @@ export async function EmployeesPanel() {
           orders={orders}
           locale={locale}
           labels={{
-            personnel: dictionary.staffDashboard.driversPersonnel,
+            personnel: dictionary.staffDashboard.assignableStaff,
             availability: dictionary.staffDashboard.driversAvailability,
             name: dictionary.employees.name,
             phone: dictionary.employees.phone,
@@ -61,6 +61,14 @@ export async function EmployeesPanel() {
             noDrivers: dictionary.staffDashboard.noDrivers,
             statuses: dictionary.statuses,
             showAvailabilityForm: hasSupabaseStaffEnv(),
+            role: dictionary.employees.role,
+            roles: dictionary.roles,
+            availabilityRange: dictionary.staffDashboard.availabilityRange,
+            availableFrom: dictionary.staffDashboard.availableFrom,
+            availableTo: dictionary.staffDashboard.availableTo,
+            clearRange: dictionary.staffDashboard.clearRange,
+            rangeInvalid: dictionary.staffDashboard.rangeInvalid,
+            noStaffInRange: dictionary.staffDashboard.noStaffInRange,
           }}
         />
       )}

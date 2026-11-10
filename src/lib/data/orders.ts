@@ -70,6 +70,8 @@ export async function listOrders(): Promise<StaffOrder[]> {
         returnOn: row.return_on,
         assignedDriverId: row.assigned_driver_id,
         assignedDriverName: employee?.full_name ?? null,
+        assignedGuideId: null,
+        assignedGuideName: null,
         assignedVehicleId: row.assigned_vehicle_id,
       },
     ];

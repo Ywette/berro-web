@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Show } from "@clerk/nextjs";
 import { useDictionary } from "@/components/i18n/locale-provider";
 import {
   orderFromQuoteInput,
@@ -129,22 +128,12 @@ export function CrmHandoff({ input }: { input: QuoteOrderInput }) {
         >
           {dictionary.crmDemo.continueContact}
         </Link>
-        <Show when="signed-in">
-          <Link
-            href="/staff/orders"
-            className="rounded-full border border-white/25 px-5 py-2.5 text-sm text-ivory hover:border-white/60"
-          >
-            {dictionary.crmDemo.openOrders}
-          </Link>
-        </Show>
-        <Show when="signed-out">
-          <Link
-            href="/sign-in"
-            className="rounded-full border border-white/25 px-5 py-2.5 text-sm text-ivory hover:border-white/60"
-          >
-            {dictionary.crmDemo.signInToCrm}
-          </Link>
-        </Show>
+        <Link
+          href="/staff/orders"
+          className="rounded-full border border-white/25 px-5 py-2.5 text-sm text-ivory hover:border-white/60"
+        >
+          {dictionary.crmDemo.openOrders}
+        </Link>
       </div>
     </div>
   );

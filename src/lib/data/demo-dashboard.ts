@@ -87,6 +87,30 @@ export const demoEmployees: Employee[] = [
     isActive: true,
   },
   {
+    id: "77777777-7777-4777-8777-777777777777",
+    fullName: "Elīna Kalna",
+    email: "elina.kalna@berro.lv",
+    phone: "+371 26 77 07 07",
+    role: "guide",
+    isActive: true,
+  },
+  {
+    id: "88888888-8888-4888-8888-888888888888",
+    fullName: "Rihards Meiers",
+    email: "rihards.meiers@berro.lv",
+    phone: "+371 26 88 08 08",
+    role: "guide",
+    isActive: true,
+  },
+  {
+    id: "99999999-9999-4999-8999-999999999999",
+    fullName: "Laura Siliņa",
+    email: "laura.silina@berro.lv",
+    phone: "+371 26 99 09 09",
+    role: "guide",
+    isActive: true,
+  },
+  {
     id: "33333333-3333-4333-8333-333333333333",
     fullName: "Kristīne Vītola",
     email: "kristine.vitola@berro.lv",
@@ -113,6 +137,8 @@ export const demoOrders: StaffOrder[] = [
     returnOn: "2026-11-20",
     assignedDriverId: null,
     assignedDriverName: null,
+    assignedGuideId: "77777777-7777-4777-8777-777777777777",
+    assignedGuideName: "Elīna Kalna",
     assignedVehicleId: "fleet-coach-white-1",
   },
   {
@@ -130,6 +156,8 @@ export const demoOrders: StaffOrder[] = [
     returnOn: null,
     assignedDriverId: "11111111-1111-4111-8111-111111111111",
     assignedDriverName: "Jānis Bērziņš",
+    assignedGuideId: null,
+    assignedGuideName: null,
     assignedVehicleId: "fleet-sprinter-black-1",
   },
   {
@@ -147,6 +175,8 @@ export const demoOrders: StaffOrder[] = [
     returnOn: "2026-11-24",
     assignedDriverId: "22222222-2222-4222-8222-222222222222",
     assignedDriverName: "Anna Ozola",
+    assignedGuideId: "88888888-8888-4888-8888-888888888888",
+    assignedGuideName: "Rihards Meiers",
     assignedVehicleId: "fleet-coach-silver-2",
   },
   {
@@ -164,6 +194,8 @@ export const demoOrders: StaffOrder[] = [
     returnOn: "2026-11-15",
     assignedDriverId: "44444444-4444-4444-8444-444444444444",
     assignedDriverName: "Mārtiņš Kalniņš",
+    assignedGuideId: null,
+    assignedGuideName: null,
     assignedVehicleId: "fleet-coach-silver-1",
   },
   {
@@ -181,6 +213,8 @@ export const demoOrders: StaffOrder[] = [
     returnOn: "2026-11-08",
     assignedDriverId: "55555555-5555-4555-8555-555555555555",
     assignedDriverName: "Ilze Liepa",
+    assignedGuideId: "99999999-9999-4999-8999-999999999999",
+    assignedGuideName: "Laura Siliņa",
     assignedVehicleId: "fleet-s-class-1",
   },
 ];

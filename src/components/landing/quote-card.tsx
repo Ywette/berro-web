@@ -20,6 +20,7 @@ export type QuoteDefaults = {
   trip?: Trip;
   name?: string;
   email?: string;
+  phone?: string;
   pickup?: string;
   pickupPlace?: string;
   dropoff?: string;
@@ -52,6 +53,7 @@ export function QuoteCard({
   const [trip, setTrip] = useState<Trip>(defaults?.trip ?? "One-Way");
   const [name, setName] = useState(defaults?.name ?? "");
   const [email, setEmail] = useState(defaults?.email ?? "");
+  const [phone, setPhone] = useState(defaults?.phone ?? "");
   const [pickup, setPickup] = useState(defaults?.pickup ?? "");
   const [pickupPlace, setPickupPlace] = useState(defaults?.pickupPlace ?? "");
   const [dropoff, setDropoff] = useState(defaults?.dropoff ?? "");
@@ -85,6 +87,7 @@ export function QuoteCard({
       trip,
       name: String(form.get("name") ?? ""),
       email: String(form.get("email") ?? ""),
+      phone: String(form.get("phone") ?? ""),
       pickup: String(form.get("pickup") ?? ""),
       dropoff: String(form.get("dropoff") ?? ""),
       departure: joinDateTime(String(form.get("departureDate") ?? ""), String(form.get("departureTime") ?? "")),
@@ -220,7 +223,7 @@ export function QuoteCard({
         })}
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.15fr)_minmax(0,1fr)]">
         <Field label={dictionary.quote.name} invalid={invalid.has("name")}>
           <input
             name="name"
@@ -246,6 +249,16 @@ export function QuoteCard({
               clearInvalid("email");
             }}
             className={controlClass(invalid.has("email"))}
+          />
+        </Field>
+        <Field label={dictionary.quote.phone}>
+          <input
+            name="phone"
+            type="tel"
+            autoComplete="tel"
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+            className={controlClass(false)}
           />
         </Field>
       </div>

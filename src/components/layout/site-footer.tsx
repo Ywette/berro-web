@@ -11,7 +11,7 @@ export async function SiteFooter() {
     { href: "/blog", label: dictionary.nav.blog },
     { href: "/pricing", label: dictionary.nav.pricing },
     { href: "/contact", label: dictionary.nav.contact },
-    { href: "/sign-in", label: dictionary.nav.members },
+    { href: "/staff", label: dictionary.nav.staff },
   ] as const;
   const staffLinks = [
     { href: "/staff/orders", label: dictionary.staffDashboard.orders },

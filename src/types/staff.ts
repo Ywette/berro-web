@@ -1,5 +1,6 @@
 export const EMPLOYEE_ROLES = [
   "driver",
+  "guide",
   "dispatcher",
   "office",
   "mechanic",
@@ -36,6 +37,7 @@ export type DriverAvailability = {
 
 const roleLabels: Record<EmployeeRole, string> = {
   driver: "Driver",
+  guide: "Guide",
   dispatcher: "Dispatcher",
   office: "Office",
   mechanic: "Mechanic",

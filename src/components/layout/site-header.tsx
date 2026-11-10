@@ -1,10 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Suspense } from "react";
-import { Show, UserButton } from "@clerk/nextjs";
 import { setLocale } from "@/actions/locale";
 import { getDictionary, getLocale } from "@/lib/i18n/get-dictionary";
-import { HeaderNav, StaffModeGate } from "@/components/layout/header-nav";
+import { HeaderNav, StaffUserSwitch } from "@/components/layout/header-nav";
 
 export async function SiteHeader() {
   const [dictionary, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -43,30 +41,7 @@ export async function SiteHeader() {
             <div className="hidden lg:block">
               <LanguageSwitch locale={locale} label={dictionary.nav.language} />
             </div>
-            <Suspense fallback={null}>
-              <Show when="signed-out">
-                <Link
-                  href="/sign-in"
-                  className="rounded-full border border-white/25 px-3 py-2 text-sm text-ivory hover:border-white/60 sm:px-4"
-                >
-                  {dictionary.nav.members}
-                </Link>
-              </Show>
-              <Show when="signed-in">
-                <StaffModeGate
-                  staff={null}
-                  public={
-                    <Link
-                      href="/staff"
-                      className="hidden text-sm text-mist hover:text-white sm:inline"
-                    >
-                      {dictionary.nav.staff}
-                    </Link>
-                  }
-                />
-                <UserButton />
-              </Show>
-            </Suspense>
+            <StaffUserSwitch label={dictionary.nav.staff} />
           </div>
         </div>
       </div>

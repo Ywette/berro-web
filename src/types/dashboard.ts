@@ -23,6 +23,8 @@ export type StaffOrder = {
   returnOn: string | null;
   assignedDriverId: string | null;
   assignedDriverName: string | null;
+  assignedGuideId: string | null;
+  assignedGuideName: string | null;
   assignedVehicleId: string | null;
 };
 

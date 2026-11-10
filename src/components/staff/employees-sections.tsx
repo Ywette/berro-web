@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AvailabilityForm } from "@/components/drivers/availability-form";
+import { DateRangeFilter } from "@/components/staff/date-range-filter";
 import { DriverCalendar } from "@/components/staff/driver-calendar";
-import { mergeOrdersWithSession } from "@/lib/orders/session-orders";
+import { useAssignedOrders } from "@/components/staff/use-assigned-orders";
+import { isEmployeeFree, resolvedRange } from "@/lib/staff/availability";
 import type { StaffOrder } from "@/types/dashboard";
-import type { DriverAvailability, DriverStatus, Employee } from "@/types/staff";
+import type { DriverAvailability, DriverStatus, Employee, EmployeeRole } from "@/types/staff";
 
 type Section = "personnel" | "availability";
 
@@ -29,6 +31,14 @@ type Labels = {
   noDrivers: string;
   statuses: Record<DriverStatus, string>;
   showAvailabilityForm: boolean;
+  role: string;
+  roles: Record<EmployeeRole, string>;
+  availabilityRange: string;
+  availableFrom: string;
+  availableTo: string;
+  clearRange: string;
+  rangeInvalid: string;
+  noStaffInRange: string;
 };
 
 const statusTone: Record<DriverStatus, string> = {
@@ -52,13 +62,16 @@ export function EmployeesSections({
   labels: Labels;
 }) {
   const [section, setSection] = useState<Section>("personnel");
-  const [mergedOrders, setMergedOrders] = useState(orders);
+  const [range, setRange] = useState({ from: "", to: "" });
+  const [mergedOrders] = useAssignedOrders(orders);
   const driversById = new Map(drivers.map((driver) => [driver.id, driver]));
-  const driverEmployees = employees.filter((employee) => employee.role === "driver");
-
-  useEffect(() => {
-    setMergedOrders(mergeOrdersWithSession(orders));
-  }, [orders]);
+  const assignable = employees.filter(
+    (employee) => employee.role === "driver" || employee.role === "guide",
+  );
+  const dateFilter = resolvedRange(range.from, range.to);
+  const visibleEmployees = dateFilter.ok
+    ? assignable.filter((employee) => isEmployeeFree(employee, dateFilter.span, mergedOrders))
+    : assignable;
 
   return (
     <div className="space-y-5">
@@ -76,9 +89,26 @@ export function EmployeesSections({
       </div>
 
       {section === "personnel" ? (
-        driverEmployees.length === 0 ? (
+        <div className="space-y-4">
+          <DateRangeFilter
+            from={range.from}
+            to={range.to}
+            onChange={setRange}
+            labels={{
+              title: labels.availabilityRange,
+              from: labels.availableFrom,
+              to: labels.availableTo,
+              clear: labels.clearRange,
+              invalid: labels.rangeInvalid,
+            }}
+          />
+          {assignable.length === 0 ? (
           <p className="rounded-2xl border border-line bg-card px-5 py-6 text-sm text-mist">
             {labels.empty}
+          </p>
+        ) : visibleEmployees.length === 0 ? (
+          <p className="rounded-2xl border border-line bg-card px-5 py-6 text-sm text-mist">
+            {labels.noStaffInRange}
           </p>
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-line bg-card">
@@ -86,6 +116,7 @@ export function EmployeesSections({
               <thead className="bg-white/5 text-mist">
                 <tr>
                   <th className="px-4 py-3 font-medium">{labels.name}</th>
+                  <th className="px-4 py-3 font-medium">{labels.role}</th>
                   <th className="px-4 py-3 font-medium">{labels.phone}</th>
                   <th className="hidden px-4 py-3 font-medium md:table-cell">{labels.email}</th>
                   <th className="px-4 py-3 font-medium">{labels.status}</th>
@@ -93,13 +124,14 @@ export function EmployeesSections({
                 </tr>
               </thead>
               <tbody>
-                {driverEmployees.map((employee) => {
-                  const availability = driversById.get(employee.id);
-                  const status = availability?.status ?? "unavailable";
+                {visibleEmployees.map((employee) => {
+                  const driverRecord = driversById.get(employee.id);
+                  const status = driverRecord?.status;
 
                   return (
                     <tr key={employee.id} className="border-t border-line">
                       <td className="px-4 py-3 font-medium text-ivory">{employee.fullName}</td>
+                      <td className="px-4 py-3 text-mist">{labels.roles[employee.role]}</td>
                       <td className="px-4 py-3 text-mist">
                         {employee.phone ?? labels.noPhone}
                       </td>
@@ -107,11 +139,15 @@ export function EmployeesSections({
                         {employee.email ?? "—"}
                       </td>
                       <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs ${statusTone[status]}`}
-                        >
-                          {labels.statuses[status]}
-                        </span>
+                        {status ? (
+                          <span
+                            className={`inline-flex rounded-full px-2.5 py-1 text-xs ${statusTone[status]}`}
+                          >
+                            {labels.statuses[status]}
+                          </span>
+                        ) : (
+                          <span className="text-mist">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-mist">
                         {employee.isActive ? labels.yes : labels.no}
@@ -122,7 +158,8 @@ export function EmployeesSections({
               </tbody>
             </table>
           </div>
-        )
+        )}
+        </div>
       ) : (
         <div className="space-y-5">
           <DriverCalendar
