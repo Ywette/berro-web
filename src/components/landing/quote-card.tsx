@@ -223,7 +223,7 @@ export function QuoteCard({
         })}
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.15fr)_minmax(0,1fr)]">
+      <div className="mt-4 grid grid-cols-2 items-end gap-3">
         <Field label={dictionary.quote.name} invalid={invalid.has("name")}>
           <input
             name="name"
@@ -237,6 +237,19 @@ export function QuoteCard({
             className={controlClass(invalid.has("name"))}
           />
         </Field>
+        <Field label={dictionary.quote.phone}>
+          <input
+            name="phone"
+            type="tel"
+            autoComplete="tel"
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+            className={controlClass(false)}
+          />
+        </Field>
+      </div>
+
+      <div className="mt-3">
         <Field label={dictionary.quote.email} invalid={invalid.has("email")}>
           <input
             name="email"
@@ -249,16 +262,6 @@ export function QuoteCard({
               clearInvalid("email");
             }}
             className={controlClass(invalid.has("email"))}
-          />
-        </Field>
-        <Field label={dictionary.quote.phone}>
-          <input
-            name="phone"
-            type="tel"
-            autoComplete="tel"
-            value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-            className={controlClass(false)}
           />
         </Field>
       </div>
@@ -286,7 +289,7 @@ export function QuoteCard({
         />
       </div>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+      <div className="mt-3 grid grid-cols-2 items-end gap-3">
         <Field label={dictionary.quote.departureDate} invalid={invalid.has("departure")}>
           <input
             type="date"
@@ -309,6 +312,9 @@ export function QuoteCard({
             className={controlClass(false)}
           />
         </Field>
+      </div>
+
+      <div className="mt-3">
         <Field label={dictionary.quote.passengers} invalid={invalid.has("passengers")}>
           <input
             name="passengers"
@@ -327,7 +333,7 @@ export function QuoteCard({
       </div>
 
       {roundTrip ? (
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div className="mt-3 grid grid-cols-2 items-end gap-3">
           <Field label={dictionary.quote.returnDate} invalid={invalid.has("return")}>
             <input
               type="date"
@@ -394,7 +400,7 @@ function Field({
 }
 
 function controlClass(invalid: boolean) {
-  return `h-10 w-full min-w-0 rounded-md border bg-white px-3 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 focus:ring-2 [color-scheme:light] ${
+  return `h-10 w-full min-w-0 max-w-full rounded-md border bg-white px-2 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 focus:ring-2 [color-scheme:light] sm:px-3 ${
     invalid ? "border-red-600 focus:ring-red-500/40" : "border-black/5 focus:ring-burgundy/30"
   }`;
 }

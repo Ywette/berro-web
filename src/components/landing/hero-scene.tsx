@@ -80,11 +80,11 @@ export function SloganHero({ children }: { children: ReactNode }) {
 
       <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 items-center px-4 py-8 sm:px-6">
         <div className="grid w-full items-center gap-8 lg:grid-cols-[36rem_minmax(0,1fr)] lg:gap-10">
-          <div className="w-full max-w-[36rem] justify-self-start lg:w-[36rem] lg:max-w-[36rem] lg:min-w-[36rem]">
+          <div className="order-2 w-full max-w-[36rem] justify-self-start lg:order-1 lg:w-[36rem] lg:max-w-[36rem] lg:min-w-[36rem]">
             {children}
           </div>
-          <div className="flex flex-col items-end lg:justify-self-end">
-            <h1 className="text-right font-serif leading-[0.85] text-burgundy lg:text-left">
+          <div className="order-1 flex flex-col items-start lg:order-2 lg:items-end lg:justify-self-end">
+            <h1 className="text-left font-serif leading-[0.85] text-burgundy">
               <span className="block text-5xl tracking-[0.06em] sm:text-6xl xl:text-7xl">
                 BERRO
               </span>
