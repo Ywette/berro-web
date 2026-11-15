@@ -26,10 +26,10 @@ function isFile(value: FormDataEntryValue): value is File {
   return typeof File !== "undefined" && value instanceof File && value.size > 0;
 }
 
-/** Persist uploaded fleet photos under /public/transport/uploads and return public paths in order. */
+/** Persist uploaded images under /public/{folder} and return public paths in order. */
 export async function saveFleetImageUploads(
   entries: FormDataEntryValue[],
-  options?: { maxCount?: number },
+  options?: { maxCount?: number; publicFolder?: string },
 ): Promise<string[]> {
   const files = entries.filter(isFile);
   if (files.length === 0) return [];
@@ -37,7 +37,8 @@ export async function saveFleetImageUploads(
     throw new FleetImageUploadException("count");
   }
 
-  const dir = path.join(process.cwd(), "public", "transport", "uploads");
+  const publicFolder = (options?.publicFolder ?? "transport/uploads").replace(/^\/+|\/+$/g, "");
+  const dir = path.join(process.cwd(), "public", ...publicFolder.split("/"));
   await mkdir(dir, { recursive: true });
 
   const paths: string[] = [];
@@ -57,7 +58,7 @@ export async function saveFleetImageUploads(
     }
 
     await writeFile(path.join(dir, filename), bytes);
-    paths.push(`/transport/uploads/${filename}`);
+    paths.push(`/${publicFolder}/${filename}`);
   }
 
   return paths;

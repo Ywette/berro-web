@@ -31,6 +31,10 @@
 /public/transport/uploads/*
 !/public/transport/uploads/.gitkeep
 
+# staff-uploaded excursion photos
+/public/excursions/uploads/*
+!/public/excursions/uploads/.gitkeep
+
 # debug
 npm-debug.log*
 yarn-debug.log*

@@ -24,9 +24,9 @@ export default function HomePage() {
 
       <TrustInfoSection />
 
-      <StatsSection />
-
       <FleetSection />
+
+      <StatsSection />
 
       <FeedbackSection />
     </div>
