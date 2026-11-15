@@ -26,6 +26,41 @@ function extensionOf(name: string) {
   return index >= 0 ? name.slice(index).toLowerCase() : "";
 }
 
+async function ensureOrderPlansBucket(
+  supabase: NonNullable<ReturnType<typeof createServiceSupabaseClient>>,
+) {
+  const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+  if (listError) {
+    console.error("[orders] list buckets failed", listError.message);
+    return { ok: false as const, error: listError.message };
+  }
+  if (buckets?.some((bucket) => bucket.name === ORDER_PLANS_BUCKET)) {
+    return { ok: true as const };
+  }
+
+  const { error: createError } = await supabase.storage.createBucket(ORDER_PLANS_BUCKET, {
+    public: false,
+    fileSizeLimit: maxPlanBytes,
+    allowedMimeTypes: [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "text/plain",
+    ],
+  });
+
+  if (createError && !/already exists|duplicate/i.test(createError.message)) {
+    console.error("[orders] create bucket failed", createError.message);
+    return {
+      ok: false as const,
+      error:
+        "Storage bucket `order-plans` is missing. Run supabase/migrations/004_order_plan_documents.sql in the Supabase SQL Editor.",
+    };
+  }
+
+  return { ok: true as const };
+}
+
 export async function uploadOrderPlanDocument(
   orderId: string,
   file: File,
@@ -42,6 +77,9 @@ export async function uploadOrderPlanDocument(
     return { error: "Document is too large (max 4 MB)." };
   }
 
+  const bucket = await ensureOrderPlansBucket(supabase);
+  if (!bucket.ok) return { error: bucket.error };
+
   const path = `${orderId}/${Date.now()}-${name}`;
   const buffer = Buffer.from(await file.arrayBuffer());
   const { error } = await supabase.storage.from(ORDER_PLANS_BUCKET).upload(path, buffer, {
@@ -51,6 +89,12 @@ export async function uploadOrderPlanDocument(
 
   if (error) {
     console.error("[orders] plan upload failed", error.message);
+    if (/bucket not found/i.test(error.message)) {
+      return {
+        error:
+          "Storage bucket `order-plans` is missing. Run supabase/migrations/004_order_plan_documents.sql in the Supabase SQL Editor.",
+      };
+    }
     return { error: error.message };
   }
 
