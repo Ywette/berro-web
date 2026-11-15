@@ -2,8 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 
-const rentalImage = "/fleet/gallery/rental-fleet-riverside.jpg";
-const toursImage = "/fleet/gallery/excursions-riga-old-town.jpg";
+const rentalImage = "/fleet/gallery/rental-fleet-riverside-v2.jpg";
+const toursImage = "/fleet/gallery/excursions-riga-old-town-v2.jpg";
 
 export async function ServicesSection() {
   const dictionary = await getDictionary();
@@ -74,18 +74,22 @@ function ServiceCard({
 }) {
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#141418]">
-      <div className="grid h-full flex-1 sm:grid-cols-[minmax(0,1.15fr)_minmax(9rem,0.85fr)]">
-        <div className="flex h-full min-h-0 flex-col px-6 py-7 sm:px-7 sm:py-8">
+      <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#0c0c0f] sm:aspect-[16/9]">
+        <Image
+          src={image}
+          alt={imageAlt}
+          fill
+          unoptimized
+          sizes="(min-width: 1024px) 45vw, 90vw"
+          className="object-contain object-center"
+        />
+      </div>
+
+      <div className="grid flex-1 gap-6 px-5 py-6 sm:grid-cols-[minmax(0,1.35fr)_minmax(8.5rem,0.75fr)] sm:gap-7 sm:px-6 sm:py-7">
+        <div className="flex min-h-0 flex-col">
           <h3 className="text-lg font-medium tracking-wide text-ivory sm:text-xl">{title}</h3>
-          <p className="mt-2 text-sm leading-6 text-mist">{body}</p>
-          <ul className="mt-4 grid gap-2">
-            {features.map((feature) => (
-              <li key={feature} className="text-sm text-mist">
-                {feature}
-              </li>
-            ))}
-          </ul>
-          <div className="mt-auto pt-7">
+          <p className="mt-3 text-sm leading-6 text-mist">{body}</p>
+          <div className="mt-auto pt-6">
             <Link
               href={href}
               className={
@@ -99,24 +103,16 @@ function ServiceCard({
           </div>
         </div>
 
-        <div className="relative min-h-44 overflow-hidden sm:h-full sm:min-h-0">
-          <Image
-            src={image}
-            alt={imageAlt}
-            fill
-            sizes="(min-width: 1024px) 18vw, (min-width: 640px) 35vw, 90vw"
-            className="object-cover"
-            style={{ objectPosition: "center center" }}
-          />
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-[#141418] via-[#141418]/70 to-transparent"
-          />
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#141418] via-[#141418]/70 to-transparent"
-          />
-        </div>
+        <ul className="grid gap-2.5 content-start">
+          {features.map((feature) => (
+            <li
+              key={feature}
+              className="rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-3 text-sm leading-5 text-ivory/90"
+            >
+              {feature}
+            </li>
+          ))}
+        </ul>
       </div>
     </article>
   );
