@@ -35,6 +35,12 @@ export function isEmployeeFree(employee: Employee, span: DateSpan, orders: Staff
   return !orders.some((order) => occupiesEmployee(order, employee.id, span));
 }
 
+export function isEmployeeScheduled(employee: Employee, span: DateSpan, orders: StaffOrder[]) {
+  if (!employee.isActive) return false;
+  if (employee.role !== "driver" && employee.role !== "guide") return false;
+  return orders.some((order) => occupiesEmployee(order, employee.id, span));
+}
+
 export function employeeChoices(
   role: "driver" | "guide",
   order: StaffOrder,
@@ -60,6 +66,11 @@ export function employeeChoices(
 export function isVehicleFree(vehicle: FleetVehicle, span: DateSpan, orders: StaffOrder[]) {
   if (!vehicle.isActive || !documentsCover(vehicle, span.end)) return false;
   return !orders.some((order) => occupiesVehicle(order, vehicle.id, span));
+}
+
+export function isVehicleScheduled(vehicle: FleetVehicle, span: DateSpan, orders: StaffOrder[]) {
+  if (!vehicle.isActive) return false;
+  return orders.some((order) => occupiesVehicle(order, vehicle.id, span));
 }
 
 export function vehicleChoices(order: StaffOrder, vehicles: FleetVehicle[], orders: StaffOrder[]) {

@@ -1,6 +1,4 @@
-import type { Locale } from "@/lib/i18n/dictionary";
-
-type Localized = Record<Locale, string>;
+import type { Localized } from "@/lib/i18n/locale";
 
 export type BlogBlock =
   | string
@@ -15,7 +13,7 @@ export type BlogPost = {
   image: string;
   title: Localized;
   excerpt: Localized;
-  body: Record<Locale, BlogBlock[]>;
+  body: Localized<BlogBlock[]>;
   planTripActions?: boolean;
 };
 

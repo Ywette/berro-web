@@ -14,6 +14,7 @@ type PlaceFieldProps = {
   defaultPlaceId?: string;
   invalid?: boolean;
   onTextChange?: (value: string) => void;
+  onPlaceChange?: (value: string, placeId: string) => void;
 };
 
 export function PlaceField({
@@ -26,6 +27,7 @@ export function PlaceField({
   defaultPlaceId = "",
   invalid = false,
   onTextChange,
+  onPlaceChange,
 }: PlaceFieldProps) {
   const dictionary = useDictionary();
   const inputId = useId();
@@ -61,6 +63,7 @@ export function PlaceField({
     setText(value);
     setPlaceId("");
     onTextChange?.(value);
+    onPlaceChange?.(value, "");
     clearTimeout(debounce.current);
     debounce.current = setTimeout(() => void load(value), 200);
   }
@@ -70,6 +73,7 @@ export function PlaceField({
     setText(next);
     setPlaceId(suggestion.id);
     onTextChange?.(next);
+    onPlaceChange?.(next, suggestion.id);
     setOpen(false);
   }
 

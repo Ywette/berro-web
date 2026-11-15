@@ -1,15 +1,13 @@
 import type { Dictionary, Locale } from "@/lib/i18n/dictionary";
+import { intlLocales } from "@/lib/i18n/locale";
 import type { TripRoute } from "@/lib/places/types";
-
-const tripIds = ["One-Way", "Round Trip", "Hourly Charter"] as const;
-
-const numberLocale: Record<Locale, string> = { lv: "lv-LV", en: "en-GB" };
+import { isQuoteTripKind, quoteTripKinds, quoteTripLabel } from "@/lib/quote-trips";
 
 export function formatTripDate(value: string | undefined, locale: Locale) {
   const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
   if (!match) return value;
   const [, year, month, day, hour, minute] = match.map(Number);
-  return new Intl.DateTimeFormat(numberLocale[locale], {
+  return new Intl.DateTimeFormat(intlLocales[locale], {
     dateStyle: "long",
     timeStyle: "short",
     timeZone: "UTC",
@@ -18,7 +16,7 @@ export function formatTripDate(value: string | undefined, locale: Locale) {
 
 export function formatDistance(route: TripRoute, locale: Locale) {
   if (route.distanceKm === null) return null;
-  const km = new Intl.NumberFormat(numberLocale[locale]).format(route.distanceKm);
+  const km = new Intl.NumberFormat(intlLocales[locale]).format(route.distanceKm);
   return `${route.estimated ? "≈ " : ""}${km} km`;
 }
 
@@ -45,12 +43,8 @@ export function quoteMessage(
     return "";
   }
 
-  const tripId = tripIds.find((id) => id === input.trip) ?? "One-Way";
-  const tripLabel = {
-    "One-Way": dictionary.quote.oneWay,
-    "Round Trip": dictionary.quote.roundTrip,
-    "Hourly Charter": dictionary.quote.hourly,
-  }[tripId];
+  const tripId = isQuoteTripKind(input.trip) ? input.trip : quoteTripKinds[0];
+  const tripLabel = quoteTripLabel(tripId, dictionary);
   const distance = route ? formatDistance(route, dictionary.locale) : null;
   const duration = route ? formatDuration(route.durationMinutes) : null;
 
@@ -61,7 +55,7 @@ export function quoteMessage(
     distance ? `${dictionary.quote.distance}: ${distance}` : null,
     duration ? `${dictionary.quote.drivingTime}: ${duration}` : null,
     `${dictionary.quote.departure}: ${formatTripDate(input.departure, dictionary.locale) || "—"}`,
-    tripId === "Round Trip"
+    input.returnAt
       ? `${dictionary.quote.return}: ${formatTripDate(input.returnAt, dictionary.locale) || "—"}`
       : null,
     `${dictionary.quote.passengers}: ${input.passengers || "—"}`,

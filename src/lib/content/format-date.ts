@@ -1,7 +1,7 @@
-import type { Locale } from "@/lib/i18n/dictionary";
+import { intlLocales, type Locale } from "@/lib/i18n/locale";
 
 export function formatPostDate(date: string, locale: Locale) {
-  return new Intl.DateTimeFormat(locale === "lv" ? "lv-LV" : "en-GB", {
+  return new Intl.DateTimeFormat(intlLocales[locale], {
     day: "numeric",
     month: "long",
     year: "numeric",

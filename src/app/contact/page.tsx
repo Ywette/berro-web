@@ -31,28 +31,27 @@ export default async function ContactPage({ searchParams }: ContactPageProps) {
   const dictionary = await getDictionary();
 
   return (
-    <section className="mx-auto grid max-w-6xl gap-10 px-5 py-16 lg:grid-cols-2 lg:items-start">
-      <div className="grid gap-8 lg:order-1">
-        <CompanyDetails />
-        <NewsletterForm />
-        <div className="rounded-2xl border border-white/10 bg-card p-5">
-          <h2 className="mb-4 font-serif text-2xl tracking-wide text-ivory">{dictionary.contact.formTitle}</h2>
-          <Suspense fallback={<ContactForm />}>
-            <QuotedContactForm searchParams={searchParams} />
+    <section className="mx-auto max-w-7xl px-5 py-16 lg:py-20">
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.15fr)] lg:items-start lg:gap-12">
+        <div className="grid gap-8">
+          <CompanyDetails />
+          <NewsletterForm />
+        </div>
+
+        <div className="grid gap-6">
+          <Suspense fallback={null}>
+            <QuotedRouteSummary searchParams={searchParams} />
           </Suspense>
+          <div className="rounded-2xl border border-white/10 bg-card p-5 sm:p-6">
+            <h2 className="mb-4 font-serif text-2xl tracking-wide text-ivory">
+              {dictionary.contact.formTitle}
+            </h2>
+            <Suspense fallback={<ContactForm />}>
+              <QuotedContactForm searchParams={searchParams} />
+            </Suspense>
+          </div>
         </div>
       </div>
-
-      <Suspense
-        fallback={
-          <aside className="lg:order-2">
-            <h1 className="font-serif text-5xl tracking-wide text-ivory">{dictionary.contact.title}</h1>
-            <p className="mt-4 max-w-md text-sm leading-6 text-mist">{dictionary.contact.body}</p>
-          </aside>
-        }
-      >
-        <ContactAside searchParams={searchParams} />
-      </Suspense>
     </section>
   );
 }
@@ -93,7 +92,7 @@ async function QuotedContactForm({
   );
 }
 
-async function ContactAside({
+async function QuotedRouteSummary({
   searchParams,
 }: {
   searchParams: ContactPageProps["searchParams"];
@@ -101,24 +100,16 @@ async function ContactAside({
   const [params, dictionary] = await Promise.all([searchParams, getDictionary()]);
   const pickup = first(params.pickup);
   const dropoff = first(params.dropoff);
-  const route =
-    pickup && dropoff
-      ? await computeRoute(
-          { place: first(params.pickupPlace), label: pickup },
-          { place: first(params.dropoffPlace), label: dropoff },
-          dictionary.locale,
-        )
-      : null;
+  if (!pickup || !dropoff) return null;
 
-  return (
-    <aside className="lg:order-2 lg:sticky lg:top-28">
-      <h1 className="font-serif text-5xl tracking-wide text-ivory">{dictionary.contact.title}</h1>
-      <p className="mt-4 max-w-md text-sm leading-6 text-mist">{dictionary.contact.body}</p>
-      {route && pickup && dropoff ? (
-        <RouteSummary pickup={pickup} dropoff={dropoff} route={route} dictionary={dictionary} />
-      ) : null}
-    </aside>
+  const route = await computeRoute(
+    { place: first(params.pickupPlace), label: pickup },
+    { place: first(params.dropoffPlace), label: dropoff },
+    dictionary.locale,
   );
+  if (!route) return null;
+
+  return <RouteSummary pickup={pickup} dropoff={dropoff} route={route} dictionary={dictionary} />;
 }
 
 function first(value: string | string[] | undefined) {

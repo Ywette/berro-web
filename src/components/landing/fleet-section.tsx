@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { fleetModels } from "@/lib/content/fleet";
+import { transportSectionHref } from "@/lib/content/transport";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 
 export async function FleetSection() {
@@ -12,54 +13,56 @@ export async function FleetSection() {
         <div className="mb-6 flex items-center justify-between gap-4">
           <h2 className="text-2xl font-medium text-ivory sm:text-3xl">{dictionary.fleet.title}</h2>
           <Link
-            href="/contact"
+            href="/autoparks"
             className="rounded-md border border-white/15 px-3 py-1.5 text-xs text-ivory/80 hover:border-white/40"
           >
             {dictionary.fleet.details}
           </Link>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {fleetModels.map((vehicle) => (
-            <article
-              key={vehicle.id}
-              className="relative rounded-2xl border border-white/10 bg-[#141418] p-3.5"
-            >
-              <span className="absolute top-3.5 right-3.5 z-10 h-2 w-2 rounded-full bg-red-600" />
-              <div className="relative h-28">
-                <Image
-                  src={vehicle.image}
-                  alt={vehicle.name}
-                  fill
-                  sizes="(min-width: 1280px) 22vw, (min-width: 640px) 45vw, 90vw"
-                  className="object-contain"
-                />
-              </div>
-              <h3 className="mt-4 text-sm font-medium text-ivory">{vehicle.name}</h3>
-              <p className="mt-2 flex items-center gap-2 text-xs text-mist">
-                <PeopleIcon />
-                {vehicle.passengers} {dictionary.fleet.passengers}
-              </p>
-              <ul className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-mist">
-                <li className="inline-flex items-center gap-1">
-                  <WifiIcon /> {dictionary.fleet.wifi}
-                </li>
-                <li className="inline-flex items-center gap-1">
-                  <SeatIcon /> {dictionary.fleet.leather}
-                </li>
-                <li className="inline-flex items-center gap-1">
-                  <SnowIcon /> {dictionary.fleet.ac}
-                </li>
-              </ul>
-              <div className="mt-4 flex justify-end">
-                <Link
-                  href="/#book"
-                  className="rounded-md border border-white/15 px-2.5 py-1 text-[11px] text-ivory/80 hover:border-white/40"
-                >
-                  {dictionary.fleet.details}
-                </Link>
-              </div>
-            </article>
-          ))}
+          {fleetModels.map((vehicle) => {
+            const title = dictionary.fleet.categories[vehicle.id];
+            const href = transportSectionHref(vehicle.id);
+            return (
+              <Link
+                key={vehicle.id}
+                href={href}
+                className="relative block rounded-2xl border border-white/10 bg-[#141418] p-3.5 transition hover:border-white/25"
+              >
+                <span className="absolute top-3.5 right-3.5 z-10 h-2 w-2 rounded-full bg-red-600" />
+                <div className="relative h-28">
+                  <Image
+                    src={vehicle.image}
+                    alt={title}
+                    fill
+                    sizes="(min-width: 1280px) 22vw, (min-width: 640px) 45vw, 90vw"
+                    className="object-contain"
+                  />
+                </div>
+                <h3 className="mt-4 text-sm font-medium text-ivory">{title}</h3>
+                <p className="mt-2 flex items-center gap-2 text-xs text-mist">
+                  <PeopleIcon />
+                  {vehicle.passengers} {dictionary.fleet.passengers}
+                </p>
+                <ul className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-mist">
+                  <li className="inline-flex items-center gap-1">
+                    <WifiIcon /> {dictionary.fleet.wifi}
+                  </li>
+                  <li className="inline-flex items-center gap-1">
+                    <SeatIcon /> {dictionary.fleet.leather}
+                  </li>
+                  <li className="inline-flex items-center gap-1">
+                    <SnowIcon /> {dictionary.fleet.ac}
+                  </li>
+                </ul>
+                <div className="mt-4 flex justify-end">
+                  <span className="rounded-md border border-white/15 px-2.5 py-1 text-[11px] text-ivory/80">
+                    {dictionary.fleet.details}
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>

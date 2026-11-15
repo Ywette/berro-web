@@ -1,4 +1,6 @@
-export type PlanTripKind = "One-Way" | "Round Trip" | "Hourly Charter";
+import type { QuoteTripKind } from "@/lib/quote-trips";
+
+export type PlanTripKind = QuoteTripKind;
 
 export type ExtractedPlanStop = {
   name: string;

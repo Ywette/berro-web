@@ -1,8 +1,6 @@
 import { requireUser } from "@/lib/auth/session";
 import { listEmployees } from "@/lib/data/employees";
-import { SetupNotice } from "@/components/layout/setup-notice";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
-import { hasSupabaseStaffEnv } from "@/lib/supabase/staff";
 import type { EmployeeRole } from "@/types/staff";
 
 export async function EmployeeTable() {
@@ -24,14 +22,6 @@ export async function EmployeeTable() {
   }
 
   if (employees.length === 0) {
-    if (!hasSupabaseStaffEnv()) {
-      return (
-        <SetupNotice
-          title={dictionary.employees.connectTitle}
-          body={dictionary.employees.connectBody}
-        />
-      );
-    }
     return (
       <p className="rounded-2xl border border-line bg-card px-5 py-6 text-sm text-mist">
         {dictionary.employees.empty}

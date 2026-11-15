@@ -51,9 +51,9 @@ export function OrdersTableClient({
     setOrders(applyAssignmentPatches(mergeOrdersWithSession(initialOrders)));
   }
 
-  function onAssignEmployee(orderId: string, role: "driver" | "guide", employeeId: string) {
+  function onAssignDriver(orderId: string, employeeId: string) {
     const employee = employees.find((item) => item.id === employeeId) ?? null;
-    setOrders(assignEmployee(orders, orderId, role, employee));
+    setOrders(assignEmployee(orders, orderId, "driver", employee));
   }
 
   function onAssignTransport(orderId: string, vehicleId: string) {
@@ -72,7 +72,7 @@ export function OrdersTableClient({
         </p>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-line bg-card">
-          <table className="w-full min-w-[1100px] text-left text-sm">
+          <table className="w-full min-w-[960px] text-left text-sm">
             <thead className="bg-white/5 text-mist">
               <tr>
                 <th className="px-4 py-3 font-medium">{dictionary.staffDashboard.orderId}</th>
@@ -81,7 +81,6 @@ export function OrdersTableClient({
                 <th className="px-4 py-3 font-medium">{dictionary.staffDashboard.requestor}</th>
                 <th className="px-4 py-3 font-medium">{dictionary.staffDashboard.state}</th>
                 <th className="px-4 py-3 font-medium">{dictionary.staffDashboard.assignedDriver}</th>
-                <th className="px-4 py-3 font-medium">{dictionary.staffDashboard.assignedGuide}</th>
                 <th className="px-4 py-3 font-medium">{dictionary.staffDashboard.assignedVehicle}</th>
                 <th className="px-4 py-3 font-medium">
                   <span className="sr-only">{dictionary.staffDashboard.deleteOrder}</span>
@@ -91,7 +90,6 @@ export function OrdersTableClient({
             <tbody>
               {orders.map((order) => {
                 const drivers = employeeChoices("driver", order, employees, orders);
-                const guides = employeeChoices("guide", order, employees, orders);
                 const transport = vehicleChoices(order, vehicles, orders);
 
                 return (
@@ -133,25 +131,12 @@ export function OrdersTableClient({
                         label={dictionary.staffDashboard.assignedDriver}
                         value={order.assignedDriverId}
                         emptyLabel={dictionary.staffDashboard.unassigned}
-                        onChange={(value) => onAssignEmployee(order.id, "driver", value)}
+                        onChange={(value) => onAssignDriver(order.id, value)}
                         options={drivers.map((employee) => ({
                           id: employee.id,
                           label: employee.fullName,
                         }))}
                         fallbackLabel={order.assignedDriverName}
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <AssignmentSelect
-                        label={dictionary.staffDashboard.assignedGuide}
-                        value={order.assignedGuideId}
-                        emptyLabel={dictionary.staffDashboard.unassigned}
-                        onChange={(value) => onAssignEmployee(order.id, "guide", value)}
-                        options={guides.map((employee) => ({
-                          id: employee.id,
-                          label: employee.fullName,
-                        }))}
-                        fallbackLabel={order.assignedGuideName}
                       />
                     </td>
                     <td className="px-4 py-3">

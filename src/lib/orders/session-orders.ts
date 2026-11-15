@@ -3,8 +3,11 @@ import type { StaffOrder } from "@/types/dashboard";
 
 export const SESSION_ORDERS_KEY = "berro-crm-demo-orders";
 
+export type QuoteTripMode = "oneWay" | "roundTrip";
+
 export type QuoteOrderInput = {
   trip?: string;
+  tripMode?: QuoteTripMode | string;
   name?: string;
   email?: string;
   phone?: string;
@@ -31,13 +34,20 @@ export type QuoteRequiredField =
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function quoteFieldErrors(input: QuoteOrderInput): QuoteRequiredField[] {
+export function quoteFieldErrors(
+  input: QuoteOrderInput,
+  options?: { requireContact?: boolean },
+): QuoteRequiredField[] {
   const errors: QuoteRequiredField[] = [];
-  const name = input.name?.trim() ?? "";
-  if (name.length < 2 || name.length > 80) errors.push("name");
+  const requireContact = options?.requireContact !== false;
 
-  const email = input.email?.trim() ?? "";
-  if (!emailPattern.test(email)) errors.push("email");
+  if (requireContact) {
+    const name = input.name?.trim() ?? "";
+    if (name.length < 2 || name.length > 80) errors.push("name");
+
+    const email = input.email?.trim() ?? "";
+    if (!emailPattern.test(email)) errors.push("email");
+  }
 
   if (!input.pickup?.trim()) errors.push("pickup");
   if (!input.dropoff?.trim()) errors.push("dropoff");
@@ -49,7 +59,7 @@ export function quoteFieldErrors(input: QuoteOrderInput): QuoteRequiredField[] {
   const departure = travelDate(input.departure);
   if (!departure) errors.push("departure");
 
-  if (input.trip === "Round Trip") {
+  if (input.returnAt?.trim()) {
     const returning = travelDate(input.returnAt);
     if (!returning || (departure && returning < departure)) errors.push("return");
   }

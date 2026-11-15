@@ -1,3 +1,4 @@
+import type { Locale } from "@/lib/i18n/locale";
 import type { ExtractedPlanFields, PlanDocumentResult } from "@/lib/plan-document/types";
 
 export type PlanDocumentApiError = {
@@ -7,7 +8,7 @@ export type PlanDocumentApiError = {
 
 export async function parsePlanDocument(
   file: File,
-  locale: "en" | "lv" = "lv",
+  locale: Locale = "lv",
 ): Promise<PlanDocumentResult> {
   const body = new FormData();
   body.set("file", file);

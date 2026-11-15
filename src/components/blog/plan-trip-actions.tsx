@@ -33,7 +33,7 @@ export function PlanTripActions() {
             event.currentTarget.close();
           }
         }}
-        className="m-auto max-h-[calc(100dvh-2rem)] w-[min(28rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl bg-transparent p-0 text-ivory backdrop:bg-black/70 backdrop:backdrop-blur-sm"
+        className="popup-enter m-auto max-h-[calc(100dvh-2rem)] w-[min(28rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl bg-transparent p-0 text-ivory backdrop:bg-black/70 backdrop:backdrop-blur-sm"
       >
         <div className="relative overflow-hidden rounded-2xl bg-[url('/hero/luxembourg.jpg')] bg-cover bg-center">
           <div className="bg-black/55 p-4 sm:p-5">

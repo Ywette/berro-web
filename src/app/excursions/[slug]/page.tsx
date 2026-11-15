@@ -7,6 +7,7 @@ import { AvailabilityButton } from "@/components/excursions/availability-button"
 import { bookingContact, excursions, findExcursion } from "@/lib/content/excursions";
 import { formatEuro } from "@/lib/content/format-price";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { pickLocalized } from "@/lib/i18n/locale";
 
 export function generateStaticParams() {
   return excursions
@@ -17,7 +18,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps<"/excursions/[slug]">): Promise<Metadata> {
   const [{ slug }, dictionary] = await Promise.all([params, getDictionary()]);
   const excursion = findExcursion(slug);
-  return { title: excursion ? excursion.title[dictionary.locale] : dictionary.nav.excursions };
+  return { title: excursion ? pickLocalized(excursion.title, dictionary.locale) : dictionary.nav.excursions };
 }
 
 export default function ExcursionPage({ params }: PageProps<"/excursions/[slug]">) {
@@ -39,6 +40,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
   const locale = dictionary.locale;
   const details = excursion.details;
   const text = dictionary.excursions;
+  const title = pickLocalized(excursion.title, locale);
 
   return (
     <article className="mx-auto max-w-4xl px-5 py-12">
@@ -46,7 +48,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
         ← {text.back}
       </Link>
       <h1 className="mt-6 font-serif text-4xl leading-tight tracking-wide sm:text-5xl">
-        {excursion.title[locale]}
+        {title}
       </h1>
 
       <div
@@ -54,7 +56,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
       >
         <Image
           src={excursion.image}
-          alt={excursion.title[locale]}
+          alt={title}
           fill
           priority
           sizes="(min-width: 896px) 896px, 100vw"
@@ -65,7 +67,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
       {details.intro.length > 0 ? (
         <div className="mt-8 grid gap-4 text-base leading-8 text-ivory/90">
           {details.intro.map((paragraph) => (
-            <p key={paragraph.lv}>{paragraph[locale]}</p>
+            <p key={paragraph.lv}>{pickLocalized(paragraph, locale)}</p>
           ))}
         </div>
       ) : null}
@@ -75,7 +77,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
           {details.highlights.map((item) => (
             <li key={item.lv} className="flex gap-3 text-base leading-7">
               <CheckIcon />
-              <span>{item[locale]}</span>
+              <span>{pickLocalized(item, locale)}</span>
             </li>
           ))}
         </ul>
@@ -90,7 +92,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
             >
               <Image
                 src={image.src}
-                alt={image.alt[locale]}
+                alt={pickLocalized(image.alt, locale)}
                 fill
                 sizes="(min-width: 640px) 440px, 100vw"
                 className={image.logo ? "object-contain p-8" : "object-cover"}
@@ -102,7 +104,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
 
       {details.callout ? (
         <p className="mt-8 rounded-2xl border border-burgundy/40 bg-burgundy/15 px-5 py-4 text-center font-serif text-xl tracking-wide">
-          {details.callout[locale]}
+          {pickLocalized(details.callout, locale)}
         </p>
       ) : null}
 
@@ -111,7 +113,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
           {details.offers.map((offer) => (
             <section key={offer.title.lv} className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-card p-6">
               <div>
-                <h2 className="text-xl font-medium">{offer.title[locale]}</h2>
+                <h2 className="text-xl font-medium">{pickLocalized(offer.title, locale)}</h2>
                 <p className="mt-1 text-lg text-burgundy">
                   {text.fromPrice(formatEuro(offer.fromPrice, locale))}
                 </p>
@@ -122,7 +124,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
                   {offer.includes.map((item) => (
                     <li key={item.lv} className="flex gap-2">
                       <CheckIcon />
-                      <span>{item[locale]}</span>
+                      <span>{pickLocalized(item, locale)}</span>
                     </li>
                   ))}
                 </ul>
@@ -130,7 +132,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
               {offer.notes ? (
                 <div className="mt-auto grid gap-1 text-xs leading-5 text-mist">
                   {offer.notes.map((note) => (
-                    <p key={note.lv}>{note[locale]}</p>
+                    <p key={note.lv}>{pickLocalized(note, locale)}</p>
                   ))}
                 </div>
               ) : null}
@@ -144,7 +146,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
           {details.terms.map((term) => (
             <li key={term.lv} className="flex gap-3 text-sm leading-6">
               <CheckIcon />
-              <span>{term[locale]}</span>
+              <span>{pickLocalized(term, locale)}</span>
             </li>
           ))}
         </ul>
@@ -163,7 +165,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
           <ContactItem label={text.website} href={`https://${bookingContact.website}`} value={bookingContact.website} />
         </dl>
         <AvailabilityButton
-          title={excursion.title[locale]}
+          title={title}
           destination={
             excursion.destination ??
             (excursion.slug === "moulin-rouge"
@@ -175,7 +177,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
           days={excursion.days}
           image={excursion.image}
         />
-        {details.closing ? <p className="mt-4 text-sm text-ivory/90">{details.closing[locale]}</p> : null}
+        {details.closing ? <p className="mt-4 text-sm text-ivory/90">{pickLocalized(details.closing, locale)}</p> : null}
       </section>
     </article>
   );

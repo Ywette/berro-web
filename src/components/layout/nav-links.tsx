@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 
 type NavLink = { href: string; label: string };
 
-const homeSections = ["fleet", "services", "about"] as const;
+const homeSections = ["services"] as const;
 
 function subscribeHash(onStoreChange: () => void) {
   window.addEventListener("hashchange", onStoreChange);

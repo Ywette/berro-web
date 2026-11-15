@@ -1,8 +1,6 @@
 import { FleetBoardClient } from "@/components/staff/fleet-board-client";
-import { listOrders } from "@/lib/data/orders";
 import { listVehicles } from "@/lib/data/vehicles";
 import { getDictionary, getLocale } from "@/lib/i18n/get-dictionary";
-import { hasSupabaseStaffEnv } from "@/lib/supabase/staff";
 
 export async function FleetBoard() {
   const [dictionary, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -20,18 +18,10 @@ export async function FleetBoard() {
     );
   }
 
-  const orders = await listOrders().catch(() => []);
-
   return (
     <div className="space-y-4">
-      {!hasSupabaseStaffEnv() ? (
-        <p className="rounded-2xl border border-line bg-card px-4 py-3 text-xs text-mist">
-          {dictionary.staffDashboard.demoNote}
-        </p>
-      ) : null}
       <FleetBoardClient
         vehicles={vehicles}
-        orders={orders}
         locale={locale}
         labels={{
           passengers: dictionary.fleet.passengers,
@@ -40,18 +30,43 @@ export async function FleetBoard() {
           capacity: dictionary.staffDashboard.capacity,
           insurance: dictionary.staffDashboard.insurance,
           inspection: dictionary.staffDashboard.inspection,
-          readiness: dictionary.staffDashboard.readiness,
-          readinessReady: dictionary.staffDashboard.readinessReady,
-          readinessAttention: dictionary.staffDashboard.readinessAttention,
-          readinessBlocked: dictionary.staffDashboard.readinessBlocked,
+          availableIn: dictionary.staffDashboard.availableIn,
           noExpiry: dictionary.staffDashboard.noExpiry,
           fleetEmpty: dictionary.staffDashboard.fleetEmpty,
-          availabilityRange: dictionary.staffDashboard.availabilityRange,
-          availableFrom: dictionary.staffDashboard.availableFrom,
-          availableTo: dictionary.staffDashboard.availableTo,
-          clearRange: dictionary.staffDashboard.clearRange,
-          rangeInvalid: dictionary.staffDashboard.rangeInvalid,
-          noFleetInRange: dictionary.staffDashboard.noFleetInRange,
+          addTransport: dictionary.staffDashboard.addTransport,
+          editTransport: dictionary.staffDashboard.editTransport,
+          addTitle: dictionary.staffDashboard.fleetFormAddTitle,
+          editTitle: dictionary.staffDashboard.fleetFormEditTitle,
+          close: dictionary.staffDashboard.fleetFormClose,
+          saveTransport: dictionary.staffDashboard.saveTransport,
+          savingTransport: dictionary.staffDashboard.savingTransport,
+          deleteTransport: dictionary.staffDashboard.deleteTransport,
+          kind: dictionary.staffDashboard.fleetKind,
+          kindVan: dictionary.staffDashboard.fleetKindVan,
+          kindCoach: dictionary.staffDashboard.fleetKindCoach,
+          kindVip: dictionary.staffDashboard.fleetKindVip,
+          kindRetro: dictionary.staffDashboard.fleetKindRetro,
+          name: dictionary.staffDashboard.fleetFormName,
+          guideSeats: dictionary.staffDashboard.fleetFormGuideSeats,
+          interiorColor: dictionary.staffDashboard.fleetFormInterior,
+          bodyColor: dictionary.staffDashboard.fleetFormBody,
+          extras: dictionary.staffDashboard.fleetFormExtras,
+          extrasHint: dictionary.staffDashboard.fleetFormExtrasHint,
+          summary: dictionary.staffDashboard.fleetFormSummary,
+          description: dictionary.staffDashboard.fleetFormDescription,
+          descriptionHint: dictionary.staffDashboard.fleetFormDescriptionHint,
+          closingNotes: dictionary.staffDashboard.fleetFormClosingNotes,
+          closingNotesHint: dictionary.staffDashboard.fleetFormClosingNotesHint,
+          photos: dictionary.staffDashboard.fleetFormPhotos,
+          photosHint: dictionary.staffDashboard.fleetFormPhotosHint,
+          uploadPhotos: dictionary.staffDashboard.fleetFormUploadPhotos,
+          mainPhoto: dictionary.staffDashboard.fleetFormMainPhoto,
+          setMainPhoto: dictionary.staffDashboard.fleetFormSetMainPhoto,
+          movePhotoLeft: dictionary.staffDashboard.fleetFormMovePhotoLeft,
+          movePhotoRight: dictionary.staffDashboard.fleetFormMovePhotoRight,
+          removePhoto: dictionary.staffDashboard.fleetFormRemovePhoto,
+          videoUrl: dictionary.staffDashboard.fleetFormVideo,
+          countriesHint: dictionary.staffDashboard.fleetFormCountriesHint,
         }}
       />
     </div>

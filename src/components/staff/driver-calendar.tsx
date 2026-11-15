@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { intlLocales, type Locale } from "@/lib/i18n/locale";
 import type { StaffOrder } from "@/types/dashboard";
 import type { DriverAvailability } from "@/types/staff";
 
@@ -17,7 +18,7 @@ type Labels = {
 type DriverCalendarProps = {
   drivers: DriverAvailability[];
   orders: StaffOrder[];
-  locale: "lv" | "en";
+  locale: Locale;
   labels: Labels;
 };
 
@@ -29,7 +30,7 @@ export function DriverCalendar({ drivers, orders, locale, labels }: DriverCalend
 
   const year = cursor.getUTCFullYear();
   const month = cursor.getUTCMonth();
-  const monthLabel = new Intl.DateTimeFormat(locale === "lv" ? "lv-LV" : "en-GB", {
+  const monthLabel = new Intl.DateTimeFormat(intlLocales[locale], {
     month: "long",
     year: "numeric",
     timeZone: "UTC",
@@ -37,7 +38,7 @@ export function DriverCalendar({ drivers, orders, locale, labels }: DriverCalend
 
   const days = useMemo(() => buildMonthDays(year, month), [year, month]);
   const weekdayLabels = useMemo(() => {
-    const formatter = new Intl.DateTimeFormat(locale === "lv" ? "lv-LV" : "en-GB", {
+    const formatter = new Intl.DateTimeFormat(intlLocales[locale], {
       weekday: "short",
       timeZone: "UTC",
     });

@@ -4,10 +4,14 @@ import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDictionary } from "@/components/i18n/locale-provider";
+import { DateTimeInput } from "@/components/landing/datetime-field";
 import { PlaceField } from "@/components/landing/place-field";
 import { QuoteSummaryDialog } from "@/components/landing/quote-summary-dialog";
 import { parsePlanDocument } from "@/lib/plan-document/client";
 import type { ExtractedPlanFields } from "@/lib/plan-document/types";
+import {
+  toDatetimeLocalInput,
+} from "@/lib/orders/route-points";
 import {
   encodeStops,
   mergeStops,
@@ -15,9 +19,10 @@ import {
   type QuoteStop,
 } from "@/lib/orders/stops";
 import { quoteFieldErrors, type QuoteOrderInput, type QuoteRequiredField } from "@/lib/orders/session-orders";
+import { quoteTripKinds, type QuoteTripKind } from "@/lib/quote-trips";
 
-const trips = ["One-Way", "Round Trip", "Hourly Charter"] as const;
-type Trip = (typeof trips)[number];
+const trips = quoteTripKinds;
+type Trip = QuoteTripKind;
 
 const maxDocumentBytes = 4 * 1024 * 1024;
 const documentTypes = [".pdf", ".doc", ".docx", ".txt"];
@@ -52,13 +57,14 @@ export function QuoteCard({
   const router = useRouter();
   const dictionary = useDictionary();
   const tripLabels: Record<Trip, string> = {
-    "One-Way": dictionary.quote.oneWay,
-    "Round Trip": dictionary.quote.roundTrip,
-    "Hourly Charter": dictionary.quote.hourly,
+    "Bus Rental": dictionary.quote.busRental,
+    "Minibus Rental": dictionary.quote.minibusRental,
+    Transfer: dictionary.quote.transfer,
+    Excursions: dictionary.quote.excursionsType,
   };
   const initialDeparture = splitDateTime(defaults?.departure);
   const initialReturn = splitDateTime(defaults?.returnAt);
-  const [trip, setTrip] = useState<Trip>(defaults?.trip ?? "One-Way");
+  const [trip, setTrip] = useState<Trip>(defaults?.trip ?? "Bus Rental");
   const [name, setName] = useState(defaults?.name ?? "");
   const [email, setEmail] = useState(defaults?.email ?? "");
   const [phone, setPhone] = useState(defaults?.phone ?? "");
@@ -66,10 +72,12 @@ export function QuoteCard({
   const [pickupPlace, setPickupPlace] = useState(defaults?.pickupPlace ?? "");
   const [dropoff, setDropoff] = useState(defaults?.dropoff ?? "");
   const [dropoffPlace, setDropoffPlace] = useState(defaults?.dropoffPlace ?? "");
-  const [departureDate, setDepartureDate] = useState(initialDeparture.date);
-  const [departureTime, setDepartureTime] = useState(initialDeparture.time);
-  const [returnDate, setReturnDate] = useState(initialReturn.date);
-  const [returnTime, setReturnTime] = useState(initialReturn.time);
+  const [departureAt, setDepartureAt] = useState(
+    toDatetimeLocalInput(initialDeparture.date, initialDeparture.time),
+  );
+  const [returnAt, setReturnAt] = useState(
+    toDatetimeLocalInput(initialReturn.date, initialReturn.time),
+  );
   const [passengers, setPassengers] = useState(defaults?.passengers ?? "");
   const [planDocument, setPlanDocument] = useState<PlanDocument | null>(null);
   const [documentNote, setDocumentNote] = useState("");
@@ -81,7 +89,10 @@ export function QuoteCard({
   const [stopsFromPlan, setStopsFromPlan] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [summaryDraft, setSummaryDraft] = useState<QuoteOrderInput | null>(null);
-  const [placeIds, setPlaceIds] = useState({ pickup: "", dropoff: "" });
+  const [placeIds, setPlaceIds] = useState({
+    pickup: defaults?.pickupPlace ?? "",
+    dropoff: defaults?.dropoffPlace ?? "",
+  });
 
   function clearInvalid(field: QuoteRequiredField) {
     setInvalid((current) => {
@@ -104,8 +115,8 @@ export function QuoteCard({
       phone: String(form.get("phone") ?? ""),
       pickup: String(form.get("pickup") ?? ""),
       dropoff: String(form.get("dropoff") ?? ""),
-      departure: joinDateTime(String(form.get("departureDate") ?? ""), String(form.get("departureTime") ?? "")),
-      returnAt: joinDateTime(String(form.get("returnDate") ?? ""), String(form.get("returnTime") ?? "")),
+      departure: String(form.get("departureAt") ?? departureAt),
+      returnAt: String(form.get("returnAt") ?? returnAt) || undefined,
       passengers: String(form.get("passengers") ?? ""),
     };
     const errors = quoteFieldErrors(input);
@@ -118,6 +129,8 @@ export function QuoteCard({
       pickup: String(form.get("pickupPlace") ?? ""),
       dropoff: String(form.get("dropoffPlace") ?? ""),
     });
+    setPickup(input.pickup || "");
+    setDropoff(input.dropoff || "");
     setSummaryDraft(input);
     setSummaryOpen(true);
   }
@@ -127,10 +140,6 @@ export function QuoteCard({
     const waiting = totalWaitingMinutes(stops, otherWaitingMinutes);
     const input: QuoteOrderInput = {
       ...summaryDraft,
-      returnAt:
-        trip === "Round Trip"
-          ? summaryDraft.returnAt
-          : summaryDraft.returnAt || "",
       stops: encodeStops(stops),
       otherWaitingMinutes: otherWaitingMinutes > 0 ? String(otherWaitingMinutes) : "",
       waitingMinutes: waiting > 0 ? String(waiting) : "",
@@ -155,9 +164,8 @@ export function QuoteCard({
     try {
       const result = await parsePlanDocument(file, dictionary.locale);
       const populated = applyExtracted(result.fields);
-      const summary = result.summary?.trim();
       setDocumentNote(
-        summary ||
+        result.summary?.trim() ||
           (populated
             ? dictionary.pricing.aiFilled(file.name)
             : dictionary.quote.documentIncomplete),
@@ -186,11 +194,9 @@ export function QuoteCard({
   function applyExtracted(fields: ExtractedPlanFields) {
     const filled = new Set<QuoteRequiredField>();
     const returning = splitDateTime(fields.returnAt);
-    if (fields.trip) {
-      setTrip(fields.trip);
-    } else if (returning.date) {
-      setTrip("Round Trip");
-    }
+    if (fields.trip) setTrip(fields.trip);
+    else if (returning.date) setTrip("Excursions");
+
     if (fields.name) {
       setName(fields.name);
       filled.add("name");
@@ -216,15 +222,13 @@ export function QuoteCard({
     }
     const departure = splitDateTime(fields.departure || fields.pickupDate);
     if (departure.date) {
-      setDepartureDate(departure.date);
+      setDepartureAt(toDatetimeLocalInput(departure.date, departure.time));
       filled.add("departure");
     }
-    if (departure.time) setDepartureTime(departure.time);
     if (returning.date) {
-      setReturnDate(returning.date);
+      setReturnAt(toDatetimeLocalInput(returning.date, returning.time));
       filled.add("return");
     }
-    if (returning.time) setReturnTime(returning.time);
     if (fields.stops?.length) {
       setStops((current) => mergeStops(current, fields.stops ?? []));
       setStopsFromPlan(true);
@@ -240,7 +244,7 @@ export function QuoteCard({
         return next;
       });
     }
-    return filled.size > 0 || Boolean(fields.stops?.length) || Boolean(fields.otherWaitingMinutes);
+    return filled.size > 0 || Boolean(fields.stops?.length);
   }
 
   return (
@@ -327,8 +331,6 @@ export function QuoteCard({
         <input
           name="passengers"
           inputMode="numeric"
-          min={1}
-          max={80}
           value={passengers}
           placeholder={dictionary.quote.passengers}
           aria-label={dictionary.quote.passengers}
@@ -341,8 +343,9 @@ export function QuoteCard({
         />
       </div>
 
-      <div className="mt-3 grid grid-cols-[minmax(0,1.45fr)_minmax(0,0.95fr)_minmax(0,0.75fr)] items-end gap-2 sm:gap-3">
+      <div className="mt-3 grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1.35fr)_minmax(0,1.15fr)] sm:gap-3">
         <PlaceField
+          key={`pickup-${pickup}`}
           name="pickup"
           label={dictionary.quote.pickup}
           placeholder={dictionary.quote.pickup}
@@ -350,34 +353,29 @@ export function QuoteCard({
           defaultText={pickup}
           defaultPlaceId={pickupPlace}
           invalid={invalid.has("pickup")}
-          onTextChange={() => clearInvalid("pickup")}
+          onPlaceChange={(value, placeId) => {
+            setPickup(value);
+            setPickupPlace(placeId);
+            clearInvalid("pickup");
+          }}
         />
-        <Field label={dictionary.quote.date} invalid={invalid.has("departure")}>
-          <input
-            type="date"
-            name="departureDate"
-            value={departureDate}
-            aria-invalid={invalid.has("departure") || undefined}
-            onChange={(event) => {
-              setDepartureDate(event.target.value);
+        <Field label={dictionary.quote.departureAt} invalid={invalid.has("departure")}>
+          <DateTimeInput
+            name="departureAt"
+            value={departureAt}
+            invalid={invalid.has("departure")}
+            onChange={(value) => {
+              setDepartureAt(value);
               clearInvalid("departure");
+              if (returnAt && value && returnAt < value) setReturnAt(value);
             }}
-            className={controlClass(invalid.has("departure"))}
-          />
-        </Field>
-        <Field label={dictionary.quote.departureTime}>
-          <input
-            type="time"
-            name="departureTime"
-            value={departureTime}
-            onChange={(event) => setDepartureTime(event.target.value)}
-            className={controlClass(false)}
           />
         </Field>
       </div>
 
-      <div className="mt-3 grid grid-cols-[minmax(0,1.45fr)_minmax(0,0.95fr)_minmax(0,0.75fr)] items-end gap-2 sm:gap-3">
+      <div className="mt-3 grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1.35fr)_minmax(0,1.15fr)] sm:gap-3">
         <PlaceField
+          key={`dropoff-${dropoff}`}
           name="dropoff"
           label={dictionary.quote.dropoff}
           placeholder={dictionary.quote.dropoff}
@@ -385,29 +383,22 @@ export function QuoteCard({
           defaultText={dropoff}
           defaultPlaceId={dropoffPlace}
           invalid={invalid.has("dropoff")}
-          onTextChange={() => clearInvalid("dropoff")}
+          onPlaceChange={(value, placeId) => {
+            setDropoff(value);
+            setDropoffPlace(placeId);
+            clearInvalid("dropoff");
+          }}
         />
-        <Field label={dictionary.quote.date} invalid={invalid.has("return")}>
-          <input
-            type="date"
-            name="returnDate"
-            min={departureDate || undefined}
-            value={returnDate}
-            aria-invalid={invalid.has("return") || undefined}
-            onChange={(event) => {
-              setReturnDate(event.target.value);
+        <Field label={dictionary.quote.returnAt} invalid={invalid.has("return")}>
+          <DateTimeInput
+            name="returnAt"
+            value={returnAt}
+            min={departureAt || undefined}
+            invalid={invalid.has("return")}
+            onChange={(value) => {
+              setReturnAt(value);
               clearInvalid("return");
             }}
-            className={controlClass(invalid.has("return"))}
-          />
-        </Field>
-        <Field label={dictionary.quote.returnTime}>
-          <input
-            type="time"
-            name="returnTime"
-            value={returnTime}
-            onChange={(event) => setReturnTime(event.target.value)}
-            className={controlClass(false)}
           />
         </Field>
       </div>
@@ -420,7 +411,7 @@ export function QuoteCard({
 
       <div className="mt-4 grid grid-cols-2 gap-3">
         <Link
-          href="/pricing"
+          href="/plan"
           className="inline-flex h-10 items-center justify-center rounded-md border border-white/30 px-3 text-sm font-medium text-ivory hover:border-white/60 hover:bg-white/5"
         >
           {dictionary.quote.planner}
@@ -453,21 +444,16 @@ export function QuoteCard({
 
 function Field({
   label,
-  hint,
   invalid = false,
   children,
 }: {
   label: string;
-  hint?: string;
   invalid?: boolean;
   children: ReactNode;
 }) {
   return (
     <label className={`grid min-w-0 gap-1.5 text-xs ${invalid ? "text-red-200" : "text-ivory/70"}`}>
-      <span>
-        {label}
-        {hint ? <span className="ml-1 text-[10px] text-ivory/45">{hint}</span> : null}
-      </span>
+      <span>{label}</span>
       {children}
     </label>
   );
@@ -582,17 +568,12 @@ function PlanDocumentAttach({
 }
 
 function formatSize(bytes: number) {
-  return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return bytes < 1024 * 1024
+    ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+    : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function splitDateTime(value: string | undefined) {
   const match = value?.match(/^(\d{4}-\d{2}-\d{2})(?:T(\d{2}:\d{2}))?/);
   return { date: match?.[1] ?? "", time: match?.[2] ?? "" };
-}
-
-function joinDateTime(date: string, time: string) {
-  const day = date.trim();
-  const clock = time.trim();
-  if (!day) return "";
-  return clock ? `${day}T${clock}` : day;
 }

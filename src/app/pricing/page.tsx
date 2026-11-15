@@ -7,15 +7,9 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: dictionary.nav.pricing };
 }
 
-export default async function PricingPage() {
-  const dictionary = await getDictionary();
-
+export default function PricingPage() {
   return (
     <section className="mx-auto max-w-7xl px-5 py-12">
-      <div className="mb-8 max-w-3xl">
-        <h1 className="font-serif text-5xl tracking-wide">{dictionary.pricing.title}</h1>
-        <p className="mt-3 text-sm leading-6 text-mist">{dictionary.pricing.intro}</p>
-      </div>
       <PriceSimulator />
     </section>
   );

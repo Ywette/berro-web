@@ -1,5 +1,5 @@
 import type { Locale } from "@/lib/i18n/dictionary";
-import { countryName, findCatalogPlace, searchCatalog } from "./catalog";
+import { countryName, findCatalogPlace, placeName, searchCatalog } from "./catalog";
 import type { PlaceSuggestion, TripRoute } from "./types";
 
 const googleKey = () => process.env.GOOGLE_MAPS_API_KEY;
@@ -52,9 +52,9 @@ export async function searchPlaces(query: string, locale: Locale): Promise<Place
     }
   }
 
-  return searchCatalog(query).map((place) => ({
+  return searchCatalog(query, locale).map((place) => ({
     id: `local:${place.id}`,
-    label: place.name[locale],
+    label: placeName(place, locale),
     secondary: countryName(place, locale),
   }));
 }

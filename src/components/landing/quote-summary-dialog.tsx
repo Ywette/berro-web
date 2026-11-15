@@ -82,7 +82,7 @@ export function QuoteSummaryDialog({
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
-      className="m-auto max-h-[calc(100dvh-2rem)] w-[min(36rem,calc(100vw-1.5rem))] overflow-y-auto rounded-2xl border border-white/15 bg-[#1a1210] p-0 text-ivory shadow-[0_30px_80px_-24px_rgba(0,0,0,0.9)] backdrop:bg-black/70 backdrop:backdrop-blur-sm"
+      className="popup-enter m-auto max-h-[calc(100dvh-2rem)] w-[min(36rem,calc(100vw-1.5rem))] overflow-y-auto rounded-2xl border border-white/10 bg-card p-0 text-ivory shadow-[0_30px_80px_-24px_rgba(0,0,0,0.9)] backdrop:bg-black/70 backdrop:backdrop-blur-sm"
     >
       <div className="p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3">

@@ -3,6 +3,7 @@
 import { useMemo, useRef } from "react";
 import { useDictionary } from "@/components/i18n/locale-provider";
 import { QuoteCard, type QuoteDefaults } from "@/components/landing/quote-card";
+import { pickLocalized, type Locale, type Localized } from "@/lib/i18n/locale";
 
 type AvailabilityButtonProps = {
   title: string;
@@ -11,17 +12,44 @@ type AvailabilityButtonProps = {
   image: string;
 };
 
-const placeByDestination: Record<string, { label: { lv: string; en: string }; placeId: string }> = {
-  Paris: { label: { lv: "Parīze, Francija", en: "Paris, France" }, placeId: "local:paris" },
-  Berlin: { label: { lv: "Berlīne, Vācija", en: "Berlin, Germany" }, placeId: "local:berlin" },
-  Luxembourg: { label: { lv: "Luksemburga, Luksemburga", en: "Luxembourg, Luxembourg" }, placeId: "local:luxembourg" },
-  Alps: { label: { lv: "Alpi, Austrija", en: "Alps, Austria" }, placeId: "local:vienna" },
+const placeByDestination: Record<string, { label: Localized; placeId: string }> = {
+  Paris: {
+    label: { lv: "Parīze, Francija", en: "Paris, France", fr: "Paris, France", ru: "Париж, Франция" },
+    placeId: "local:paris",
+  },
+  Berlin: {
+    label: { lv: "Berlīne, Vācija", en: "Berlin, Germany", fr: "Berlin, Allemagne", ru: "Берлин, Германия" },
+    placeId: "local:berlin",
+  },
+  Luxembourg: {
+    label: {
+      lv: "Luksemburga, Luksemburga",
+      en: "Luxembourg, Luxembourg",
+      fr: "Luxembourg, Luxembourg",
+      ru: "Люксембург, Люксембург",
+    },
+    placeId: "local:luxembourg",
+  },
+  Alps: {
+    label: { lv: "Alpi, Austrija", en: "Alps, Austria", fr: "Alpes, Autriche", ru: "Альпы, Австрия" },
+    placeId: "local:vienna",
+  },
   "Disneyland Paris": {
-    label: { lv: "Disneyland Paris, Francija", en: "Disneyland Paris, France" },
+    label: {
+      lv: "Disneyland Paris, Francija",
+      en: "Disneyland Paris, France",
+      fr: "Disneyland Paris, France",
+      ru: "Диснейленд Париж, Франция",
+    },
     placeId: "local:disneyland-paris",
   },
   "Moulin Rouge": {
-    label: { lv: "Moulin Rouge, Parīze", en: "Moulin Rouge, Paris" },
+    label: {
+      lv: "Moulin Rouge, Parīze",
+      en: "Moulin Rouge, Paris",
+      fr: "Moulin Rouge, Paris",
+      ru: "Мулен Руж, Париж",
+    },
     placeId: "local:moulin-rouge",
   },
 };
@@ -50,7 +78,7 @@ export function AvailabilityButton({ title, destination, days, image }: Availabi
         onClick={(event) => {
           if (event.target === event.currentTarget) event.currentTarget.close();
         }}
-        className="m-auto max-h-[calc(100dvh-2rem)] w-[min(28rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl bg-transparent p-0 text-ivory backdrop:bg-black/70 backdrop:backdrop-blur-sm"
+        className="popup-enter m-auto max-h-[calc(100dvh-2rem)] w-[min(28rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl bg-transparent p-0 text-ivory backdrop:bg-black/70 backdrop:backdrop-blur-sm"
       >
         <div
           className="relative overflow-hidden rounded-2xl bg-cover bg-center"
@@ -90,12 +118,20 @@ function buildDefaults({
   title: string;
   destination?: string;
   days?: number;
-  locale: "lv" | "en";
+  locale: Locale;
 }): QuoteDefaults {
-  const pickup =
-    locale === "lv"
-      ? { text: "Rīga, Latvija", placeId: "local:riga" }
-      : { text: "Riga, Latvia", placeId: "local:riga" };
+  const pickup = {
+    text: pickLocalized(
+      {
+        lv: "Rīga, Latvija",
+        en: "Riga, Latvia",
+        fr: "Riga, Lettonie",
+        ru: "Рига, Латвия",
+      },
+      locale,
+    ),
+    placeId: "local:riga",
+  };
 
   const mapped =
     (destination && placeByDestination[destination]) ||
@@ -106,7 +142,7 @@ function buildDefaults({
         : null);
 
   const dropoff = mapped
-    ? { text: mapped.label[locale], placeId: mapped.placeId }
+    ? { text: pickLocalized(mapped.label, locale), placeId: mapped.placeId }
     : {
         text: destination ?? title,
         placeId: "",
@@ -116,7 +152,7 @@ function buildDefaults({
   const end = defaultReturn(start, days);
 
   return {
-    trip: "Round Trip",
+    trip: "Excursions",
     pickup: pickup.text,
     pickupPlace: pickup.placeId,
     dropoff: dropoff.text,

@@ -3,8 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { RevealList } from "@/components/ui/reveal-list";
 import { blogPosts } from "@/lib/content/blog";
-import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { formatPostDate } from "@/lib/content/format-date";
+import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { pickLocalized } from "@/lib/i18n/locale";
 
 export async function generateMetadata(): Promise<Metadata> {
   const dictionary = await getDictionary();
@@ -17,11 +18,6 @@ export default async function BlogPage() {
 
   return (
     <section className="mx-auto w-full px-5 py-12 md:w-[75vw] md:px-0">
-      <div className="mb-8 max-w-3xl">
-        <h1 className="font-serif text-5xl tracking-wide">{dictionary.blog.title}</h1>
-        <p className="mt-3 text-sm leading-6 text-mist">{dictionary.blog.intro}</p>
-      </div>
-
       <RevealList className="flex flex-col gap-6">
         {blogPosts.map((post, index) => {
           const imageRight = index % 2 === 1;
@@ -51,10 +47,10 @@ export default async function BlogPage() {
                 </time>
                 <h2 className="font-serif text-3xl leading-tight tracking-wide">
                   <Link href={`/blog/${post.slug}`} className="hover:text-white">
-                    {post.title[locale]}
+                    {pickLocalized(post.title, locale)}
                   </Link>
                 </h2>
-                <p className="text-sm leading-7 text-mist">{post.excerpt[locale]}</p>
+                <p className="text-sm leading-7 text-mist">{pickLocalized(post.excerpt, locale)}</p>
                 <Link
                   href={`/blog/${post.slug}`}
                   className="self-start text-sm text-ivory underline decoration-burgundy underline-offset-4 hover:text-white"

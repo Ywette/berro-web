@@ -13,6 +13,7 @@ import {
   type QuoteResult,
 } from "@/lib/pricing/calculate";
 import type { Dictionary } from "@/lib/i18n/dictionary";
+import { intlLocales } from "@/lib/i18n/locale";
 import type { ExtractedPlanFields, PlanTripKind } from "@/lib/plan-document/types";
 import { parsePlanDocument } from "@/lib/plan-document/client";
 
@@ -283,7 +284,7 @@ function Proposal({
 
 function Breakdown({ result }: { result: QuoteResult }) {
   const dictionary = useDictionary();
-  const euro = new Intl.NumberFormat(dictionary.locale === "lv" ? "lv-LV" : "en-IE", {
+  const euro = new Intl.NumberFormat(intlLocales[dictionary.locale], {
     style: "currency",
     currency: "EUR",
   });
@@ -457,9 +458,9 @@ function mapQuoteTripType(
   departure?: string,
   returnAt?: string,
 ): (typeof tripTypeNames)[number] {
-  if (trip === "Hourly Charter") return "Local";
+  if (trip === "Transfer" || trip === "Bus Rental" || trip === "Minibus Rental") return "Local";
   const days = estimateDays(departure?.slice(0, 10), returnAt, 1);
-  if (days > 1 || trip === "Round Trip") return days > 1 ? "Long excursion" : "Day excursion";
+  if (days > 1 || trip === "Excursions") return days > 1 ? "Long excursion" : "Day excursion";
   return "Day excursion";
 }
 

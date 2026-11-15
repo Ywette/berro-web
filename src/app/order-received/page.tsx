@@ -12,6 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 type OrderReceivedPageProps = {
   searchParams: Promise<{
     trip?: string | string[];
+    tripMode?: string | string[];
     name?: string | string[];
     email?: string | string[];
     phone?: string | string[];
@@ -49,6 +50,7 @@ async function OrderReceivedContent({
   const params = await searchParams;
   const input: QuoteOrderInput = {
     trip: first(params.trip),
+    tripMode: first(params.tripMode),
     name: first(params.name),
     email: first(params.email),
     phone: first(params.phone),

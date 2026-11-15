@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { AvailabilityForm } from "@/components/drivers/availability-form";
-import { DateRangeFilter } from "@/components/staff/date-range-filter";
 import { DriverCalendar } from "@/components/staff/driver-calendar";
 import { useAssignedOrders } from "@/components/staff/use-assigned-orders";
-import { isEmployeeFree, resolvedRange } from "@/lib/staff/availability";
+import type { Locale } from "@/lib/i18n/locale";
 import type { StaffOrder } from "@/types/dashboard";
 import type { DriverAvailability, DriverStatus, Employee, EmployeeRole } from "@/types/staff";
 
@@ -33,12 +32,6 @@ type Labels = {
   showAvailabilityForm: boolean;
   role: string;
   roles: Record<EmployeeRole, string>;
-  availabilityRange: string;
-  availableFrom: string;
-  availableTo: string;
-  clearRange: string;
-  rangeInvalid: string;
-  noStaffInRange: string;
 };
 
 const statusTone: Record<DriverStatus, string> = {
@@ -58,20 +51,12 @@ export function EmployeesSections({
   drivers: DriverAvailability[];
   employees: Employee[];
   orders: StaffOrder[];
-  locale: "lv" | "en";
+  locale: Locale;
   labels: Labels;
 }) {
   const [section, setSection] = useState<Section>("personnel");
-  const [range, setRange] = useState({ from: "", to: "" });
   const [mergedOrders] = useAssignedOrders(orders);
   const driversById = new Map(drivers.map((driver) => [driver.id, driver]));
-  const assignable = employees.filter(
-    (employee) => employee.role === "driver" || employee.role === "guide",
-  );
-  const dateFilter = resolvedRange(range.from, range.to);
-  const visibleEmployees = dateFilter.ok
-    ? assignable.filter((employee) => isEmployeeFree(employee, dateFilter.span, mergedOrders))
-    : assignable;
 
   return (
     <div className="space-y-5">
@@ -89,26 +74,9 @@ export function EmployeesSections({
       </div>
 
       {section === "personnel" ? (
-        <div className="space-y-4">
-          <DateRangeFilter
-            from={range.from}
-            to={range.to}
-            onChange={setRange}
-            labels={{
-              title: labels.availabilityRange,
-              from: labels.availableFrom,
-              to: labels.availableTo,
-              clear: labels.clearRange,
-              invalid: labels.rangeInvalid,
-            }}
-          />
-          {assignable.length === 0 ? (
+        employees.length === 0 ? (
           <p className="rounded-2xl border border-line bg-card px-5 py-6 text-sm text-mist">
             {labels.empty}
-          </p>
-        ) : visibleEmployees.length === 0 ? (
-          <p className="rounded-2xl border border-line bg-card px-5 py-6 text-sm text-mist">
-            {labels.noStaffInRange}
           </p>
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-line bg-card">
@@ -124,7 +92,7 @@ export function EmployeesSections({
                 </tr>
               </thead>
               <tbody>
-                {visibleEmployees.map((employee) => {
+                {employees.map((employee) => {
                   const driverRecord = driversById.get(employee.id);
                   const status = driverRecord?.status;
 
@@ -132,9 +100,7 @@ export function EmployeesSections({
                     <tr key={employee.id} className="border-t border-line">
                       <td className="px-4 py-3 font-medium text-ivory">{employee.fullName}</td>
                       <td className="px-4 py-3 text-mist">{labels.roles[employee.role]}</td>
-                      <td className="px-4 py-3 text-mist">
-                        {employee.phone ?? labels.noPhone}
-                      </td>
+                      <td className="px-4 py-3 text-mist">{employee.phone ?? labels.noPhone}</td>
                       <td className="hidden px-4 py-3 text-mist md:table-cell">
                         {employee.email ?? "—"}
                       </td>
@@ -158,8 +124,7 @@ export function EmployeesSections({
               </tbody>
             </table>
           </div>
-        )}
-        </div>
+        )
       ) : (
         <div className="space-y-5">
           <DriverCalendar

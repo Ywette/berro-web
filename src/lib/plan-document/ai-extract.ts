@@ -1,10 +1,19 @@
+import type { Locale } from "@/lib/i18n/locale";
 import type { ExtractedPlanFields, PlanTripKind } from "@/lib/plan-document/types";
+import { quoteTripKinds } from "@/lib/quote-trips";
 
 const openaiUrl = "https://api.openai.com/v1/chat/completions";
 const defaultModel = "gpt-4o-mini";
 const maxPromptChars = 12_000;
 
-const tripKinds: PlanTripKind[] = ["One-Way", "Round Trip", "Hourly Charter"];
+const tripKinds: PlanTripKind[] = [...quoteTripKinds];
+
+const summaryLanguages: Record<Locale, string> = {
+  lv: "Latvian",
+  en: "English",
+  fr: "French",
+  ru: "Russian",
+};
 
 export type AiExtractResult = {
   fields: ExtractedPlanFields | null;
@@ -15,7 +24,7 @@ export type AiExtractResult = {
 
 export async function extractPlanFieldsWithAi(
   text: string,
-  locale: "en" | "lv" = "lv",
+  locale: Locale = "lv",
 ): Promise<AiExtractResult> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) return { fields: null, summary: "", status: "missing_key" };
@@ -24,7 +33,7 @@ export async function extractPlanFieldsWithAi(
   const document = text.replace(/\u0000/g, "").trim().slice(0, maxPromptChars);
   if (!document) return { fields: null, summary: "", status: "empty" };
 
-  const summaryLanguage = locale === "en" ? "English" : "Latvian";
+  const summaryLanguage = summaryLanguages[locale];
 
   try {
     const response = await fetch(openaiUrl, {
@@ -40,8 +49,22 @@ export async function extractPlanFieldsWithAi(
         messages: [
           {
             role: "system",
-            content:
-              "You read a travel or excursion plan and prepare a coach booking form. Use only facts written in the document. Reply with JSON and no other text. Use null for anything the document does not state. Do not guess a time, phone, email, place, or passenger count. Dates are YYYY-MM-DD. Include HH:MM only when a clock time is written, as YYYY-MM-DDTHH:MM. trip is one of \"One-Way\", \"Round Trip\", \"Hourly Charter\", or null. If a return date or return place is present, prefer Round Trip. passengers is an integer from 1 to 80 or null. stops is an array of intermediate stops between pickup and dropoff; each item is {\"name\":\"...\",\"waitMinutes\":number}. If a stop is named but no pause is written, use waitMinutes 15. Do not list pickup or final dropoff as stops. If the same place appears more than once, keep one stop and use the longest wait. otherWaitingMinutes is waiting time from the plan that is not tied to a named stop (integer minutes), otherwise null. summary is one or two short sentences in the requested language that list what you prepared for the form, including stops/waiting if found, and what is still missing.",
+            content: [
+              "You extract fields for a Latvian coach booking form from a travel plan.",
+              "Use only facts written in the document. Reply with JSON only.",
+              "Use null for anything not stated. Do not invent contact details, places, times, or passenger counts.",
+              "Field mapping:",
+              '- pickup = departure place / "Izbraukšana no" / from / origin / lidosta pickup',
+              '- dropoff = destination / "Galamērķis" / to / where the group travels for the trip (not the later return home unless that is the only destination)',
+              '- departure = trip start date-time',
+              '- returnAt = trip end / return date-time',
+              '- trip is one of "Bus Rental", "Minibus Rental", "Transfer", "Excursions", or null; prefer Excursions for tour/excursion plans, Transfer for airport/point-to-point rides, Minibus Rental for smaller vans/VIP, Bus Rental for coach hire without a fixed tour',
+              "Dates in the JSON must be YYYY-MM-DD. If a clock time is written, use YYYY-MM-DDTHH:MM (24h). Convert European dates such as 18.11.2026 or 18/11/2026.",
+              "passengers is an integer 1-80 or null.",
+              'stops = intermediate stops between pickup and destination as [{"name":"...","waitMinutes":number}]. Default waitMinutes to 15 when a stop is named without a pause. Do not list pickup or final destination as stops. Deduplicate the same place and keep the longest wait.',
+              "otherWaitingMinutes = waiting minutes mentioned without a named stop, else null.",
+              "summary = 1-2 short sentences in the requested language listing what you filled. Mention as missing only fields that are null in your JSON.",
+            ].join(" "),
           },
           {
             role: "user",
@@ -72,7 +95,7 @@ export async function extractPlanFieldsWithAi(
 
     const summary = cleanText((parsed as Record<string, unknown>).summary, 320) ?? "";
     const fields = sanitizeFields(parsed);
-    if (fields?.returnAt && !fields.trip) fields.trip = "Round Trip";
+    if (fields?.returnAt && !fields.trip) fields.trip = "Excursions";
     if (fields && summary) fields.travelPlan = summary;
 
     return fields || summary
@@ -111,8 +134,8 @@ function sanitizeFields(value: unknown): ExtractedPlanFields | null {
   const email = cleanText(raw.email, 120);
   if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fields.email = email;
 
-  const phone = cleanText(raw.phone, 40);
-  if (phone && /[+\d][\d\s().-]{5,}/.test(phone)) fields.phone = phone;
+  const phone = cleanPhone(raw.phone);
+  if (phone) fields.phone = phone;
 
   const pickup = cleanText(raw.pickup, 80);
   if (pickup) fields.pickup = pickup;
@@ -136,8 +159,8 @@ function sanitizeFields(value: unknown): ExtractedPlanFields | null {
   if (stops) fields.stops = stops;
 
   const otherWaiting = Number(raw.otherWaitingMinutes);
-  if (Number.isInteger(otherWaiting) && otherWaiting > 0 && otherWaiting <= 24 * 60) {
-    fields.otherWaitingMinutes = otherWaiting;
+  if (Number.isFinite(otherWaiting) && otherWaiting > 0 && otherWaiting <= 24 * 60) {
+    fields.otherWaitingMinutes = Math.round(otherWaiting);
   }
 
   return Object.keys(fields).length > 0 ? fields : null;
@@ -145,7 +168,7 @@ function sanitizeFields(value: unknown): ExtractedPlanFields | null {
 
 function sanitizeStops(value: unknown) {
   if (!Array.isArray(value)) return undefined;
-  const stops: ExtractedPlanFields["stops"] = [];
+  const stops: NonNullable<ExtractedPlanFields["stops"]> = [];
   const seen = new Set<string>();
   for (const item of value) {
     if (!item || typeof item !== "object") continue;
@@ -155,7 +178,7 @@ function sanitizeStops(value: unknown) {
     const key = name.toLowerCase();
     const waitRaw = Number(row.waitMinutes);
     const waitMinutes =
-      Number.isInteger(waitRaw) && waitRaw > 0 && waitRaw <= 24 * 60 ? waitRaw : 15;
+      Number.isFinite(waitRaw) && waitRaw > 0 && waitRaw <= 24 * 60 ? Math.round(waitRaw) : 15;
     if (seen.has(key)) {
       const existing = stops.find((stop) => stop.name.toLowerCase() === key);
       if (existing) existing.waitMinutes = Math.max(existing.waitMinutes ?? 15, waitMinutes);
@@ -167,6 +190,14 @@ function sanitizeStops(value: unknown) {
   return stops.length > 0 ? stops : undefined;
 }
 
+function cleanPhone(value: unknown) {
+  const text = cleanText(value, 40);
+  if (!text) return undefined;
+  const digits = text.replace(/\D/g, "");
+  if (digits.length < 6) return undefined;
+  return text;
+}
+
 function cleanText(value: unknown, max: number) {
   if (typeof value !== "string") return undefined;
   const text = value.replace(/\s+/g, " ").trim();
@@ -176,19 +207,45 @@ function cleanText(value: unknown, max: number) {
 
 function normalizeWhen(value: unknown) {
   if (typeof value !== "string") return undefined;
-  const match = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?$/);
-  if (!match) return undefined;
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
+  const raw = value.trim();
+  if (!raw || raw.toLowerCase() === "null") return undefined;
+
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s]+(\d{1,2}):(\d{2})(?::\d{2})?)?/);
+  if (iso) return buildWhen(Number(iso[1]), Number(iso[2]), Number(iso[3]), iso[4], iso[5]);
+
+  const european = raw.match(
+    /^(\d{1,2})[./-](\d{1,2})[./-](\d{4})(?:[T\s]+(?:plkst\.?\s*)?(\d{1,2})[:.](\d{2}))?/i,
+  );
+  if (european) {
+    return buildWhen(
+      Number(european[3]),
+      Number(european[2]),
+      Number(european[1]),
+      european[4],
+      european[5],
+    );
+  }
+
+  return undefined;
+}
+
+function buildWhen(
+  year: number,
+  month: number,
+  day: number,
+  hourText?: string,
+  minuteText?: string,
+) {
   const date = new Date(Date.UTC(year, month - 1, day));
   if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
     return undefined;
   }
-  const dayText = `${match[1]}-${match[2]}-${match[3]}`;
-  if (!match[4]) return dayText;
-  const hour = Number(match[4]);
-  const minute = Number(match[5]);
-  if (hour > 23 || minute > 59) return dayText;
-  return `${dayText}T${match[4]}:${match[5]}`;
+  const dayText = `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  if (hourText == null || minuteText == null) return dayText;
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  if (!Number.isInteger(hour) || !Number.isInteger(minute) || hour > 23 || minute > 59) {
+    return dayText;
+  }
+  return `${dayText}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }

@@ -1,18 +1,17 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { FleetBoard } from "@/components/staff/fleet-board";
-import { getDictionary } from "@/lib/i18n/get-dictionary";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const dictionary = await getDictionary();
-  return { title: dictionary.staffDashboard.fleetTitle };
-}
+/** Staff fleet reads cookies + filesystem store; allow blocking until Cache Components migration is complete. */
+export const instant = false;
 
-export default async function StaffFleetPage() {
-  const dictionary = await getDictionary();
+export const metadata: Metadata = {
+  title: "Autoparks",
+};
 
+export default function StaffFleetPage() {
   return (
-    <Suspense fallback={<p className="text-sm text-mist">{dictionary.drivers.loading}</p>}>
+    <Suspense fallback={<p className="text-sm text-mist">…</p>}>
       <FleetBoard />
     </Suspense>
   );

@@ -1,4 +1,4 @@
-import pricingData from "../../../database/pricing.json";
+import pricingData from "./pricing.json";
 
 export const tripTypeNames = ["Local", "Day excursion", "Long excursion"] as const;
 

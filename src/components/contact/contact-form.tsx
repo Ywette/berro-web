@@ -18,36 +18,18 @@ export function ContactForm({ defaultMessage = "" }: { defaultMessage?: string }
 
   return (
     <form action={action} className="grid gap-4">
-      <div className="grid gap-4 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.15fr)_minmax(0,1fr)]">
-        <label className="grid gap-1.5 text-sm">
-          <span className="font-medium text-ivory/80">{dictionary.contact.name}</span>
-          <input
-            name="name"
-            required
-            autoComplete="name"
-            className={fieldClass}
-          />
-        </label>
-        <label className="grid gap-1.5 text-sm">
-          <span className="font-medium text-ivory/80">{dictionary.contact.email}</span>
-          <input
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            className={fieldClass}
-          />
-        </label>
-        <label className="grid gap-1.5 text-sm">
-          <span className="font-medium text-ivory/80">{dictionary.contact.phone}</span>
-          <input
-            name="phone"
-            type="tel"
-            autoComplete="tel"
-            className={fieldClass}
-          />
-        </label>
-      </div>
+      <label className="grid gap-1.5 text-sm">
+        <span className="font-medium text-ivory/80">{dictionary.contact.name}</span>
+        <input name="name" required autoComplete="name" className={fieldClass} />
+      </label>
+      <label className="grid gap-1.5 text-sm">
+        <span className="font-medium text-ivory/80">{dictionary.contact.email}</span>
+        <input name="email" type="email" required autoComplete="email" className={fieldClass} />
+      </label>
+      <label className="grid gap-1.5 text-sm">
+        <span className="font-medium text-ivory/80">{dictionary.contact.phone}</span>
+        <input name="phone" type="tel" autoComplete="tel" className={fieldClass} />
+      </label>
       <label className="grid gap-1.5 text-sm">
         <span className="font-medium text-ivory/80">{dictionary.contact.message}</span>
         <textarea

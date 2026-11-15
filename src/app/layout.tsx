@@ -5,6 +5,7 @@ import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { SocialRail } from "@/components/layout/social-rail";
 import { getDictionary, getLocale } from "@/lib/i18n/get-dictionary";
 import "./globals.css";
 
@@ -20,7 +21,7 @@ const geistMono = Geist_Mono({
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
-  subsets: ["latin"],
+  subsets: ["latin", "cyrillic"],
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -57,9 +58,12 @@ async function LocalizedApp({ children }: { children: ReactNode }) {
 
   return (
     <LocaleProvider locale={locale}>
-      <SiteHeader />
-      <main className="flex-1">{children}</main>
-      <SiteFooter />
+      <div lang={locale} className="contents">
+        <SiteHeader />
+        <SocialRail />
+        <main className="flex-1">{children}</main>
+        <SiteFooter />
+      </div>
     </LocaleProvider>
   );
 }

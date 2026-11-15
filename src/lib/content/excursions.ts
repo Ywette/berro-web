@@ -1,6 +1,4 @@
-import type { Locale } from "@/lib/i18n/dictionary";
-
-type Localized = Record<Locale, string>;
+import type { Localized } from "@/lib/i18n/locale";
 
 export type ExcursionImage = {
   src: string;

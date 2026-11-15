@@ -6,17 +6,18 @@ import { StaffModeGate } from "@/components/layout/header-nav";
 export async function SiteFooter() {
   const dictionary = await getDictionary();
   const publicLinks = [
-    { href: "/#fleet", label: dictionary.nav.fleet },
     { href: "/excursions", label: dictionary.nav.excursions },
+    { href: "/autoparks", label: dictionary.nav.fleet },
+    { href: "/about", label: dictionary.nav.about },
     { href: "/blog", label: dictionary.nav.blog },
-    { href: "/pricing", label: dictionary.nav.pricing },
     { href: "/contact", label: dictionary.nav.contact },
-    { href: "/staff", label: dictionary.nav.staff },
   ] as const;
   const staffLinks = [
+    { href: "/staff/calendar", label: dictionary.staffDashboard.calendar },
     { href: "/staff/orders", label: dictionary.staffDashboard.orders },
     { href: "/staff/fleet", label: dictionary.staffDashboard.fleet },
     { href: "/staff/employees", label: dictionary.staffDashboard.employees },
+    { href: "/staff/calculation", label: dictionary.staffDashboard.calculation },
   ] as const;
 
   return (

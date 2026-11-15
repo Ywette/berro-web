@@ -8,6 +8,7 @@
   --card: #1a1a1e;
   --burgundy: #8e243f;
   --burgundy-deep: #721d33;
+  --champagne: #c4a574;
   --ivory: #f4f1ec;
   --mist: #a9a9b2;
   --line: #2e2e34;
@@ -31,6 +32,7 @@
   --color-card: var(--card);
   --color-burgundy: var(--burgundy);
   --color-burgundy-deep: var(--burgundy-deep);
+  --color-champagne: var(--champagne);
   --color-ivory: var(--ivory);
   --color-mist: var(--mist);
   --color-line: var(--line);
@@ -120,4 +122,59 @@ input,
 select,
 textarea {
   color-scheme: light;
+}
+
+/* Hide native date/time format ghost text until a value is chosen. */
+input.datetime-empty::-webkit-datetime-edit {
+  color: transparent;
+}
+
+input.datetime-empty:focus::-webkit-datetime-edit {
+  color: inherit;
+}
+
+input.datetime-input::-webkit-calendar-picker-indicator {
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+@keyframes popup-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes popup-backdrop-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.popup-enter[open],
+.popup-enter-panel {
+  animation: popup-enter 200ms ease 100ms both;
+}
+
+.popup-enter[open]::backdrop,
+.popup-enter-overlay {
+  animation: popup-backdrop-enter 200ms ease 100ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popup-enter[open],
+  .popup-enter-panel,
+  .popup-enter[open]::backdrop,
+  .popup-enter-overlay {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }

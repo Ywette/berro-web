@@ -90,7 +90,7 @@ export function MobileMenu({
           onClick={(event) => {
             if ((event.target as HTMLElement).closest("a")) setOpen(false);
           }}
-          className="absolute inset-x-0 top-full border-b border-white/10 bg-night px-4 py-4 shadow-lg"
+          className="popup-enter-panel absolute inset-x-0 top-full border-b border-white/10 bg-night px-4 py-4 shadow-lg"
         >
           {onStaff ? (
             <StaffNav links={staffLinks} />

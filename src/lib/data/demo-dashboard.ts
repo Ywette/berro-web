@@ -120,7 +120,7 @@ export const demoEmployees: Employee[] = [
   },
 ];
 
-/** Shown when Supabase staff env is missing so Personāls UI is reviewable. */
+/** In-memory sample orders for Personāls until a data store is added. */
 export const demoOrders: StaffOrder[] = [
   {
     id: "demo-order-1",

@@ -7,6 +7,7 @@ import { PlanTripActions } from "@/components/blog/plan-trip-actions";
 import { blogPosts, findPost, type BlogBlock } from "@/lib/content/blog";
 import { formatPostDate } from "@/lib/content/format-date";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { pickLocalized } from "@/lib/i18n/locale";
 
 export function generateStaticParams() {
   return blogPosts.map((post) => ({ slug: post.slug }));
@@ -15,7 +16,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps<"/blog/[slug]">): Promise<Metadata> {
   const [{ slug }, dictionary] = await Promise.all([params, getDictionary()]);
   const post = findPost(slug);
-  return { title: post ? post.title[dictionary.locale] : dictionary.nav.blog };
+  return { title: post ? pickLocalized(post.title, dictionary.locale) : dictionary.nav.blog };
 }
 
 export default function BlogPostPage({ params }: PageProps<"/blog/[slug]">) {
@@ -35,6 +36,7 @@ async function BlogPost({ params }: { params: PageProps<"/blog/[slug]">["params"
   }
 
   const locale = dictionary.locale;
+  const title = pickLocalized(post.title, locale);
 
   return (
     <article className="mx-auto max-w-3xl px-5 py-12">
@@ -45,12 +47,12 @@ async function BlogPost({ params }: { params: PageProps<"/blog/[slug]">["params"
         {formatPostDate(post.date, locale)}
       </time>
       <h1 className="mt-2 font-serif text-4xl leading-tight tracking-wide sm:text-5xl">
-        {post.title[locale]}
+        {title}
       </h1>
       <div className="relative mt-8 h-72 overflow-hidden rounded-2xl">
         <Image
           src={post.image}
-          alt={post.title[locale]}
+          alt={title}
           fill
           priority
           sizes="(min-width: 768px) 768px, 100vw"
@@ -58,7 +60,7 @@ async function BlogPost({ params }: { params: PageProps<"/blog/[slug]">["params"
         />
       </div>
       <div className="mt-8 grid gap-5 text-base leading-8 text-ivory/90">
-        {post.body[locale].map((block, index) => (
+        {pickLocalized(post.body, locale).map((block, index) => (
           <PostBlock key={index} block={block} />
         ))}
       </div>

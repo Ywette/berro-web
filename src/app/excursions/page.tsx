@@ -5,6 +5,7 @@ import { RevealList } from "@/components/ui/reveal-list";
 import { excursions } from "@/lib/content/excursions";
 import { formatEuro } from "@/lib/content/format-price";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { pickLocalized } from "@/lib/i18n/locale";
 
 export async function generateMetadata(): Promise<Metadata> {
   const dictionary = await getDictionary();
@@ -17,18 +18,14 @@ export default async function ExcursionsPage() {
 
   return (
     <section className="mx-auto w-full px-5 py-12 md:w-[75vw] md:px-0">
-      <div className="mb-8 max-w-3xl">
-        <h1 className="font-serif text-5xl tracking-wide">{dictionary.excursions.title}</h1>
-        <p className="mt-3 text-sm leading-6 text-mist">{dictionary.excursions.intro}</p>
-      </div>
-
       <RevealList className="flex flex-col gap-6">
         {excursions.map((excursion, index) => {
           const imageRight = index % 2 === 1;
+          const title = pickLocalized(excursion.title, locale);
           const query = new URLSearchParams({
-            trip: "Round Trip",
-            pickup: locale === "lv" ? "Rīga" : "Riga",
-            dropoff: excursion.destination ?? excursion.title[locale],
+            trip: "Excursions",
+            pickup: pickLocalized({ lv: "Rīga", en: "Riga", fr: "Riga", ru: "Рига" }, locale),
+            dropoff: excursion.destination ?? title,
           });
           const href = excursion.details ? `/excursions/${excursion.slug}` : `/contact?${query.toString()}`;
           const badge = excursion.fromPrice
@@ -66,14 +63,14 @@ export default async function ExcursionsPage() {
               <div className="flex flex-col justify-center gap-4 p-6 md:p-10">
                 <h2 className="font-serif text-3xl leading-tight tracking-wide">
                   <Link href={href} className="hover:text-white">
-                    {excursion.title[locale]}
+                    {title}
                   </Link>
                 </h2>
-                <p className="text-sm leading-7 text-mist">{excursion.summary[locale]}</p>
+                <p className="text-sm leading-7 text-mist">{pickLocalized(excursion.summary, locale)}</p>
                 {excursion.route ? (
                   <p className="text-xs text-ivory/80">
                     <span className="text-mist">{dictionary.excursions.route}: </span>
-                    {excursion.route[locale]}
+                    {pickLocalized(excursion.route, locale)}
                   </p>
                 ) : null}
                 <Link

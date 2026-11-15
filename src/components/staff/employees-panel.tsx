@@ -3,7 +3,6 @@ import { listDriverAvailability } from "@/lib/data/drivers";
 import { listEmployees } from "@/lib/data/employees";
 import { listOrders } from "@/lib/data/orders";
 import { getDictionary, getLocale } from "@/lib/i18n/get-dictionary";
-import { hasSupabaseStaffEnv } from "@/lib/supabase/staff";
 
 export async function EmployeesPanel() {
   const [dictionary, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -25,12 +24,6 @@ export async function EmployeesPanel() {
 
   return (
     <div className="space-y-5">
-      {!hasSupabaseStaffEnv() ? (
-        <p className="rounded-2xl border border-line bg-card px-4 py-3 text-xs text-mist">
-          {dictionary.staffDashboard.demoNote}
-        </p>
-      ) : null}
-
       {loadError ? (
         <p className="rounded-2xl bg-burgundy/15 px-5 py-4 text-sm text-rose-200" role="alert">
           {loadError}
@@ -60,15 +53,9 @@ export async function EmployeesPanel() {
             free: dictionary.staffDashboard.free,
             noDrivers: dictionary.staffDashboard.noDrivers,
             statuses: dictionary.statuses,
-            showAvailabilityForm: hasSupabaseStaffEnv(),
+            showAvailabilityForm: false,
             role: dictionary.employees.role,
             roles: dictionary.roles,
-            availabilityRange: dictionary.staffDashboard.availabilityRange,
-            availableFrom: dictionary.staffDashboard.availableFrom,
-            availableTo: dictionary.staffDashboard.availableTo,
-            clearRange: dictionary.staffDashboard.clearRange,
-            rangeInvalid: dictionary.staffDashboard.rangeInvalid,
-            noStaffInRange: dictionary.staffDashboard.noStaffInRange,
           }}
         />
       )}

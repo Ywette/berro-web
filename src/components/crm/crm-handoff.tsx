@@ -18,7 +18,10 @@ export function CrmHandoff({ input }: { input: QuoteOrderInput }) {
   const [phase, setPhase] = useState<"syncing" | "done">("syncing");
   const [order, setOrder] = useState<StaffOrder | null>(null);
 
-  const errors = useMemo(() => quoteFieldErrors(input), [input]);
+  const errors = useMemo(
+    () => quoteFieldErrors(input, { requireContact: false }),
+    [input],
+  );
 
   const contactHref = useMemo(() => {
     const params = new URLSearchParams();
