@@ -20,14 +20,22 @@ import {
   type RoutePoint,
 } from "@/lib/orders/route-points";
 import { encodeStops, totalWaitingMinutes } from "@/lib/orders/stops";
-import { quoteFieldErrors, type QuoteOrderInput, type QuoteRequiredField } from "@/lib/orders/session-orders";
+import {
+  prependSessionOrder,
+  quoteFieldErrors,
+  type QuoteOrderInput,
+  type QuoteRequiredField,
+} from "@/lib/orders/session-orders";
 import type { TripRoute } from "@/lib/places/types";
 import {
   isQuoteHeardAboutSource,
   quoteHeardAboutSources,
   type QuoteHeardAboutSource,
 } from "@/lib/quote-heard-about";
+import { TravelTypeField } from "@/components/landing/travel-type-field";
+import { submitQuoteOrder } from "@/actions/orders";
 import { isQuoteTripKind, quoteTripKinds, type QuoteTripKind } from "@/lib/quote-trips";
+import type { QuoteTravelType } from "@/lib/quote-travel-types";
 
 const trips = quoteTripKinds;
 type Trip = QuoteTripKind;
@@ -68,6 +76,10 @@ export function QuotePlanForm({ formId = "plan-book", defaults }: QuotePlanFormP
   const initialDeparture = splitDateTime(defaults?.departure);
   const initialReturn = splitDateTime(defaults?.returnAt);
   const [trip, setTrip] = useState<Trip>(isQuoteTripKind(defaults?.trip) ? defaults.trip : "Bus Rental");
+  const [travelType, setTravelType] = useState<QuoteTravelType | "">("");
+  const [travelTypeDetail, setTravelTypeDetail] = useState("");
+  const [travelTypeError, setTravelTypeError] = useState(false);
+  const [travelTypeOtherError, setTravelTypeOtherError] = useState(false);
   const [name, setName] = useState(defaults?.name ?? "");
   const [email, setEmail] = useState(defaults?.email ?? "");
   const [phone, setPhone] = useState(defaults?.phone ?? "");
@@ -78,9 +90,11 @@ export function QuotePlanForm({ formId = "plan-book", defaults }: QuotePlanFormP
   const [passengers, setPassengers] = useState(defaults?.passengers ?? "");
   const [planText, setPlanText] = useState("");
   const [planDocument, setPlanDocument] = useState<PlanDocument | null>(null);
+  const [planFile, setPlanFile] = useState<File | null>(null);
   const [documentNote, setDocumentNote] = useState("");
   const [documentError, setDocumentError] = useState("");
   const [reading, setReading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [invalid, setInvalid] = useState<Set<QuoteRequiredField>>(new Set());
   const [points, setPoints] = useState<RoutePoint[]>(() =>
     defaultRoutePoints({
@@ -148,6 +162,11 @@ export function QuotePlanForm({ formId = "plan-book", defaults }: QuotePlanFormP
         heardAbout === "other" && heardAboutDetail.trim().length >= 2
           ? heardAboutDetail.trim()
           : undefined,
+      travelType: travelType || undefined,
+      travelTypeDetail:
+        travelType === "other" && travelTypeDetail.trim().length >= 2
+          ? travelTypeDetail.trim()
+          : undefined,
       pickup: mapped.pickup,
       dropoff: mapped.dropoff,
       departure: mapped.departure,
@@ -169,9 +188,20 @@ export function QuotePlanForm({ formId = "plan-book", defaults }: QuotePlanFormP
     const missingHeardAbout = !isQuoteHeardAboutSource(heardAbout);
     const missingOtherDetail =
       heardAbout === "other" && heardAboutDetail.trim().length < 2;
+    const missingTravelType = !travelType;
+    const missingTravelTypeOther =
+      travelType === "other" && travelTypeDetail.trim().length < 2;
     setHeardAboutError(missingHeardAbout);
     setHeardAboutOtherError(missingOtherDetail);
-    if (errors.length > 0 || missingHeardAbout || missingOtherDetail) {
+    setTravelTypeError(missingTravelType);
+    setTravelTypeOtherError(missingTravelTypeOther);
+    if (
+      errors.length > 0 ||
+      missingHeardAbout ||
+      missingOtherDetail ||
+      missingTravelType ||
+      missingTravelTypeOther
+    ) {
       setInvalid(new Set(errors));
       return;
     }
@@ -180,8 +210,8 @@ export function QuotePlanForm({ formId = "plan-book", defaults }: QuotePlanFormP
     setSummaryOpen(true);
   }
 
-  function confirmSummary() {
-    if (!summaryDraft) return;
+  async function confirmSummary() {
+    if (!summaryDraft || saving) return;
     const waiting = totalWaitingMinutes(mapped.stops, otherWaitingMinutes);
     const input: QuoteOrderInput = {
       ...summaryDraft,
@@ -192,15 +222,33 @@ export function QuotePlanForm({ formId = "plan-book", defaults }: QuotePlanFormP
     if (planDocument) input.planDocument = planDocument.name;
     if (planText.trim()) input.planDocument = input.planDocument || "travel-plan.txt";
 
-    const params = new URLSearchParams({ trip });
-    for (const [key, value] of Object.entries(input)) {
-      if (key !== "trip" && value) params.set(key, value);
+    setSaving(true);
+    try {
+      const formData = new FormData();
+      for (const [key, value] of Object.entries(input)) {
+        if (value) formData.set(key, value);
+      }
+      if (planFile) {
+        formData.set("planFile", planFile, planFile.name);
+      } else if (planText.trim() && !planFile) {
+        const textBlob = new File([planText.trim()], "travel-plan.txt", {
+          type: "text/plain",
+        });
+        formData.set("planFile", textBlob, textBlob.name);
+      }
+
+      const result = await submitQuoteOrder(formData);
+      if (!result.ok) {
+        setDocumentError(result.error || dictionary.hero.contactSubmitError);
+        setSummaryOpen(false);
+        return;
+      }
+      prependSessionOrder(result.order);
+      setSummaryOpen(false);
+      router.push(`/order-received?reference=${encodeURIComponent(result.order.reference)}`);
+    } finally {
+      setSaving(false);
     }
-    if (mapped.pickupPlace) params.set("pickupPlace", mapped.pickupPlace);
-    if (mapped.dropoffPlace) params.set("dropoffPlace", mapped.dropoffPlace);
-    if (planText.trim()) params.set("travelPlan", planText.trim().slice(0, 2000));
-    setSummaryOpen(false);
-    router.push(`/order-received?${params.toString()}`);
   }
 
   async function readDocument(file: File) {
@@ -517,10 +565,16 @@ export function QuotePlanForm({ formId = "plan-book", defaults }: QuotePlanFormP
             reading={reading}
             note={documentNote}
             error={documentError}
-            onDocument={setPlanDocument}
+            onDocument={(doc) => {
+              setPlanDocument(doc);
+              if (!doc) setPlanFile(null);
+            }}
             onError={setDocumentError}
             onNote={setDocumentNote}
-            onRead={(file) => void readDocument(file)}
+            onRead={(file) => {
+              setPlanFile(file);
+              void readDocument(file);
+            }}
           />
         </div>
       </QuoteSection>
@@ -549,6 +603,38 @@ export function QuotePlanForm({ formId = "plan-book", defaults }: QuotePlanFormP
               </button>
             );
           })}
+        </div>
+
+        <div className="mb-3 grid gap-2">
+          <TravelTypeField
+            value={travelType}
+            detail={travelTypeDetail}
+            invalid={travelTypeError}
+            detailInvalid={travelTypeOtherError}
+            copy={{
+              label: dictionary.quote.travelTypeLabel,
+              placeholder: dictionary.quote.travelTypePlaceholder,
+              otherPlaceholder: dictionary.quote.travelTypeOtherPlaceholder,
+              options: dictionary.quote.travelTypeOptions,
+            }}
+            onChange={(value) => {
+              setTravelType(value);
+              if (value !== "other") setTravelTypeDetail("");
+              setTravelTypeError(false);
+              setTravelTypeOtherError(false);
+            }}
+            onDetailChange={(value) => {
+              setTravelTypeDetail(value);
+              setTravelTypeOtherError(false);
+            }}
+          />
+          {travelTypeError || travelTypeOtherError ? (
+            <p className="text-xs text-red-300" role="alert">
+              {travelTypeOtherError
+                ? dictionary.quote.travelTypeOtherError
+                : dictionary.quote.travelTypeError}
+            </p>
+          ) : null}
         </div>
 
         <div className="grid gap-3">
@@ -774,7 +860,8 @@ export function QuotePlanForm({ formId = "plan-book", defaults }: QuotePlanFormP
             });
           }}
           onClose={() => setSummaryOpen(false)}
-          onConfirm={confirmSummary}
+          onConfirm={() => void confirmSummary()}
+          confirming={saving}
         />
       ) : null}
     </form>

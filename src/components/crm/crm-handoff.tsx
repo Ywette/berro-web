@@ -7,20 +7,28 @@ import {
   orderFromQuoteInput,
   prependSessionOrder,
   quoteFieldErrors,
+  readSessionOrders,
   type QuoteOrderInput,
 } from "@/lib/orders/session-orders";
 import type { StaffOrder } from "@/types/dashboard";
 
 const syncMs = 2000;
 
-export function CrmHandoff({ input }: { input: QuoteOrderInput }) {
+export function CrmHandoff({
+  input,
+  savedReference,
+}: {
+  input: QuoteOrderInput;
+  savedReference?: string;
+}) {
   const dictionary = useDictionary();
   const [phase, setPhase] = useState<"syncing" | "done">("syncing");
   const [order, setOrder] = useState<StaffOrder | null>(null);
 
+  const alreadySaved = Boolean(savedReference?.trim());
   const errors = useMemo(
-    () => quoteFieldErrors(input, { requireContact: false }),
-    [input],
+    () => (alreadySaved ? [] : quoteFieldErrors(input, { requireContact: false })),
+    [alreadySaved, input],
   );
 
   const contactHref = useMemo(() => {
@@ -33,6 +41,45 @@ export function CrmHandoff({ input }: { input: QuoteOrderInput }) {
   }, [input]);
 
   useEffect(() => {
+    if (alreadySaved) {
+      const reference = savedReference!.trim();
+      const existing = readSessionOrders().find((item) => item.reference === reference) ?? null;
+      const timer = window.setTimeout(() => {
+        setOrder(
+          existing ?? {
+            id: `ref-${reference}`,
+            reference,
+            origin: input.pickup?.trim() || "—",
+            destination: input.dropoff?.trim() || "—",
+            returnTo: null,
+            passengerCount: Number(input.passengers) || 0,
+            requestorName: input.name?.trim() || null,
+            requestorCompany: null,
+            requestorEmail: input.email?.trim() || null,
+            requestorPhone: input.phone?.trim() || null,
+            heardAbout: null,
+            heardAboutDetail: null,
+            travelType: input.travelType?.trim() || null,
+            travelTypeDetail: input.travelTypeDetail?.trim() || null,
+            planDocument: input.planDocument?.trim() || null,
+            planDocumentPath: null,
+            status: "new",
+            departureOn: null,
+            returnOn: null,
+            stops: null,
+            waitingMinutes: null,
+            assignedDriverId: null,
+            assignedDriverName: null,
+            assignedGuideId: null,
+            assignedGuideName: null,
+            assignedVehicleId: null,
+          },
+        );
+        setPhase("done");
+      }, 400);
+      return () => window.clearTimeout(timer);
+    }
+
     if (errors.length > 0) return;
     const created = orderFromQuoteInput(input);
     const timer = window.setTimeout(() => {
@@ -41,7 +88,7 @@ export function CrmHandoff({ input }: { input: QuoteOrderInput }) {
       setPhase("done");
     }, syncMs);
     return () => window.clearTimeout(timer);
-  }, [errors, input]);
+  }, [alreadySaved, errors, input, savedReference]);
 
   if (errors.length > 0) {
     return (
@@ -121,6 +168,12 @@ export function CrmHandoff({ input }: { input: QuoteOrderInput }) {
             <dt className="text-mist">{dictionary.quote.email}</dt>
             <dd className="mt-1 text-ivory">{order.requestorEmail}</dd>
           </div>
+          {order.planDocument ? (
+            <div className="sm:col-span-2">
+              <dt className="text-mist">{dictionary.pricing.planDocument}</dt>
+              <dd className="mt-1 text-ivory">{order.planDocument}</dd>
+            </div>
+          ) : null}
           {order.stops && order.stops.length > 0 ? (
             <div className="sm:col-span-2">
               <dt className="text-mist">{dictionary.quote.stopsTitle}</dt>

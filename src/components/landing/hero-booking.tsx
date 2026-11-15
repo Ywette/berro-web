@@ -1,7 +1,15 @@
 "use client";
 
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type FormEvent,
+  type SetStateAction,
+} from "react";
 import { useDictionary } from "@/components/i18n/locale-provider";
 import { DateTimeField } from "@/components/landing/datetime-field";
 import {
@@ -13,10 +21,11 @@ import {
   totalPassengers,
   type PassengerCounts,
 } from "@/components/landing/passenger-field";
+import { TravelTypeField } from "@/components/landing/travel-type-field";
+import { submitQuoteOrder } from "@/actions/orders";
 import { parsePlanDocument } from "@/lib/plan-document/client";
 import type { ExtractedPlanFields } from "@/lib/plan-document/types";
 import {
-  orderFromQuoteInput,
   prependSessionOrder,
   type QuoteOrderInput,
   type QuoteTripMode,
@@ -27,6 +36,7 @@ import {
   toDatetimeLocalInput,
 } from "@/lib/orders/route-points";
 import type { QuoteTripKind } from "@/lib/quote-trips";
+import type { QuoteTravelType } from "@/lib/quote-travel-types";
 
 type ServiceId = "bus" | "minibus" | "transfer";
 
@@ -54,6 +64,27 @@ const emptyPassengers = (): PassengerCounts => ({
   children: 0,
   infants: 0,
 });
+
+type HeroFieldError =
+  | "passengers"
+  | "travelType"
+  | "travelTypeOther"
+  | "pickup"
+  | "dropoff"
+  | "departureAt"
+  | "arrivalAt"
+  | "returnAt";
+
+function clearFieldError(
+  setter: Dispatch<SetStateAction<Set<HeroFieldError>>>,
+  ...keys: HeroFieldError[]
+) {
+  setter((current) => {
+    const next = new Set(current);
+    for (const key of keys) next.delete(key);
+    return next;
+  });
+}
 
 const BUS_MAX_PASSENGERS = 49;
 const maxDocumentBytes = 4 * 1024 * 1024;
@@ -101,10 +132,13 @@ export function HeroBooking() {
   const searchParams = useSearchParams();
   const planInputRef = useRef<HTMLInputElement>(null);
   const [service, setService] = useState<ServiceId>("bus");
+  const [travelType, setTravelType] = useState<QuoteTravelType | "">("");
+  const [travelTypeDetail, setTravelTypeDetail] = useState("");
+  const [planFile, setPlanFile] = useState<File | null>(null);
   const [draft, setDraft] = useState<HeroTripDraft>(emptyDraft);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [phase, setPhase] = useState<"contact" | "sent">("contact");
-  const [invalid, setInvalid] = useState<Set<"passengers" | "pickup">>(new Set());
+  const [invalid, setInvalid] = useState<Set<HeroFieldError>>(new Set());
   const [readingPlan, setReadingPlan] = useState(false);
   const [planError, setPlanError] = useState("");
 
@@ -185,6 +219,7 @@ export function HeroBooking() {
     try {
       const result = await parsePlanDocument(file, dictionary.locale);
       applyExtracted(result.fields);
+      setPlanFile(file);
       setDraft((current) => ({
         ...current,
         planDocumentName: file.name,
@@ -206,6 +241,7 @@ export function HeroBooking() {
                 ? caught.message
                 : dictionary.pricing.documentReadError;
       setPlanError(message || dictionary.pricing.documentReadError);
+      setPlanFile(null);
       setDraft((current) => ({ ...current, planDocumentName: null, planNote: "" }));
     } finally {
       setReadingPlan(false);
@@ -228,12 +264,14 @@ export function HeroBooking() {
       setPlanError(dictionary.pricing.documentTooLarge);
       return;
     }
+    setPlanFile(file);
     setDraft((current) => ({ ...current, planDocumentName: file.name }));
     void readTravelPlan(file);
   }
 
   function clearTravelPlan() {
     setPlanError("");
+    setPlanFile(null);
     setDraft((current) => ({ ...current, planDocumentName: null, planNote: "" }));
     if (planInputRef.current) planInputRef.current.value = "";
   }
@@ -257,6 +295,9 @@ export function HeroBooking() {
       phone: contact.phone,
       heardAbout: contact.heardAbout,
       heardAboutDetail: contact.heardAboutDetail,
+      travelType: travelType || undefined,
+      travelTypeDetail:
+        travelType === "other" ? travelTypeDetail.trim() || undefined : undefined,
       pickup: draft.pickup.trim(),
       dropoff: resolvedDropoff,
       departure: draft.departureAt || undefined,
@@ -272,14 +313,31 @@ export function HeroBooking() {
     };
   }
 
-  function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const errors = new Set<"passengers" | "pickup">();
+  function collectErrors() {
+    const errors = new Set<HeroFieldError>();
     const count = totalPassengers(draft.passengers);
     if (count < 1 || count > BUS_MAX_PASSENGERS) {
       errors.add("passengers");
     }
+    if (!travelType) errors.add("travelType");
+    if (travelType === "other" && travelTypeDetail.trim().length < 2) {
+      errors.add("travelTypeOther");
+    }
     if (!draft.pickup.trim()) errors.add("pickup");
+    if (!draft.departureAt) errors.add("departureAt");
+    if (draft.tripMode === "oneWay") {
+      if (!draft.dropoff.trim()) errors.add("dropoff");
+      if (!draft.arrivalAt) errors.add("arrivalAt");
+    }
+    if (draft.tripMode === "roundTrip" && !draft.returnAt) {
+      errors.add("returnAt");
+    }
+    return errors;
+  }
+
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const errors = collectErrors();
     if (errors.size > 0) {
       setInvalid(errors);
       return;
@@ -290,18 +348,31 @@ export function HeroBooking() {
   }
 
   function closeDialog() {
+    const shouldReload = phase === "sent";
     setDialogOpen(false);
     setPhase("contact");
+    if (shouldReload) window.location.reload();
   }
 
-  function submitContact(contact: OfferContactSubmit) {
-    const order = orderFromQuoteInput(buildQuoteInput(contact));
-    prependSessionOrder(order);
-    window.location.reload();
+  async function submitContact(contact: OfferContactSubmit) {
+    const input = buildQuoteInput(contact);
+    const formData = new FormData();
+    for (const [key, value] of Object.entries(input)) {
+      if (value) formData.set(key, value);
+    }
+    if (planFile) formData.set("planFile", planFile, planFile.name);
+
+    const result = await submitQuoteOrder(formData);
+    if (!result.ok) {
+      throw new Error(result.error || dictionary.hero.contactSubmitError);
+    }
+    prependSessionOrder(result.order);
+    setPhase("sent");
   }
 
   const needsDestination = draft.tripMode === "oneWay";
   const needsReturn = draft.tripMode === "roundTrip";
+  const formReady = collectErrors().size === 0;
 
   const fieldClass = (bad = false) =>
     `h-10 w-full rounded-full border bg-white/95 px-3.5 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 ${
@@ -421,6 +492,8 @@ export function HeroBooking() {
                         returnAt: mode === "roundTrip" ? draft.returnAt : "",
                         arrivalAt: mode === "oneWay" ? draft.arrivalAt : "",
                       });
+                      if (mode === "oneWay") clearFieldError(setInvalid, "returnAt");
+                      else clearFieldError(setInvalid, "dropoff", "arrivalAt");
                     }}
                     className={`relative z-10 h-full whitespace-nowrap rounded-full px-2.5 text-[11px] font-semibold tracking-wide transition-colors duration-300 sm:px-3 sm:text-xs ${
                       active ? "text-white" : "text-ivory/75 hover:text-ivory"
@@ -443,18 +516,43 @@ export function HeroBooking() {
               }}
               onChange={(passengers) => {
                 patchDraft({ passengers });
-                setInvalid((current) => {
-                  const next = new Set(current);
-                  next.delete("passengers");
-                  return next;
-                });
+                clearFieldError(setInvalid, "passengers");
               }}
             />
           </div>
 
+          <TravelTypeField
+            value={travelType}
+            detail={travelTypeDetail}
+            invalid={invalid.has("travelType")}
+            detailInvalid={invalid.has("travelTypeOther")}
+            copy={{
+              label: dictionary.hero.travelTypeLabel,
+              placeholder: dictionary.hero.travelTypePlaceholder,
+              otherPlaceholder: dictionary.hero.travelTypeOtherPlaceholder,
+              options: dictionary.hero.travelTypeOptions,
+            }}
+            onChange={(value) => {
+              setTravelType(value);
+              if (value !== "other") setTravelTypeDetail("");
+              clearFieldError(setInvalid, "travelType", "travelTypeOther");
+            }}
+            onDetailChange={(value) => {
+              setTravelTypeDetail(value);
+              clearFieldError(setInvalid, "travelTypeOther");
+            }}
+          />
+
           {planError ? (
             <p className="text-[11px] text-red-200" role="alert">
               {planError}
+            </p>
+          ) : null}
+          {invalid.has("travelType") || invalid.has("travelTypeOther") ? (
+            <p className="text-[11px] text-red-200" role="alert">
+              {invalid.has("travelTypeOther")
+                ? dictionary.hero.travelTypeOtherError
+                : dictionary.hero.travelTypeError}
             </p>
           ) : null}
         </div>
@@ -483,34 +581,34 @@ export function HeroBooking() {
                   aria-invalid={invalid.has("pickup") || undefined}
                   onChange={(event) => {
                     patchDraft({ pickup: event.target.value });
-                    setInvalid((current) => {
-                      const next = new Set(current);
-                      next.delete("pickup");
-                      return next;
-                    });
+                    clearFieldError(setInvalid, "pickup");
                   }}
                   className={`${fieldClass(invalid.has("pickup"))} placeholder:normal-case placeholder:tracking-normal`}
                 />
               </label>
-              <DateTimeField
-                label={dictionary.hero.departureAt}
-                value={draft.departureAt}
-                hideLabel
-                className="h-10 rounded-full"
-                onChange={(value) => {
-                  patchDraft({
-                    departureAt: value,
-                    arrivalAt:
-                      draft.arrivalAt && value && draft.arrivalAt < value
-                        ? value
-                        : draft.arrivalAt,
-                    returnAt:
-                      draft.returnAt && value && draft.returnAt < value
-                        ? value
-                        : draft.returnAt,
-                  });
-                }}
-              />
+              <div className={invalid.has("departureAt") ? "relative z-40 overflow-visible" : ""}>
+                <DateTimeField
+                  label={dictionary.hero.departureAt}
+                  value={draft.departureAt}
+                  hideLabel
+                  invalid={invalid.has("departureAt")}
+                  className="h-10 rounded-full"
+                  onChange={(value) => {
+                    patchDraft({
+                      departureAt: value,
+                      arrivalAt:
+                        draft.arrivalAt && value && draft.arrivalAt < value
+                          ? value
+                          : draft.arrivalAt,
+                      returnAt:
+                        draft.returnAt && value && draft.returnAt < value
+                          ? value
+                          : draft.returnAt,
+                    });
+                    clearFieldError(setInvalid, "departureAt");
+                  }}
+                />
+              </div>
             </div>
 
             {draft.stops.length > 0 ? (
@@ -560,24 +658,36 @@ export function HeroBooking() {
             {needsDestination ? (
               <div className="relative grid grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-x-2.5 gap-y-2 sm:grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)]">
                 <RouteMarker kind="end" />
-                <label>
+                <label
+                  className={invalid.has("dropoff") ? "relative z-40 overflow-visible" : ""}
+                >
                   <span className="sr-only">{dictionary.hero.destination}</span>
                   <input
                     value={draft.dropoff}
                     placeholder={dictionary.hero.destination}
                     aria-label={dictionary.hero.destination}
-                    onChange={(event) => patchDraft({ dropoff: event.target.value })}
-                    className={`${fieldClass()} placeholder:normal-case placeholder:tracking-normal`}
+                    aria-invalid={invalid.has("dropoff") || undefined}
+                    onChange={(event) => {
+                      patchDraft({ dropoff: event.target.value });
+                      clearFieldError(setInvalid, "dropoff");
+                    }}
+                    className={`${fieldClass(invalid.has("dropoff"))} placeholder:normal-case placeholder:tracking-normal`}
                   />
                 </label>
-                <DateTimeField
-                  label={dictionary.hero.arrivalAt}
-                  value={draft.arrivalAt}
-                  min={draft.departureAt || undefined}
-                  hideLabel
-                  className="h-10 rounded-full"
-                  onChange={(value) => patchDraft({ arrivalAt: value })}
-                />
+                <div className={invalid.has("arrivalAt") ? "relative z-40 overflow-visible" : ""}>
+                  <DateTimeField
+                    label={dictionary.hero.arrivalAt}
+                    value={draft.arrivalAt}
+                    min={draft.departureAt || undefined}
+                    hideLabel
+                    invalid={invalid.has("arrivalAt")}
+                    className="h-10 rounded-full"
+                    onChange={(value) => {
+                      patchDraft({ arrivalAt: value });
+                      clearFieldError(setInvalid, "arrivalAt");
+                    }}
+                  />
+                </div>
               </div>
             ) : null}
           </div>
@@ -595,14 +705,20 @@ export function HeroBooking() {
 
           {needsReturn ? (
             <div className="grid grid-cols-1 gap-2 overflow-visible sm:grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)] sm:gap-x-2.5">
-              <div className="sm:col-start-3">
+              <div
+                className={`sm:col-start-3 ${invalid.has("returnAt") ? "relative z-40 overflow-visible" : ""}`}
+              >
                 <DateTimeField
                   label={dictionary.hero.returnAt}
                   value={draft.returnAt}
                   min={draft.departureAt || undefined}
                   hideLabel
+                  invalid={invalid.has("returnAt")}
                   className="h-10 rounded-full"
-                  onChange={(value) => patchDraft({ returnAt: value })}
+                  onChange={(value) => {
+                    patchDraft({ returnAt: value });
+                    clearFieldError(setInvalid, "returnAt");
+                  }}
                 />
               </div>
             </div>
@@ -618,9 +734,23 @@ export function HeroBooking() {
         <button
           type="submit"
           disabled={readingPlan}
-          className="mt-3 inline-flex h-11 w-full shrink-0 items-center justify-center rounded-full bg-burgundy px-5 text-sm font-semibold text-white hover:bg-burgundy-deep disabled:opacity-50"
+          className={`mt-3 inline-flex h-11 w-full shrink-0 items-center justify-center gap-2.5 rounded-full px-5 text-sm font-semibold transition-[background-color,color] duration-300 disabled:opacity-50 ${
+            formReady
+              ? "field-ready-glow bg-leaf text-white hover:bg-leaf-deep"
+              : "bg-burgundy text-white hover:bg-burgundy-deep"
+          }`}
         >
-          {dictionary.hero.getOffer}
+          <span>{dictionary.hero.getOffer}</span>
+          {formReady ? (
+            <Image
+              src="/brand/berro-travel-mark.png"
+              alt=""
+              width={36}
+              height={36}
+              className="field-ready-mark h-8 w-8 object-contain"
+              aria-hidden="true"
+            />
+          ) : null}
         </button>
       </form>
 

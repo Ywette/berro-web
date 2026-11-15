@@ -55,7 +55,7 @@ export async function sendContactMessage(
   };
 }
 
-const newsletterTopics = ["minibus", "coach", "excursions"] as const;
+const newsletterTopics = ["destinations", "openExcursions", "blog"] as const;
 
 export async function subscribeToNews(
   _state: ContactState,

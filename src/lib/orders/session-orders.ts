@@ -14,12 +14,15 @@ export type QuoteOrderInput = {
   phone?: string;
   heardAbout?: string;
   heardAboutDetail?: string;
+  travelType?: string;
+  travelTypeDetail?: string;
   pickup?: string;
   dropoff?: string;
   departure?: string;
   returnAt?: string;
   passengers?: string;
   planDocument?: string;
+  planDocumentPath?: string;
   /** JSON array of { name, waitMinutes }. */
   stops?: string;
   otherWaitingMinutes?: string;
@@ -131,9 +134,13 @@ export function orderFromQuoteInput(input: QuoteOrderInput): StaffOrder {
   const waiting =
     Number(input.waitingMinutes ?? "") ||
     totalWaitingMinutes(stops, Number.isFinite(otherWaiting) ? otherWaiting : 0);
+  const id =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `order-${stamp}`;
 
   return {
-    id: `session-order-${stamp}`,
+    id,
     reference,
     origin: (input.pickup || "—").trim() || "—",
     destination: destination || "—",
@@ -145,6 +152,10 @@ export function orderFromQuoteInput(input: QuoteOrderInput): StaffOrder {
     requestorPhone: input.phone?.trim() || null,
     heardAbout: input.heardAbout?.trim() || null,
     heardAboutDetail: input.heardAboutDetail?.trim() || null,
+    travelType: input.travelType?.trim() || null,
+    travelTypeDetail: input.travelTypeDetail?.trim() || null,
+    planDocument: input.planDocument?.trim() || null,
+    planDocumentPath: input.planDocumentPath?.trim() || null,
     status: "new",
     departureOn: toDateOnly(input.departure),
     returnOn: toDateOnly(input.returnAt),

@@ -11,11 +11,14 @@ export async function generateMetadata(): Promise<Metadata> {
 
 type OrderReceivedPageProps = {
   searchParams: Promise<{
+    reference?: string | string[];
     trip?: string | string[];
     tripMode?: string | string[];
     name?: string | string[];
     email?: string | string[];
     phone?: string | string[];
+    travelType?: string | string[];
+    travelTypeDetail?: string | string[];
     pickup?: string | string[];
     dropoff?: string | string[];
     departure?: string | string[];
@@ -48,12 +51,15 @@ async function OrderReceivedContent({
   searchParams: OrderReceivedPageProps["searchParams"];
 }) {
   const params = await searchParams;
+  const reference = first(params.reference);
   const input: QuoteOrderInput = {
     trip: first(params.trip),
     tripMode: first(params.tripMode),
     name: first(params.name),
     email: first(params.email),
     phone: first(params.phone),
+    travelType: first(params.travelType),
+    travelTypeDetail: first(params.travelTypeDetail),
     pickup: first(params.pickup),
     dropoff: first(params.dropoff),
     departure: first(params.departure),
@@ -65,7 +71,7 @@ async function OrderReceivedContent({
     waitingMinutes: first(params.waitingMinutes),
   };
 
-  return <CrmHandoff input={input} />;
+  return <CrmHandoff input={input} savedReference={reference} />;
 }
 
 function first(value: string | string[] | undefined) {

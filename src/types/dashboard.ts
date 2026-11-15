@@ -21,6 +21,10 @@ export type StaffOrder = {
   requestorPhone: string | null;
   heardAbout: string | null;
   heardAboutDetail: string | null;
+  travelType: string | null;
+  travelTypeDetail: string | null;
+  planDocument: string | null;
+  planDocumentPath: string | null;
   status: OrderStatus;
   departureOn: string | null;
   returnOn: string | null;

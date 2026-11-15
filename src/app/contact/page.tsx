@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { CompanyDetails } from "@/components/contact/company-details";
+import { CompanyDetails, ContactIntro } from "@/components/contact/company-details";
 import { ContactForm } from "@/components/contact/contact-form";
 import { NewsletterForm } from "@/components/contact/newsletter-form";
 import { RouteSummary } from "@/components/contact/route-summary";
@@ -32,23 +32,27 @@ export default async function ContactPage({ searchParams }: ContactPageProps) {
 
   return (
     <section className="mx-auto max-w-7xl px-5 py-16 lg:py-20">
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.15fr)] lg:items-start lg:gap-12">
-        <div className="grid gap-8">
-          <CompanyDetails />
-          <NewsletterForm />
-        </div>
+      <div className="grid gap-10 lg:gap-12">
+        <ContactIntro />
 
-        <div className="grid gap-6">
-          <Suspense fallback={null}>
-            <QuotedRouteSummary searchParams={searchParams} />
-          </Suspense>
-          <div className="rounded-2xl border border-white/10 bg-card p-5 sm:p-6">
-            <h2 className="mb-4 font-serif text-2xl tracking-wide text-ivory">
-              {dictionary.contact.formTitle}
-            </h2>
-            <Suspense fallback={<ContactForm />}>
-              <QuotedContactForm searchParams={searchParams} />
+        <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-12">
+          <div className="grid gap-8">
+            <CompanyDetails />
+            <NewsletterForm />
+          </div>
+
+          <div className="grid gap-6">
+            <Suspense fallback={null}>
+              <QuotedRouteSummary searchParams={searchParams} />
             </Suspense>
+            <div className="rounded-2xl border border-white/10 bg-card p-5 sm:p-6">
+              <h2 className="mb-4 font-serif text-2xl tracking-wide text-ivory">
+                {dictionary.contact.formTitle}
+              </h2>
+              <Suspense fallback={<ContactForm />}>
+                <QuotedContactForm searchParams={searchParams} />
+              </Suspense>
+            </div>
           </div>
         </div>
       </div>

@@ -22,6 +22,7 @@ type QuoteSummaryDialogProps = {
   onStopsChange: (stops: QuoteStop[]) => void;
   onClose: () => void;
   onConfirm: () => void;
+  confirming?: boolean;
 };
 
 export function QuoteSummaryDialog({
@@ -34,6 +35,7 @@ export function QuoteSummaryDialog({
   onStopsChange,
   onClose,
   onConfirm,
+  confirming = false,
 }: QuoteSummaryDialogProps) {
   const dictionary = useDictionary();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -239,9 +241,10 @@ export function QuoteSummaryDialog({
           <button
             type="button"
             onClick={onConfirm}
-            className="h-10 rounded-md bg-burgundy px-3 text-sm font-medium text-white hover:bg-burgundy-deep"
+            disabled={confirming}
+            className="h-10 rounded-md bg-burgundy px-3 text-sm font-medium text-white hover:bg-burgundy-deep disabled:opacity-60"
           >
-            {dictionary.quote.summaryConfirm}
+            {confirming ? dictionary.hero.contactSubmitting : dictionary.quote.summaryConfirm}
           </button>
         </div>
       </div>

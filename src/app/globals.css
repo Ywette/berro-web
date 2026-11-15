@@ -13,6 +13,8 @@
   --mist: #a9a9b2;
   --line: #2e2e34;
   --pine: #8dcea8;
+  --leaf: #3f8f3a;
+  --leaf-deep: #347832;
   /* Sticky header: main row + mobile secondary nav */
   --site-header-height: 7.25rem;
 }
@@ -37,6 +39,8 @@
   --color-mist: var(--mist);
   --color-line: var(--line);
   --color-pine: var(--pine);
+  --color-leaf: var(--leaf);
+  --color-leaf-deep: var(--leaf-deep);
   --font-sans: var(--font-geist-sans);
   --font-serif: var(--font-playfair);
   --font-mono: var(--font-geist-mono);
@@ -220,6 +224,40 @@ input.datetime-input::-webkit-calendar-picker-indicator {
   animation: field-error-blink 1s linear infinite;
 }
 
+@keyframes field-ready-glow-in {
+  from {
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  to {
+    filter:
+      drop-shadow(0 3px 4px rgba(63, 143, 58, 0.95))
+      drop-shadow(0 6px 12px rgba(63, 143, 58, 0.72))
+      drop-shadow(0 0 18px rgba(63, 143, 58, 0.5));
+  }
+}
+
+@keyframes field-ready-mark-in {
+  from {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.field-ready-glow {
+  position: relative;
+  z-index: 30;
+  overflow: visible;
+  animation: field-ready-glow-in 420ms ease 200ms both;
+}
+
+.field-ready-mark {
+  animation: field-ready-mark-in 360ms ease 200ms both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .popup-enter[open],
   .popup-enter-panel,
@@ -236,5 +274,16 @@ input.datetime-input::-webkit-calendar-picker-indicator {
     filter:
       drop-shadow(0 3px 4px rgba(245, 198, 90, 0.95))
       drop-shadow(0 6px 12px rgba(245, 198, 90, 0.75));
+  }
+
+  .field-ready-glow,
+  .field-ready-mark {
+    animation: none;
+  }
+
+  .field-ready-glow {
+    filter:
+      drop-shadow(0 3px 4px rgba(63, 143, 58, 0.95))
+      drop-shadow(0 6px 12px rgba(63, 143, 58, 0.72));
   }
 }

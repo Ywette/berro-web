@@ -2,6 +2,7 @@ import type { Dictionary, Locale } from "@/lib/i18n/dictionary";
 import { intlLocales } from "@/lib/i18n/locale";
 import type { TripRoute } from "@/lib/places/types";
 import { isQuoteTripKind, quoteTripKinds, quoteTripLabel } from "@/lib/quote-trips";
+import { formatTravelTypeLabel } from "@/lib/quote-travel-types";
 
 export function formatTripDate(value: string | undefined, locale: Locale) {
   const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
@@ -29,6 +30,8 @@ export function formatDuration(minutes: number | null) {
 export function quoteMessage(
   input: {
     trip?: string;
+    travelType?: string;
+    travelTypeDetail?: string;
     pickup?: string;
     dropoff?: string;
     departure?: string;
@@ -45,11 +48,21 @@ export function quoteMessage(
 
   const tripId = isQuoteTripKind(input.trip) ? input.trip : quoteTripKinds[0];
   const tripLabel = quoteTripLabel(tripId, dictionary);
+  const travelTypeLabel = input.travelType
+    ? formatTravelTypeLabel(
+        input.travelType,
+        input.travelTypeDetail,
+        dictionary.quote.travelTypeOptions,
+      )
+    : null;
   const distance = route ? formatDistance(route, dictionary.locale) : null;
   const duration = route ? formatDuration(route.durationMinutes) : null;
 
   return [
     `${dictionary.quote.trip}: ${tripLabel}`,
+    travelTypeLabel
+      ? `${dictionary.quote.travelTypeLabel}: ${travelTypeLabel}`
+      : null,
     `${dictionary.quote.pickup}: ${input.pickup || "—"}`,
     `${dictionary.quote.dropoff}: ${input.dropoff || "—"}`,
     distance ? `${dictionary.quote.distance}: ${distance}` : null,

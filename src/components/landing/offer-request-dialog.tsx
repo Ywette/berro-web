@@ -13,7 +13,7 @@ export type OfferContactSubmit = {
   company: string;
   email: string;
   phone: string;
-  heardAbout: QuoteHeardAboutSource;
+  heardAbout?: QuoteHeardAboutSource;
   heardAboutDetail?: string;
 };
 
@@ -21,7 +21,8 @@ type OfferRequestDialogProps = {
   open: boolean;
   phase: "contact" | "sent";
   onClose: () => void;
-  onContactSubmit: (contact: OfferContactSubmit) => void;
+  onContactSubmit: (contact: OfferContactSubmit) => void | Promise<void>;
+  submittingLabel?: string;
 };
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -31,6 +32,7 @@ export function OfferRequestDialog({
   phase,
   onClose,
   onContactSubmit,
+  submittingLabel,
 }: OfferRequestDialogProps) {
   const dictionary = useDictionary();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -41,6 +43,8 @@ export function OfferRequestDialog({
   const [phone, setPhone] = useState("");
   const [heardAbout, setHeardAbout] = useState<QuoteHeardAboutSource | "">("");
   const [heardAboutDetail, setHeardAboutDetail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [contactInvalid, setContactInvalid] = useState<
     Set<"email" | "phone" | "contact" | "heardAbout" | "heardAboutOther">
   >(new Set());
@@ -55,6 +59,8 @@ export function OfferRequestDialog({
   useEffect(() => {
     if (!open) return;
     setContactInvalid(new Set());
+    setSubmitError("");
+    setSubmitting(false);
     if (phase === "contact") {
       setName("");
       setCompany("");
@@ -65,8 +71,9 @@ export function OfferRequestDialog({
     }
   }, [open, phase]);
 
-  function handleContactSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleContactSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting) return;
     const nextName = name.trim();
     const nextCompany = company.trim();
     const nextEmail = email.trim();
@@ -75,25 +82,37 @@ export function OfferRequestDialog({
     const errors = new Set<"email" | "phone" | "contact" | "heardAbout" | "heardAboutOther">();
     if (nextEmail && !emailPattern.test(nextEmail)) errors.add("email");
     if (!nextEmail && !nextPhone) errors.add("contact");
-    if (!isQuoteHeardAboutSource(heardAbout)) errors.add("heardAbout");
     if (heardAbout === "other" && nextDetail.length < 2) errors.add("heardAboutOther");
-    if (errors.size > 0 || !isQuoteHeardAboutSource(heardAbout)) {
+    if (errors.size > 0) {
       setContactInvalid(errors);
       return;
     }
-    onContactSubmit({
-      name: nextName,
-      company: nextCompany,
-      email: nextEmail,
-      phone: nextPhone,
-      heardAbout,
-      heardAboutDetail: heardAbout === "other" ? nextDetail : undefined,
-    });
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      await onContactSubmit({
+        name: nextName,
+        company: nextCompany,
+        email: nextEmail,
+        phone: nextPhone,
+        heardAbout: isQuoteHeardAboutSource(heardAbout) ? heardAbout : undefined,
+        heardAboutDetail:
+          heardAbout === "other" && nextDetail.length >= 2 ? nextDetail : undefined,
+      });
+    } catch (caught) {
+      setSubmitError(
+        caught instanceof Error && caught.message
+          ? caught.message
+          : dictionary.hero.contactSubmitError,
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const inputClass = (bad = false) =>
-    `h-11 w-full rounded-lg border bg-white px-3 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 ${
-      bad ? "field-error-blink relative z-20" : "border-transparent"
+    `h-10 w-full rounded-full border bg-white/95 px-3.5 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 ${
+      bad ? "field-error-blink" : "border-transparent"
     }`;
 
   const title =
@@ -130,7 +149,7 @@ export function OfferRequestDialog({
             <button
               type="button"
               onClick={onClose}
-              className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-lg bg-burgundy px-4 text-sm font-semibold text-white hover:bg-burgundy-deep"
+              className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-full bg-burgundy px-4 text-sm font-semibold text-white hover:bg-burgundy-deep"
             >
               {dictionary.hero.contactClose}
             </button>
@@ -140,30 +159,33 @@ export function OfferRequestDialog({
             <p className="text-sm leading-6 text-ivory/70">{dictionary.hero.contactDialogBody}</p>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="grid gap-1.5 text-[11px] font-medium tracking-wide text-ivory/80">
-                {dictionary.hero.name}
+              <label className="block min-w-0">
+                <span className="sr-only">{dictionary.hero.name}</span>
                 <input
                   value={name}
                   autoComplete="name"
+                  placeholder={dictionary.hero.name}
                   onChange={(event) => setName(event.target.value)}
                   className={inputClass()}
                 />
               </label>
-              <label className="grid gap-1.5 text-[11px] font-medium tracking-wide text-ivory/80">
-                {dictionary.hero.companyName}
+              <label className="block min-w-0">
+                <span className="sr-only">{dictionary.hero.companyName}</span>
                 <input
                   value={company}
                   autoComplete="organization"
+                  placeholder={dictionary.hero.companyName}
                   onChange={(event) => setCompany(event.target.value)}
                   className={inputClass()}
                 />
               </label>
-              <label className="grid gap-1.5 text-[11px] font-medium tracking-wide text-ivory/80">
-                {dictionary.hero.phone}
+              <label className="block min-w-0">
+                <span className="sr-only">{dictionary.hero.phone}</span>
                 <input
                   type="tel"
                   value={phone}
                   autoComplete="tel"
+                  placeholder={dictionary.hero.phone}
                   aria-invalid={contactInvalid.has("contact") || undefined}
                   onChange={(event) => {
                     setPhone(event.target.value);
@@ -176,12 +198,13 @@ export function OfferRequestDialog({
                   className={inputClass(contactInvalid.has("contact"))}
                 />
               </label>
-              <label className="grid gap-1.5 text-[11px] font-medium tracking-wide text-ivory/80">
-                {dictionary.hero.email}
+              <label className="block min-w-0">
+                <span className="sr-only">{dictionary.hero.email}</span>
                 <input
                   type="email"
                   value={email}
                   autoComplete="email"
+                  placeholder={dictionary.hero.email}
                   aria-invalid={
                     contactInvalid.has("email") || contactInvalid.has("contact") || undefined
                   }
@@ -206,14 +229,14 @@ export function OfferRequestDialog({
                 {dictionary.hero.heardAboutLabel}
               </legend>
               <div
-                className={`grid grid-cols-1 gap-2 rounded-xl sm:grid-cols-2 ${
-                  contactInvalid.has("heardAbout") ? "field-error-blink p-1" : ""
+                className={`grid grid-cols-1 gap-1.5 sm:grid-cols-2 ${
+                  contactInvalid.has("heardAbout") ? "field-error-blink rounded-lg p-1" : ""
                 }`}
               >
                 {quoteHeardAboutSources.map((source) => (
                   <label
                     key={source}
-                    className="flex cursor-pointer items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-ivory/90 hover:bg-white/8"
+                    className="flex cursor-pointer items-center gap-2.5 py-1 text-sm text-ivory/90 hover:text-white"
                   >
                     <input
                       type="radio"
@@ -266,12 +289,20 @@ export function OfferRequestDialog({
                       : dictionary.hero.contactEmailOrPhone}
               </p>
             ) : null}
+            {submitError ? (
+              <p role="alert" className="text-xs text-red-300">
+                {submitError}
+              </p>
+            ) : null}
 
             <button
               type="submit"
-              className="mt-1 inline-flex h-11 w-full items-center justify-center rounded-lg bg-burgundy px-4 text-sm font-semibold text-white hover:bg-burgundy-deep"
+              disabled={submitting}
+              className="mt-1 inline-flex h-11 w-full items-center justify-center rounded-full bg-burgundy px-4 text-sm font-semibold text-white hover:bg-burgundy-deep disabled:opacity-60"
             >
-              {dictionary.hero.contactSubmit}
+              {submitting
+                ? submittingLabel || dictionary.hero.contactSubmitting
+                : dictionary.hero.contactSubmit}
             </button>
           </form>
         )}

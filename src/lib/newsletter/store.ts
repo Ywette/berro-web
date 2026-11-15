@@ -2,7 +2,7 @@ import { createServiceSupabaseClient } from "@/lib/supabase/server";
 
 const TABLE = "newsletter_subscribers";
 
-export type NewsletterTopic = "minibus" | "coach" | "excursions";
+export type NewsletterTopic = "destinations" | "openExcursions" | "blog";
 
 export type NewsletterSubscribeInput = {
   email: string;

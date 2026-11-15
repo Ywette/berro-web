@@ -8,6 +8,7 @@ import {
   removeSessionOrderByReference,
 } from "@/lib/orders/session-orders";
 import { formatHeardAboutLabel } from "@/lib/quote-heard-about";
+import { formatTravelTypeLabel } from "@/lib/quote-travel-types";
 import { assignEmployee, assignTransport, applyAssignmentPatches } from "@/lib/staff/assignments";
 import { employeeChoices, vehicleChoices, vehicleLabel } from "@/lib/staff/availability";
 import type { OrderStatus, StaffOrder } from "@/types/dashboard";
@@ -122,6 +123,22 @@ export function OrdersTableClient({
                       ) : null}
                       <p className="mt-1 text-xs text-mist">{order.requestorEmail ?? "—"}</p>
                       <p className="text-xs text-mist">{order.requestorPhone ?? "—"}</p>
+                      {order.travelType ? (
+                        <p className="mt-1 text-xs text-mist">
+                          {dictionary.quote.travelTypeLabel}:{" "}
+                          {formatTravelTypeLabel(
+                            order.travelType,
+                            order.travelTypeDetail,
+                            dictionary.quote.travelTypeOptions,
+                          )}
+                        </p>
+                      ) : null}
+                      {order.planDocument ? (
+                        <p className="mt-1 text-xs text-mist">
+                          {dictionary.pricing.planDocument}: {order.planDocument}
+                          {order.planDocumentPath ? " ✓" : ""}
+                        </p>
+                      ) : null}
                       {order.heardAbout ? (
                         <p className="mt-1 text-xs text-mist">
                           {dictionary.quote.heardAboutLabel}:{" "}
