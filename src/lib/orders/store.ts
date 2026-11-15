@@ -1,4 +1,5 @@
 import { sendNewOrderEmail } from "@/lib/email/send-order-email";
+import { sendOrderThankYouEmail } from "@/lib/email/send-order-thank-you";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 import {
   orderFromQuoteInput,
@@ -176,6 +177,11 @@ export async function insertOrder(
   const emailed = await sendNewOrderEmail(order, input);
   if (!emailed.ok) {
     console.error("[orders] notification email failed", emailed.error);
+  }
+
+  const thankYou = await sendOrderThankYouEmail(order, input);
+  if (!thankYou.ok) {
+    console.error("[orders] thank-you email failed", thankYou.error);
   }
 
   return { ok: true, order };

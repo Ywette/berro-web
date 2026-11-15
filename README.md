@@ -43,7 +43,7 @@ cp .env.example .env.local
 
 3. Supabase: Project Settings → API. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable), and `SUPABASE_SERVICE_ROLE_KEY` (secret). Run these in the SQL Editor: `001_fleet_and_excursions.sql`, `002_newsletter_subscribers.sql`, `003_orders.sql`, then `004_order_plan_documents.sql`. Quote requests save to `orders`; attached travel plans go to the private `order-plans` Storage bucket.
 
-4. Create a Resend API key. `CONTACT_TO_EMAIL` is who receives the contact form. `CONTACT_FROM_EMAIL` must be a sender Resend allows. New quote orders email the same inbox (or `ORDERS_TO_EMAIL` if set), with a link built from `APP_URL` (default `http://localhost:3000`) to `/staff/orders`.
+4. Create a Resend API key. `CONTACT_TO_EMAIL` is who receives the contact form. `CONTACT_FROM_EMAIL` must be a sender Resend allows. New quote orders email staff (`ORDERS_TO_EMAIL` or `CONTACT_TO_EMAIL`) with a link from `APP_URL` to `/staff/orders`, and send a thank-you email to the customer with newsletter/social links. For production, verify your domain in Resend — `onboarding@resend.dev` can only send to your own Resend account email.
 
 5. Start the app.
 
