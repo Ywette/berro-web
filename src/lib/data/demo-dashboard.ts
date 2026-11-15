@@ -1,6 +1,6 @@
 import type { StaffOrder } from "@/types/dashboard";
 import type { DriverAvailability, Employee } from "@/types/staff";
-import { fleetCatalog } from "@/lib/content/fleet";
+import { buildFleetSeed } from "@/lib/fleet/seed";
 
 export const demoDrivers: DriverAvailability[] = [
   {
@@ -229,4 +229,4 @@ export const demoOrders: StaffOrder[] = [
   },
 ];
 
-export const demoVehicles = fleetCatalog;
+export const demoVehicles = buildFleetSeed();

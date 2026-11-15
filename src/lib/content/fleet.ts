@@ -60,5 +60,5 @@ export const fleetModels: FleetModel[] = [
   },
 ];
 
-/** Legacy seed catalog — empty; staff fleet store is the source of truth. */
+/** Legacy alias — live listings come from the fleet store (falls back to transport catalog seed). */
 export const fleetCatalog: FleetVehicle[] = [];

@@ -41,9 +41,11 @@ cp .env.example .env.local
 
 2. Clerk: use the linked Dashboard app (`clerk init` / `clerk env pull`) so `.env.local` has `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`. Sign-in/up URLs should point at `/sign-in` and `/sign-up`.
 
-3. Create a Resend API key. `CONTACT_TO_EMAIL` is who receives the form. `CONTACT_FROM_EMAIL` must be a sender Resend allows.
+3. Supabase: Project Settings → API. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable), and `SUPABASE_SERVICE_ROLE_KEY` (secret). Then run `supabase/migrations/001_fleet_and_excursions.sql` in the SQL Editor. Fleet and excursions sync to Supabase; local JSON remains a fallback.
 
-4. Start the app.
+4. Create a Resend API key. `CONTACT_TO_EMAIL` is who receives the form. `CONTACT_FROM_EMAIL` must be a sender Resend allows.
+
+5. Start the app.
 
 ```bash
 npm install
@@ -60,4 +62,4 @@ The landing page and contact form still render when optional keys are missing. E
 
 ## What is not in this pass
 
-There is no database and no screen yet for adding or editing employees. Staff boards show sample data. Availability updates are not persisted. Tighten access with Clerk roles or organization permissions when staff roles are settled.
+Orders and employees still use in-code demo data. Tighten access with Clerk roles or organization permissions when staff roles are settled.

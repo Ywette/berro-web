@@ -1,33 +1,26 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
 import {
   normalizeManagedExcursion,
   type ManagedExcursion,
 } from "@/lib/content/managed-excursion";
+import { readJsonFile, writeJsonFile } from "@/lib/data/json-file-store";
 import { excursionSeed } from "@/lib/excursions/seed";
+import { createServiceSupabaseClient } from "@/lib/supabase/server";
+import {
+  excursionFromRow,
+  excursionToRow,
+  type ExcursionRow,
+} from "@/lib/supabase/excursion-map";
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const STORE_PATH = path.join(DATA_DIR, "excursions.json");
+const STORE_FILE = "excursions.json";
+const TABLE = "excursions";
 
-async function ensureStore(): Promise<void> {
-  await mkdir(DATA_DIR, { recursive: true });
-  try {
-    const raw = await readFile(STORE_PATH, "utf8");
-    const parsed = JSON.parse(raw) as unknown;
-    if (Array.isArray(parsed) && parsed.length === 0) {
-      await writeFile(STORE_PATH, `${JSON.stringify(excursionSeed, null, 2)}\n`, "utf8");
-    }
-  } catch {
-    await writeFile(STORE_PATH, `${JSON.stringify(excursionSeed, null, 2)}\n`, "utf8");
-  }
-}
-
-export async function readExcursionStore(): Promise<ManagedExcursion[]> {
-  await ensureStore();
-  const raw = await readFile(STORE_PATH, "utf8");
+async function readExcursionFileFallback(): Promise<ManagedExcursion[]> {
+  const raw = await readJsonFile(STORE_FILE);
+  if (!raw) return [...excursionSeed];
   try {
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [...excursionSeed];
+    if (parsed.length === 0) return [...excursionSeed];
     const normalized = parsed
       .map(normalizeManagedExcursion)
       .filter((item): item is ManagedExcursion => item !== null);
@@ -37,35 +30,107 @@ export async function readExcursionStore(): Promise<ManagedExcursion[]> {
   }
 }
 
+async function ensureExcursionSeeded(
+  supabase: NonNullable<ReturnType<typeof createServiceSupabaseClient>>,
+): Promise<ManagedExcursion[]> {
+  const seed = [...excursionSeed];
+  const { error } = await supabase.from(TABLE).upsert(seed.map(excursionToRow), {
+    onConflict: "id",
+  });
+  if (error) {
+    console.error("[excursions] seed upsert failed", error.message);
+  }
+  return seed;
+}
+
+export async function readExcursionStore(): Promise<ManagedExcursion[]> {
+  const supabase = createServiceSupabaseClient();
+  if (!supabase) return readExcursionFileFallback();
+
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select("*")
+    .order("title", { ascending: true });
+
+  if (error) {
+    console.error("[excursions] supabase read failed", error.message);
+    return readExcursionFileFallback();
+  }
+
+  const rows = (data ?? []) as ExcursionRow[];
+  if (rows.length === 0) return ensureExcursionSeeded(supabase);
+  return rows.map(excursionFromRow);
+}
+
 export async function writeExcursionStore(excursions: ManagedExcursion[]): Promise<void> {
-  await mkdir(DATA_DIR, { recursive: true });
-  await writeFile(STORE_PATH, `${JSON.stringify(excursions, null, 2)}\n`, "utf8");
+  const supabase = createServiceSupabaseClient();
+  if (!supabase) {
+    await writeJsonFile(STORE_FILE, `${JSON.stringify(excursions, null, 2)}\n`);
+    return;
+  }
+
+  const { error: deleteError } = await supabase.from(TABLE).delete().neq("id", "__never__");
+  if (deleteError) throw new Error(deleteError.message);
+
+  if (excursions.length === 0) return;
+  const { error } = await supabase.from(TABLE).insert(excursions.map(excursionToRow));
+  if (error) throw new Error(error.message);
 }
 
 export async function insertManagedExcursion(
   excursion: ManagedExcursion,
 ): Promise<ManagedExcursion> {
-  const excursions = await readExcursionStore();
-  excursions.unshift(excursion);
-  await writeExcursionStore(excursions);
+  const supabase = createServiceSupabaseClient();
+  if (!supabase) {
+    const excursions = await readExcursionFileFallback();
+    excursions.unshift(excursion);
+    await writeJsonFile(STORE_FILE, `${JSON.stringify(excursions, null, 2)}\n`);
+    return excursion;
+  }
+
+  const { error } = await supabase.from(TABLE).upsert(excursionToRow(excursion), {
+    onConflict: "id",
+  });
+  if (error) throw new Error(error.message);
   return excursion;
 }
 
 export async function updateManagedExcursion(
   excursion: ManagedExcursion,
 ): Promise<ManagedExcursion | null> {
-  const excursions = await readExcursionStore();
-  const index = excursions.findIndex((item) => item.id === excursion.id);
-  if (index < 0) return null;
-  excursions[index] = excursion;
-  await writeExcursionStore(excursions);
-  return excursion;
+  const supabase = createServiceSupabaseClient();
+  if (!supabase) {
+    const excursions = await readExcursionFileFallback();
+    const index = excursions.findIndex((item) => item.id === excursion.id);
+    if (index < 0) return null;
+    excursions[index] = excursion;
+    await writeJsonFile(STORE_FILE, `${JSON.stringify(excursions, null, 2)}\n`);
+    return excursion;
+  }
+
+  const { data, error } = await supabase
+    .from(TABLE)
+    .update({ ...excursionToRow(excursion), updated_at: new Date().toISOString() })
+    .eq("id", excursion.id)
+    .select("*")
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  return excursionFromRow(data as ExcursionRow);
 }
 
 export async function deleteManagedExcursion(id: string): Promise<boolean> {
-  const excursions = await readExcursionStore();
-  const next = excursions.filter((item) => item.id !== id);
-  if (next.length === excursions.length) return false;
-  await writeExcursionStore(next);
-  return true;
+  const supabase = createServiceSupabaseClient();
+  if (!supabase) {
+    const excursions = await readExcursionFileFallback();
+    const next = excursions.filter((item) => item.id !== id);
+    if (next.length === excursions.length) return false;
+    await writeJsonFile(STORE_FILE, `${JSON.stringify(next, null, 2)}\n`);
+    return true;
+  }
+
+  const { data, error } = await supabase.from(TABLE).delete().eq("id", id).select("id");
+  if (error) throw new Error(error.message);
+  return (data?.length ?? 0) > 0;
 }
