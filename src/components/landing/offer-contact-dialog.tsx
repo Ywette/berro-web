@@ -2,11 +2,18 @@
 
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { useDictionary } from "@/components/i18n/locale-provider";
+import {
+  isQuoteHeardAboutSource,
+  quoteHeardAboutSources,
+  type QuoteHeardAboutSource,
+} from "@/lib/quote-heard-about";
 
 export type OfferContactValues = {
   name: string;
   email: string;
   phone: string;
+  heardAbout: QuoteHeardAboutSource;
+  heardAboutDetail?: string;
 };
 
 type OfferContactDialogProps = {
@@ -32,7 +39,13 @@ export function OfferContactDialog({
   const [name, setName] = useState(initial.name);
   const [email, setEmail] = useState(initial.email);
   const [phone, setPhone] = useState(initial.phone);
-  const [invalid, setInvalid] = useState<Set<"email" | "phone" | "contact">>(new Set());
+  const [heardAbout, setHeardAbout] = useState<QuoteHeardAboutSource | "">(
+    initial.heardAbout ?? "",
+  );
+  const [heardAboutDetail, setHeardAboutDetail] = useState(initial.heardAboutDetail ?? "");
+  const [invalid, setInvalid] = useState<
+    Set<"email" | "phone" | "contact" | "heardAbout" | "heardAboutOther">
+  >(new Set());
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -46,24 +59,35 @@ export function OfferContactDialog({
     setName(initial.name);
     setEmail(initial.email);
     setPhone(initial.phone);
+    setHeardAbout(initial.heardAbout ?? "");
+    setHeardAboutDetail(initial.heardAboutDetail ?? "");
     setInvalid(new Set());
-  }, [open, initial.name, initial.email, initial.phone]);
+  }, [open, initial.name, initial.email, initial.phone, initial.heardAbout, initial.heardAboutDetail]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const nextName = name.trim();
     const nextEmail = email.trim();
     const nextPhone = phone.trim();
-    const errors = new Set<"email" | "phone" | "contact">();
+    const nextDetail = heardAboutDetail.trim();
+    const errors = new Set<"email" | "phone" | "contact" | "heardAbout" | "heardAboutOther">();
 
     if (nextEmail && !emailPattern.test(nextEmail)) errors.add("email");
     if (!nextEmail && !nextPhone) errors.add("contact");
-    if (errors.size > 0) {
+    if (!isQuoteHeardAboutSource(heardAbout)) errors.add("heardAbout");
+    if (heardAbout === "other" && nextDetail.length < 2) errors.add("heardAboutOther");
+    if (errors.size > 0 || !isQuoteHeardAboutSource(heardAbout)) {
       setInvalid(errors);
       return;
     }
 
-    onSubmit({ name: nextName, email: nextEmail, phone: nextPhone });
+    onSubmit({
+      name: nextName,
+      email: nextEmail,
+      phone: nextPhone,
+      heardAbout,
+      heardAboutDetail: heardAbout === "other" ? nextDetail : undefined,
+    });
   }
 
   const inputClass = (bad: boolean) =>
@@ -169,11 +193,65 @@ export function OfferContactDialog({
               />
             </label>
 
+            <fieldset className="grid gap-2">
+              <legend className="text-[11px] font-medium tracking-wide text-ivory/80">
+                {dictionary.hero.heardAboutLabel}
+              </legend>
+              <div className="grid gap-2">
+                {quoteHeardAboutSources.map((source) => (
+                  <label
+                    key={source}
+                    className="flex cursor-pointer items-center gap-3 text-sm text-ivory/90"
+                  >
+                    <input
+                      type="radio"
+                      name="heardAbout"
+                      value={source}
+                      checked={heardAbout === source}
+                      aria-invalid={invalid.has("heardAbout") || undefined}
+                      onChange={() => {
+                        setHeardAbout(source);
+                        setInvalid((current) => {
+                          const next = new Set(current);
+                          next.delete("heardAbout");
+                          next.delete("heardAboutOther");
+                          return next;
+                        });
+                      }}
+                      className="h-4 w-4 border-white/30 bg-transparent text-burgundy focus:ring-burgundy/40"
+                    />
+                    {dictionary.hero.heardAboutOptions[source]}
+                  </label>
+                ))}
+              </div>
+              {heardAbout === "other" ? (
+                <input
+                  value={heardAboutDetail}
+                  placeholder={dictionary.hero.heardAboutOtherPlaceholder}
+                  aria-label={dictionary.hero.heardAboutOptions.other}
+                  aria-invalid={invalid.has("heardAboutOther") || undefined}
+                  onChange={(event) => {
+                    setHeardAboutDetail(event.target.value);
+                    setInvalid((current) => {
+                      const next = new Set(current);
+                      next.delete("heardAboutOther");
+                      return next;
+                    });
+                  }}
+                  className={inputClass(invalid.has("heardAboutOther"))}
+                />
+              ) : null}
+            </fieldset>
+
             {invalid.size > 0 ? (
               <p role="alert" className="text-xs text-red-300">
-                {invalid.has("email")
-                  ? dictionary.hero.email
-                  : dictionary.hero.contactEmailOrPhone}
+                {invalid.has("heardAboutOther")
+                  ? dictionary.hero.heardAboutOtherError
+                  : invalid.has("heardAbout")
+                    ? dictionary.hero.heardAboutError
+                    : invalid.has("email")
+                      ? dictionary.hero.email
+                      : dictionary.hero.contactEmailOrPhone}
               </p>
             ) : null}
 

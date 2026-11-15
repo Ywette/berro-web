@@ -10,6 +10,7 @@ import {
   type QuoteStop,
 } from "@/lib/orders/stops";
 import type { QuoteOrderInput } from "@/lib/orders/session-orders";
+import { formatHeardAboutLabel } from "@/lib/quote-heard-about";
 
 type QuoteSummaryDialogProps = {
   open: boolean;
@@ -119,6 +120,15 @@ export function QuoteSummaryDialog({
           <SummaryItem label={dictionary.quote.name} value={draft.name || "—"} />
           <SummaryItem label={dictionary.quote.email} value={draft.email || "—"} />
           <SummaryItem label={dictionary.quote.phone} value={draft.phone || "—"} />
+          <SummaryItem
+            label={dictionary.quote.heardAboutLabel}
+            value={formatHeardAboutLabel(
+              draft.heardAbout,
+              draft.heardAboutDetail,
+              dictionary.quote.heardAboutOptions,
+            )}
+            className="sm:col-span-2"
+          />
           <SummaryItem
             label={dictionary.quote.pickup}
             value={draft.pickup || "—"}

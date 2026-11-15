@@ -1,7 +1,8 @@
 "use server";
 
 import { sendContactEmail } from "@/lib/email/send-contact-email";
-import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { getDictionary, getLocale } from "@/lib/i18n/get-dictionary";
+import { upsertNewsletterSubscriber } from "@/lib/newsletter/store";
 
 export type ContactState = {
   error?: string;
@@ -72,8 +73,14 @@ export async function subscribeToNews(
     return { error: dictionary.contact.newsletterTopicError };
   }
 
+  const locale = await getLocale();
+  const saved = await upsertNewsletterSubscriber({ email, topics, locale });
+  if (!saved.ok) {
+    return { error: dictionary.contact.emailError };
+  }
+
   const topicLabels = topics.map((topic) => dictionary.contact.newsletterTopics[topic]);
-  const result = await sendContactEmail({
+  await sendContactEmail({
     name: "Newsletter",
     email,
     phone: "",
@@ -83,10 +90,6 @@ export async function subscribeToNews(
     emailLabel: dictionary.contact.email,
     phoneLabel: dictionary.contact.phone,
   });
-
-  if (!result.ok) {
-    return { error: result.error };
-  }
 
   return { success: dictionary.contact.newsletterSent };
 }

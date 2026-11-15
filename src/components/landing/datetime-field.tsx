@@ -18,6 +18,7 @@ type DateTimeInputProps = {
   min?: string;
   invalid?: boolean;
   className?: string;
+  placeholder?: string;
   "aria-label"?: string;
 };
 
@@ -69,6 +70,7 @@ export function DateTimeInput({
   min,
   invalid = false,
   className,
+  placeholder = "—",
   "aria-label": ariaLabel,
 }: DateTimeInputProps) {
   const parsed = parseValue(value);
@@ -187,7 +189,7 @@ export function DateTimeInput({
   const display = formatDisplay(value);
 
   return (
-    <div ref={rootRef} className="relative min-w-[13.5rem]">
+    <div ref={rootRef} className="relative min-w-0 w-full">
       {name ? <input type="hidden" name={name} value={value} /> : null}
 
       <button
@@ -197,12 +199,12 @@ export function DateTimeInput({
         aria-expanded={open}
         aria-controls={listId}
         onClick={() => setOpen((current) => !current)}
-        className={`flex h-10 w-full min-w-0 items-center gap-2 rounded-md border bg-white px-3 text-left text-sm outline-none ${
-          invalid ? "border-red-600" : "border-black/5"
+        className={`flex h-10 w-full min-w-0 items-center gap-2 rounded-full border bg-white/95 px-3.5 text-left text-sm outline-none ${
+          invalid ? "field-error-blink" : "border-transparent"
         } ${display ? "text-neutral-900" : "text-neutral-400"} ${className ?? ""}`}
       >
         <CalendarGlyph />
-        <span className="min-w-0 flex-1 truncate">{display || "—"}</span>
+        <span className="min-w-0 flex-1 truncate">{display || placeholder}</span>
       </button>
 
       {open && coords && portalRoot
@@ -354,29 +356,37 @@ type DateTimeFieldProps = DateTimeInputProps & {
   label: string;
   icon?: ReactNode;
   labelClassName?: string;
+  hideLabel?: boolean;
 };
 
 export function DateTimeField({
   label,
   icon,
   labelClassName,
+  hideLabel = false,
   invalid = false,
   className,
+  placeholder,
   ...inputProps
 }: DateTimeFieldProps) {
   return (
     <div
-      className={`grid min-w-0 gap-1.5 ${labelClassName ?? (invalid ? "text-red-200" : "text-ivory/80")}`}
+      className={`grid min-w-0 overflow-visible ${hideLabel ? "gap-0" : "gap-1.5"} ${invalid ? "relative z-40" : ""} ${labelClassName ?? (invalid ? "text-red-200" : "text-ivory/80")}`}
     >
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-medium tracking-wide">
-        {icon}
-        {label}
-      </span>
+      {hideLabel ? (
+        <span className="sr-only">{label}</span>
+      ) : (
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium tracking-wide">
+          {icon}
+          {label}
+        </span>
+      )}
       <DateTimeInput
         {...inputProps}
         invalid={invalid}
+        placeholder={placeholder ?? (hideLabel ? label : "—")}
         aria-label={inputProps["aria-label"] ?? label}
-        className={`h-11 rounded-lg ${className ?? ""}`}
+        className={className ?? "h-10 rounded-full"}
       />
     </div>
   );

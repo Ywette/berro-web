@@ -7,6 +7,7 @@ import {
   mergeOrdersWithSession,
   removeSessionOrderByReference,
 } from "@/lib/orders/session-orders";
+import { formatHeardAboutLabel } from "@/lib/quote-heard-about";
 import { assignEmployee, assignTransport, applyAssignmentPatches } from "@/lib/staff/assignments";
 import { employeeChoices, vehicleChoices, vehicleLabel } from "@/lib/staff/availability";
 import type { OrderStatus, StaffOrder } from "@/types/dashboard";
@@ -116,8 +117,21 @@ export function OrdersTableClient({
                     <td className="px-4 py-3">{order.passengerCount}</td>
                     <td className="px-4 py-3">
                       <p className="text-ivory">{order.requestorName ?? "—"}</p>
+                      {order.requestorCompany ? (
+                        <p className="mt-1 text-xs text-mist">{order.requestorCompany}</p>
+                      ) : null}
                       <p className="mt-1 text-xs text-mist">{order.requestorEmail ?? "—"}</p>
                       <p className="text-xs text-mist">{order.requestorPhone ?? "—"}</p>
+                      {order.heardAbout ? (
+                        <p className="mt-1 text-xs text-mist">
+                          {dictionary.quote.heardAboutLabel}:{" "}
+                          {formatHeardAboutLabel(
+                            order.heardAbout,
+                            order.heardAboutDetail,
+                            dictionary.quote.heardAboutOptions,
+                          )}
+                        </p>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3">
                       <span

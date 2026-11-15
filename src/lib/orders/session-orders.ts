@@ -9,8 +9,11 @@ export type QuoteOrderInput = {
   trip?: string;
   tripMode?: QuoteTripMode | string;
   name?: string;
+  company?: string;
   email?: string;
   phone?: string;
+  heardAbout?: string;
+  heardAboutDetail?: string;
   pickup?: string;
   dropoff?: string;
   departure?: string;
@@ -137,8 +140,11 @@ export function orderFromQuoteInput(input: QuoteOrderInput): StaffOrder {
     returnTo,
     passengerCount: Number(input.passengers),
     requestorName: input.name?.trim() || null,
+    requestorCompany: input.company?.trim() || null,
     requestorEmail: input.email?.trim() || null,
     requestorPhone: input.phone?.trim() || null,
+    heardAbout: input.heardAbout?.trim() || null,
+    heardAboutDetail: input.heardAboutDetail?.trim() || null,
     status: "new",
     departureOn: toDateOnly(input.departure),
     returnOn: toDateOnly(input.returnAt),

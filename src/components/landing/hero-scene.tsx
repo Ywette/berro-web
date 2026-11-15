@@ -57,7 +57,7 @@ export function SloganHero({ children }: { children: ReactNode }) {
   return (
     <section
       id="book"
-      className="relative flex min-h-[calc(100svh-var(--site-header-height))] scroll-mt-[var(--site-header-height)] overflow-x-hidden"
+      className="relative flex h-[calc(100svh-var(--site-header-height))] scroll-mt-[var(--site-header-height)] overflow-x-hidden overflow-y-auto lg:overflow-hidden"
     >
       <div className="absolute inset-0" aria-hidden="true">
         {slides.map((slide, slideIndex) => (
@@ -74,21 +74,21 @@ export function SloganHero({ children }: { children: ReactNode }) {
             style={{ transitionDuration: reducedMotion.current ? "0ms" : `${FADE_MS}ms` }}
           />
         ))}
-        <div className="absolute inset-0 bg-[linear-gradient(105deg,rgba(8,8,10,0.88)_0%,rgba(8,8,10,0.62)_38%,rgba(8,8,10,0.28)_68%,rgba(8,8,10,0.55)_100%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-night via-night/70 to-transparent" />
+        <div className="absolute inset-0 bg-[linear-gradient(105deg,rgba(8,8,10,0.88)_0%,rgba(8,8,10,0.58)_40%,rgba(8,8,10,0.32)_70%,rgba(8,8,10,0.55)_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-night via-night/50 to-transparent lg:h-28" />
       </div>
 
-      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col justify-center gap-10 px-4 py-10 sm:px-6 lg:py-14">
-        <div className="max-w-2xl">
-          <h1 className="font-serif text-4xl leading-[1.08] tracking-wide text-ivory sm:text-5xl lg:text-[3.35rem]">
+      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col justify-center gap-5 px-4 py-6 sm:gap-6 sm:px-6 lg:py-8">
+        <div className="max-w-xl">
+          <h1 className="font-serif text-3xl leading-[1.1] tracking-wide text-ivory sm:text-4xl lg:text-[2.65rem] xl:text-[3rem]">
             {dictionary.hero.headline}
           </h1>
-          <p className="mt-5 max-w-xl text-sm leading-7 text-ivory/80 sm:text-[15px]">
+          <p className="mt-3 max-w-md text-sm leading-6 text-ivory/78 sm:mt-4 sm:leading-7">
             {dictionary.hero.support}
           </p>
         </div>
 
-        <div className="w-full max-w-2xl">{children}</div>
+        <div className="w-full max-w-xl min-w-0">{children}</div>
       </div>
     </section>
   );

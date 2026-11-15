@@ -16,8 +16,11 @@ export type StaffOrder = {
   returnTo: string | null;
   passengerCount: number;
   requestorName: string | null;
+  requestorCompany: string | null;
   requestorEmail: string | null;
   requestorPhone: string | null;
+  heardAbout: string | null;
+  heardAboutDetail: string | null;
   status: OrderStatus;
   departureOn: string | null;
   returnOn: string | null;

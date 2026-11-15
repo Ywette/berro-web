@@ -41,7 +41,7 @@ cp .env.example .env.local
 
 2. Clerk: use the linked Dashboard app (`clerk init` / `clerk env pull`) so `.env.local` has `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`. Sign-in/up URLs should point at `/sign-in` and `/sign-up`.
 
-3. Supabase: Project Settings → API. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable), and `SUPABASE_SERVICE_ROLE_KEY` (secret). Then run `supabase/migrations/001_fleet_and_excursions.sql` in the SQL Editor. Fleet and excursions sync to Supabase; local JSON remains a fallback.
+3. Supabase: Project Settings → API. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable), and `SUPABASE_SERVICE_ROLE_KEY` (secret). Run these in the SQL Editor: `supabase/migrations/001_fleet_and_excursions.sql`, then `002_newsletter_subscribers.sql`. Fleet, excursions, and newsletter signups sync to Supabase.
 
 4. Create a Resend API key. `CONTACT_TO_EMAIL` is who receives the form. `CONTACT_FROM_EMAIL` must be a sender Resend allows.
 

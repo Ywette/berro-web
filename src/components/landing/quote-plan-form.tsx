@@ -22,6 +22,11 @@ import {
 import { encodeStops, totalWaitingMinutes } from "@/lib/orders/stops";
 import { quoteFieldErrors, type QuoteOrderInput, type QuoteRequiredField } from "@/lib/orders/session-orders";
 import type { TripRoute } from "@/lib/places/types";
+import {
+  isQuoteHeardAboutSource,
+  quoteHeardAboutSources,
+  type QuoteHeardAboutSource,
+} from "@/lib/quote-heard-about";
 import { isQuoteTripKind, quoteTripKinds, type QuoteTripKind } from "@/lib/quote-trips";
 
 const trips = quoteTripKinds;
@@ -66,6 +71,10 @@ export function QuotePlanForm({ formId = "plan-book", defaults }: QuotePlanFormP
   const [name, setName] = useState(defaults?.name ?? "");
   const [email, setEmail] = useState(defaults?.email ?? "");
   const [phone, setPhone] = useState(defaults?.phone ?? "");
+  const [heardAbout, setHeardAbout] = useState<QuoteHeardAboutSource | "">("");
+  const [heardAboutDetail, setHeardAboutDetail] = useState("");
+  const [heardAboutError, setHeardAboutError] = useState(false);
+  const [heardAboutOtherError, setHeardAboutOtherError] = useState(false);
   const [passengers, setPassengers] = useState(defaults?.passengers ?? "");
   const [planText, setPlanText] = useState("");
   const [planDocument, setPlanDocument] = useState<PlanDocument | null>(null);
@@ -134,6 +143,11 @@ export function QuotePlanForm({ formId = "plan-book", defaults }: QuotePlanFormP
       name,
       email,
       phone,
+      heardAbout: isQuoteHeardAboutSource(heardAbout) ? heardAbout : undefined,
+      heardAboutDetail:
+        heardAbout === "other" && heardAboutDetail.trim().length >= 2
+          ? heardAboutDetail.trim()
+          : undefined,
       pickup: mapped.pickup,
       dropoff: mapped.dropoff,
       departure: mapped.departure,
@@ -152,7 +166,12 @@ export function QuotePlanForm({ formId = "plan-book", defaults }: QuotePlanFormP
 
     const input = buildInput();
     const errors = quoteFieldErrors(input);
-    if (errors.length > 0) {
+    const missingHeardAbout = !isQuoteHeardAboutSource(heardAbout);
+    const missingOtherDetail =
+      heardAbout === "other" && heardAboutDetail.trim().length < 2;
+    setHeardAboutError(missingHeardAbout);
+    setHeardAboutOtherError(missingOtherDetail);
+    if (errors.length > 0 || missingHeardAbout || missingOtherDetail) {
       setInvalid(new Set(errors));
       return;
     }
@@ -430,6 +449,52 @@ export function QuotePlanForm({ formId = "plan-book", defaults }: QuotePlanFormP
             className={controlClass(invalid.has("passengers"))}
           />
         </div>
+        <fieldset className="mt-4 grid gap-2">
+          <legend className="text-sm font-medium text-ivory/85">{dictionary.quote.heardAboutLabel}</legend>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {quoteHeardAboutSources.map((source) => (
+              <label
+                key={source}
+                className="flex cursor-pointer items-center gap-3 text-sm text-ivory/90"
+              >
+                <input
+                  type="radio"
+                  name="heardAbout"
+                  value={source}
+                  checked={heardAbout === source}
+                  aria-invalid={heardAboutError || undefined}
+                  onChange={() => {
+                    setHeardAbout(source);
+                    setHeardAboutError(false);
+                    setHeardAboutOtherError(false);
+                  }}
+                  className="h-4 w-4 border-white/30 bg-transparent text-burgundy focus:ring-burgundy/40"
+                />
+                {dictionary.quote.heardAboutOptions[source]}
+              </label>
+            ))}
+          </div>
+          {heardAbout === "other" ? (
+            <input
+              value={heardAboutDetail}
+              placeholder={dictionary.quote.heardAboutOtherPlaceholder}
+              aria-label={dictionary.quote.heardAboutOptions.other}
+              aria-invalid={heardAboutOtherError || undefined}
+              onChange={(event) => {
+                setHeardAboutDetail(event.target.value);
+                setHeardAboutOtherError(false);
+              }}
+              className={controlClass(heardAboutOtherError)}
+            />
+          ) : null}
+          {heardAboutError || heardAboutOtherError ? (
+            <p role="alert" className="text-xs text-red-300">
+              {heardAboutOtherError
+                ? dictionary.quote.heardAboutOtherError
+                : dictionary.quote.heardAboutError}
+            </p>
+          ) : null}
+        </fieldset>
       </QuoteSection>
 
       <QuoteSection
