@@ -27,7 +27,7 @@ export async function SiteHeader() {
       <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3.5 sm:px-6">
         <Link href="/" aria-label="Berro Travel" className="shrink-0">
           <Image
-            src="/brand/berro-travel-logo.png"
+            src="/brand/berro-travel-logo-dark.png"
             alt=""
             width={352}
             height={112}

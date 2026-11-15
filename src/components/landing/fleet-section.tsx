@@ -8,8 +8,11 @@ export async function FleetSection() {
   const dictionary = await getDictionary();
 
   return (
-    <section id="fleet" className="scroll-mt-[var(--site-header-height)] bg-night">
-      <div className="mx-auto max-w-7xl px-5 py-14">
+    <section
+      id="fleet"
+      className="flex min-h-[calc(100svh-var(--site-header-height))] scroll-mt-[var(--site-header-height)] bg-night"
+    >
+      <div className="mx-auto flex w-full max-w-7xl flex-col justify-center px-5 py-10 sm:py-12">
         <div className="mb-6 flex items-center justify-between gap-4">
           <h2 className="text-2xl font-medium text-ivory sm:text-3xl">{dictionary.fleet.title}</h2>
           <Link
@@ -19,7 +22,7 @@ export async function FleetSection() {
             {dictionary.fleet.details}
           </Link>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2">
           {fleetModels.map((vehicle) => {
             const title = dictionary.fleet.categories[vehicle.id];
             const href = transportSectionHref(vehicle.id);
@@ -27,19 +30,18 @@ export async function FleetSection() {
               <Link
                 key={vehicle.id}
                 href={href}
-                className="relative block rounded-2xl border border-white/10 bg-[#141418] p-3.5 transition hover:border-white/25"
+                className="relative flex flex-col rounded-2xl border border-white/10 bg-[#141418] p-4 transition hover:border-white/25 sm:p-5"
               >
-                <span className="absolute top-3.5 right-3.5 z-10 h-2 w-2 rounded-full bg-red-600" />
-                <div className="relative h-28">
+                <div className="relative h-36 sm:h-44">
                   <Image
                     src={vehicle.image}
                     alt={title}
                     fill
-                    sizes="(min-width: 1280px) 22vw, (min-width: 640px) 45vw, 90vw"
+                    sizes="(min-width: 640px) 45vw, 90vw"
                     className="object-contain"
                   />
                 </div>
-                <h3 className="mt-4 text-sm font-medium text-ivory">{title}</h3>
+                <h3 className="mt-4 text-sm font-medium text-ivory sm:text-base">{title}</h3>
                 <p className="mt-2 flex items-center gap-2 text-xs text-mist">
                   <PeopleIcon />
                   {vehicle.passengers} {dictionary.fleet.passengers}
@@ -55,7 +57,7 @@ export async function FleetSection() {
                     <SnowIcon /> {dictionary.fleet.ac}
                   </li>
                 </ul>
-                <div className="mt-4 flex justify-end">
+                <div className="mt-auto flex justify-end pt-4">
                   <span className="rounded-md border border-white/15 px-2.5 py-1 text-[11px] text-ivory/80">
                     {dictionary.fleet.details}
                   </span>

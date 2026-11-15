@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { useEffect, useId, useMemo, useState } from "react";
 import { TransportPhotoStrip } from "@/components/autoparks/transport-photo-strip";
-import { countryLabel } from "@/lib/content/countries";
+import {
+  countryLabel,
+  fleetCountries,
+  type FleetCountryCode,
+} from "@/lib/content/countries";
 import type { FleetVehicle } from "@/lib/content/fleet";
 import {
   formatTransportSeats,
@@ -31,8 +35,27 @@ const sectionKinds: Record<TransportSectionId, FleetVehicle["kind"][]> = {
 
 export function TransportCatalog({ vehicles, locale, labels }: TransportCatalogProps) {
   const active = useMemo(() => vehicles.filter((vehicle) => vehicle.isActive), [vehicles]);
+  const [place, setPlace] = useState<FleetCountryCode | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const selected = active.find((vehicle) => vehicle.id === selectedId) ?? null;
+
+  const filtered = useMemo(
+    () => (place ? active.filter((vehicle) => vehicle.availableIn.includes(place)) : active),
+    [active, place],
+  );
+  const selected = filtered.find((vehicle) => vehicle.id === selectedId) ?? null;
+
+  const placeOptions: { value: FleetCountryCode | null; label: string }[] = [
+    { value: null, label: labels.filterAll },
+    ...fleetCountries.map((country) => ({
+      value: country.code,
+      label:
+        country.code === "LV"
+          ? labels.filterLatvia
+          : country.code === "FR"
+            ? labels.filterFrance
+            : labels.filterUsa,
+    })),
+  ];
 
   useEffect(() => {
     const hash = window.location.hash.replace(/^#/, "");
@@ -50,17 +73,49 @@ export function TransportCatalog({ vehicles, locale, labels }: TransportCatalogP
 
   return (
     <div className="mt-10 flex flex-col gap-14">
-      {transportSections.map((section) => (
-        <TransportSection
-          key={section}
-          section={section}
-          title={labels.sections[section]}
-          vehicles={active.filter((vehicle) => sectionKinds[section].includes(vehicle.kind))}
-          selectedId={selectedId}
-          onOpen={setSelectedId}
-          labels={labels}
-        />
-      ))}
+      <div className="space-y-3">
+        <p className="text-sm font-medium tracking-wide text-ivory">{labels.filterLabel}</p>
+        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={labels.filterLabel}>
+          {placeOptions.map((option) => {
+            const isActive = place === option.value;
+            return (
+              <button
+                key={option.label}
+                type="button"
+                role="radio"
+                aria-checked={isActive}
+                onClick={() => setPlace(option.value)}
+                className={`inline-flex h-9 items-center justify-center rounded-full px-4 text-xs font-semibold tracking-wide transition sm:text-sm ${
+                  isActive
+                    ? "bg-burgundy text-white"
+                    : "border border-white/15 text-ivory/85 hover:bg-white/8"
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="rounded-2xl border border-white/10 bg-[#141418] px-6 py-10 text-sm text-mist">
+          {labels.filterEmpty}
+        </p>
+      ) : (
+        transportSections.map((section) => (
+          <TransportSection
+            key={section}
+            section={section}
+            title={labels.sections[section]}
+            vehicles={filtered.filter((vehicle) => sectionKinds[section].includes(vehicle.kind))}
+            selectedId={selectedId}
+            onOpen={setSelectedId}
+            locale={locale}
+            labels={labels}
+          />
+        ))
+      )}
 
       {selected ? (
         <TransportSummaryDialog
@@ -80,6 +135,7 @@ function TransportSection({
   vehicles,
   selectedId,
   onOpen,
+  locale,
   labels,
 }: {
   section: TransportSectionId;
@@ -87,6 +143,7 @@ function TransportSection({
   vehicles: FleetVehicle[];
   selectedId: string | null;
   onOpen: (id: string) => void;
+  locale: Locale;
   labels: Dictionary["autoparks"];
 }) {
   const anchor = transportSectionAnchors[section];
@@ -109,6 +166,10 @@ function TransportSection({
             const seats = formatTransportSeats(vehicle);
             const active = vehicle.id === selectedId;
             const primary = vehicle.image || vehicle.galleryImages[0] || "";
+            const places =
+              vehicle.availableIn.length > 0
+                ? vehicle.availableIn.map((code) => countryLabel(code, locale)).join(", ")
+                : null;
 
             return (
               <article
@@ -140,6 +201,11 @@ function TransportSection({
                   <SeatIcon />
                   <span>{seats}</span>
                 </p>
+                {places ? (
+                  <p className="mt-1.5 text-xs text-mist/90">
+                    {labels.availableIn}: {places}
+                  </p>
+                ) : null}
                 <div className="mt-4 flex justify-end">
                   <button
                     type="button"

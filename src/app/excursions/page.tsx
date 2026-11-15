@@ -22,7 +22,8 @@ export default async function ExcursionsPage() {
     route: excursion.route,
     description: excursion.teaser,
     cta: dictionary.excursions.more,
-    image: excursion.image,
+    images: excursion.images,
+    logoVariant: excursion.logoVariant,
     region: excursion.region ?? undefined,
   }));
 

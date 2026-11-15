@@ -4,8 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AvailabilityButton } from "@/components/excursions/availability-button";
+import { ExcursionCollage } from "@/components/excursions/excursion-collage";
 import { bookingContact, getExcursionDetails } from "@/lib/content/excursions";
 import { formatEuro } from "@/lib/content/format-price";
+import { excursionCoverImage } from "@/lib/content/managed-excursion";
 import {
   getManagedExcursionBySlug,
   listActiveManagedExcursions,
@@ -46,7 +48,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
   const details = getExcursionDetails(slug);
   const text = dictionary.excursions;
   const title = excursion.title;
-  const imageIsLogo = excursion.image.toLowerCase().includes("logo");
+  const coverImage = excursionCoverImage(excursion);
 
   return (
     <article className="mx-auto max-w-4xl px-5 py-12">
@@ -65,20 +67,28 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
         <p className="mt-4 text-base leading-7 text-ivory/90">{excursion.teaser}</p>
       ) : null}
 
-      <div
-        className={`relative mt-8 h-72 overflow-hidden rounded-2xl sm:h-96 ${imageIsLogo ? "bg-[#242426]" : ""}`}
-      >
-        <Image
-          src={excursion.image}
-          alt={title}
-          fill
-          priority
-          sizes="(min-width: 896px) 896px, 100vw"
-          className={imageIsLogo ? "object-contain p-6" : "object-cover"}
-        />
-      </div>
+      <ExcursionCollage
+        images={excursion.images}
+        logoVariant={excursion.logoVariant}
+        alt={title}
+        priority
+        className="relative mt-8 h-72 overflow-hidden rounded-2xl sm:h-96"
+        sizes="(min-width: 896px) 896px, 100vw"
+      />
 
-      {details?.intro && details.intro.length > 0 ? (
+      {excursion.details ? (
+        <div className="mt-8 grid gap-4 text-base leading-8 text-ivory/90">
+          {excursion.details
+            .split(/\n\s*\n/)
+            .map((paragraph) => paragraph.trim())
+            .filter(Boolean)
+            .map((paragraph) => (
+              <p key={paragraph} className="whitespace-pre-line">
+                {paragraph}
+              </p>
+            ))}
+        </div>
+      ) : details?.intro && details.intro.length > 0 ? (
         <div className="mt-8 grid gap-4 text-base leading-8 text-ivory/90">
           {details.intro.map((paragraph) => (
             <p key={paragraph.lv}>{pickLocalized(paragraph, locale)}</p>
@@ -195,7 +205,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
                         ? "Alps"
                         : undefined
           }
-          image={excursion.image}
+          image={coverImage}
         />
         {details?.closing ? (
           <p className="mt-4 text-sm text-ivory/90">{pickLocalized(details.closing, locale)}</p>

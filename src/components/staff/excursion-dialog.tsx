@@ -9,9 +9,17 @@ import {
   type ReactNode,
 } from "react";
 import { saveManagedExcursion, type ExcursionActionState } from "@/actions/excursions";
-import { FleetPhotoManager, type FleetPhotoDraft } from "@/components/staff/fleet-photo-manager";
+import {
+  ExcursionCollagePhotos,
+  type ExcursionCollagePhotoLabels,
+} from "@/components/staff/excursion-collage-photos";
+import type { FleetPhotoDraft } from "@/components/staff/fleet-photo-manager";
 import { excursionRegions, type ExcursionRegion } from "@/lib/content/excursions";
-import type { ManagedExcursion } from "@/lib/content/managed-excursion";
+import {
+  EXCURSION_COLLAGE_PHOTO_COUNT,
+  type ExcursionLogoVariant,
+  type ManagedExcursion,
+} from "@/lib/content/managed-excursion";
 
 export type ExcursionDialogLabels = {
   addTitle: string;
@@ -24,21 +32,15 @@ export type ExcursionDialogLabels = {
   routeHint: string;
   teaser: string;
   teaserHint: string;
+  details: string;
+  detailsHint: string;
   region: string;
   regionNone: string;
   regionLatvia: string;
   regionFrance: string;
   regionBaltics: string;
   regionGermany: string;
-  photos: string;
-  photosHint: string;
-  uploadPhotos: string;
-  mainPhoto: string;
-  setMainPhoto: string;
-  movePhotoLeft: string;
-  movePhotoRight: string;
-  removePhoto: string;
-};
+} & ExcursionCollagePhotoLabels;
 
 type ExcursionDialogProps = {
   excursion: ManagedExcursion | null;
@@ -49,17 +51,13 @@ type ExcursionDialogProps = {
 
 const initialState: ExcursionActionState = {};
 
-function photosFromExcursion(excursion: ManagedExcursion | null): {
-  photos: FleetPhotoDraft[];
-  mainId: string | null;
-} {
-  if (!excursion?.image) return { photos: [], mainId: null };
-  const photo = {
-    id: `existing-0-${excursion.image}`,
-    preview: excursion.image,
-    src: excursion.image,
-  };
-  return { photos: [photo], mainId: photo.id };
+function photosFromExcursion(excursion: ManagedExcursion | null): FleetPhotoDraft[] {
+  if (!excursion?.images.length) return [];
+  return excursion.images.map((src, index) => ({
+    id: `existing-${index}-${src}`,
+    preview: src,
+    src,
+  }));
 }
 
 function Field({
@@ -84,10 +82,12 @@ const inputClass =
   "h-10 w-full rounded-lg border border-white/10 bg-white px-3 text-sm text-neutral-900 outline-none";
 
 export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionDialogProps) {
-  const seed = photosFromExcursion(excursion);
-  const [photos, setPhotos] = useState<FleetPhotoDraft[]>(seed.photos);
-  const [mainPhotoId, setMainPhotoId] = useState<string | null>(seed.mainId);
+  const [photos, setPhotos] = useState<FleetPhotoDraft[]>(() => photosFromExcursion(excursion));
+  const [logoVariant, setLogoVariant] = useState<ExcursionLogoVariant>(
+    () => excursion?.logoVariant ?? "dark",
+  );
   const [state, formAction, pending] = useActionState(saveManagedExcursion, initialState);
+  const [clientError, setClientError] = useState<string | null>(null);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -109,19 +109,20 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setClientError(null);
+
+    if (photos.length !== EXCURSION_COLLAGE_PHOTO_COUNT) {
+      setClientError(labels.photosHint);
+      return;
+    }
+
     const form = event.currentTarget;
     const formData = new FormData(form);
 
     formData.delete("photos");
     formData.delete("photoSlots");
     formData.delete("existingPhotos");
-    formData.delete("mainPhotoIndex");
-
-    const mainIndex = Math.max(
-      0,
-      photos.findIndex((photo) => photo.id === mainPhotoId),
-    );
-    formData.set("mainPhotoIndex", String(mainIndex === -1 ? 0 : mainIndex));
+    formData.set("logoVariant", logoVariant);
 
     for (const photo of photos) {
       if (photo.file) {
@@ -185,22 +186,24 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
             />
           </Field>
 
-          <FleetPhotoManager
+          <ExcursionCollagePhotos
             photos={photos}
-            mainId={mainPhotoId}
-            onChange={(next, nextMain) => {
-              setPhotos(next);
-              setMainPhotoId(nextMain);
-            }}
+            logoVariant={logoVariant}
+            onPhotosChange={setPhotos}
+            onLogoVariantChange={setLogoVariant}
             labels={{
               photos: labels.photos,
               photosHint: labels.photosHint,
-              upload: labels.uploadPhotos,
-              main: labels.mainPhoto,
-              setMain: labels.setMainPhoto,
-              moveLeft: labels.movePhotoLeft,
-              moveRight: labels.movePhotoRight,
-              remove: labels.removePhoto,
+              upload: labels.upload,
+              moveLeft: labels.moveLeft,
+              moveRight: labels.moveRight,
+              remove: labels.remove,
+              logo: labels.logo,
+              logoHint: labels.logoHint,
+              logoDark: labels.logoDark,
+              logoWhite: labels.logoWhite,
+              preview: labels.preview,
+              slot: labels.slot,
             }}
           />
 
@@ -217,9 +220,19 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
           <Field label={labels.teaser} hint={labels.teaserHint}>
             <textarea
               name="teaser"
-              rows={5}
+              rows={4}
               maxLength={800}
               defaultValue={excursion?.teaser ?? ""}
+              className="w-full resize-y rounded-lg border border-white/10 bg-white px-3 py-2 text-sm text-neutral-900 outline-none"
+            />
+          </Field>
+
+          <Field label={labels.details} hint={labels.detailsHint}>
+            <textarea
+              name="details"
+              rows={10}
+              maxLength={8000}
+              defaultValue={excursion?.details ?? ""}
               className="w-full resize-y rounded-lg border border-white/10 bg-white px-3 py-2 text-sm text-neutral-900 outline-none"
             />
           </Field>
@@ -239,9 +252,9 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
             </select>
           </Field>
 
-          {state.error ? (
+          {clientError || state.error ? (
             <p role="alert" className="text-xs text-red-300">
-              {state.error}
+              {clientError ?? state.error}
             </p>
           ) : null}
 

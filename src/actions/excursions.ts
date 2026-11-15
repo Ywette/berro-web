@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth/session";
 import { excursionRegions, type ExcursionRegion } from "@/lib/content/excursions";
 import {
+  EXCURSION_COLLAGE_PHOTO_COUNT,
+  isExcursionLogoVariant,
+  type ExcursionLogoVariant,
+} from "@/lib/content/managed-excursion";
+import {
   createManagedExcursion,
   removeManagedExcursion,
   updateManagedExcursionById,
@@ -31,21 +36,25 @@ async function parseExcursionForm(
       title: string;
       route: string;
       teaser: string;
+      details: string;
       region: ExcursionRegion | null;
-      image: string;
+      images: string[];
+      logoVariant: ExcursionLogoVariant;
     }
   | { error: string }
 > {
   const title = String(formData.get("title") ?? "").trim();
   const route = String(formData.get("route") ?? "").trim();
   const teaser = String(formData.get("teaser") ?? "").trim();
+  const details = String(formData.get("details") ?? "").trim();
   const region = parseRegion(formData.get("region"));
+  const logoRaw = String(formData.get("logoVariant") ?? "dark");
+  const logoVariant: ExcursionLogoVariant = isExcursionLogoVariant(logoRaw) ? logoRaw : "dark";
   const existingPhotos = formData
     .getAll("existingPhotos")
     .map(String)
     .filter(Boolean);
   const photoSlots = formData.getAll("photoSlots").map(String);
-  const mainPhotoIndex = Number(formData.get("mainPhotoIndex") ?? 0);
 
   if (!title) return { error: labels.excursionFormTitleRequired };
 
@@ -53,6 +62,7 @@ async function parseExcursionForm(
   try {
     uploaded = await saveFleetImageUploads(formData.getAll("photos"), {
       publicFolder: "excursions/uploads",
+      maxCount: EXCURSION_COLLAGE_PHOTO_COUNT,
     });
   } catch (error) {
     if (error instanceof FleetImageUploadException) {
@@ -74,18 +84,20 @@ async function parseExcursionForm(
       orderedPaths.push(slot);
     }
   }
-  if (orderedPaths.length === 0 && existingPhotos[0]) {
-    orderedPaths.push(existingPhotos[0]);
+
+  if (orderedPaths.length !== EXCURSION_COLLAGE_PHOTO_COUNT) {
+    return { error: labels.excursionFormPhotoRequired };
   }
 
-  const safeMain = Number.isFinite(mainPhotoIndex)
-    ? Math.min(Math.max(Math.round(mainPhotoIndex), 0), Math.max(orderedPaths.length - 1, 0))
-    : 0;
-  const image = orderedPaths[safeMain] ?? orderedPaths[0] ?? "";
-
-  if (!image) return { error: labels.excursionFormPhotoRequired };
-
-  return { title, route, teaser, region, image };
+  return {
+    title,
+    route,
+    teaser,
+    details,
+    region,
+    images: orderedPaths,
+    logoVariant,
+  };
 }
 
 export async function saveManagedExcursion(

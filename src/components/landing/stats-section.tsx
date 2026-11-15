@@ -1,7 +1,8 @@
-import { fleetCountries } from "@/lib/content/countries";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 
 const YEARS_ON_MARKET = 10;
+/** Marketing figure — not tied to the Autoparks availability filter list. */
+const COUNTRIES_SERVED = 10;
 
 export async function StatsSection() {
   const dictionary = await getDictionary();
@@ -21,7 +22,7 @@ export async function StatsSection() {
       label: stats.successfulTravels,
     },
     {
-      value: `${fleetCountries.length}+`,
+      value: `${COUNTRIES_SERVED}+`,
       label: stats.countriesServed,
     },
   ] as const;

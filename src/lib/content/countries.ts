@@ -1,17 +1,24 @@
 import type { Localized } from "@/lib/i18n/locale";
 
-/** Countries where a vehicle can be offered. */
+/** Places where a vehicle can be offered / filtered on Autoparks. */
 export const fleetCountries = [
-  { code: "LV", name: { lv: "Latvija", en: "Latvia", fr: "Lettonie", ru: "Латвия" } },
-  { code: "EE", name: { lv: "Igaunija", en: "Estonia", fr: "Estonie", ru: "Эстония" } },
-  { code: "LT", name: { lv: "Lietuva", en: "Lithuania", fr: "Lituanie", ru: "Литва" } },
-  { code: "FR", name: { lv: "Francija", en: "France", fr: "France", ru: "Франция" } },
-  { code: "BE", name: { lv: "Beļģija", en: "Belgium", fr: "Belgique", ru: "Бельгия" } },
-  { code: "DE", name: { lv: "Vācija", en: "Germany", fr: "Allemagne", ru: "Германия" } },
-  { code: "PL", name: { lv: "Polija", en: "Poland", fr: "Pologne", ru: "Польша" } },
-  { code: "FI", name: { lv: "Somija", en: "Finland", fr: "Finlande", ru: "Финляндия" } },
-  { code: "SE", name: { lv: "Zviedrija", en: "Sweden", fr: "Suède", ru: "Швеция" } },
-  { code: "NL", name: { lv: "Nīderlande", en: "Netherlands", fr: "Pays-Bas", ru: "Нидерланды" } },
+  {
+    code: "LV",
+    name: { lv: "Latvija", en: "Latvia", fr: "Lettonie", ru: "Латвия" },
+  },
+  {
+    code: "FR",
+    name: { lv: "Francija", en: "France", fr: "France", ru: "Франция" },
+  },
+  {
+    code: "US",
+    name: {
+      lv: "ASV (Denvera, Kolorādo)",
+      en: "USA (Denver, Colorado)",
+      fr: "États-Unis (Denver, Colorado)",
+      ru: "США (Денвер, Колорадо)",
+    },
+  },
 ] as const;
 
 export type FleetCountryCode = (typeof fleetCountries)[number]["code"];

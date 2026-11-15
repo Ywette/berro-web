@@ -42,9 +42,11 @@ export async function createManagedExcursion(
     id: `excursion-${crypto.randomUUID()}`,
     slug: uniqueSlug(input.title, existing),
     title: input.title,
-    image: input.image,
+    images: input.images,
+    logoVariant: input.logoVariant,
     route: input.route,
     teaser: input.teaser,
+    details: input.details,
     region: input.region,
     isActive: true,
   };
@@ -61,9 +63,11 @@ export async function updateManagedExcursionById(
   const next: ManagedExcursion = {
     ...current,
     title: input.title,
-    image: input.image,
+    images: input.images,
+    logoVariant: input.logoVariant,
     route: input.route,
     teaser: input.teaser,
+    details: input.details,
     region: input.region,
     slug: uniqueSlug(input.title, existing, id),
   };

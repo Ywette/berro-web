@@ -26,7 +26,7 @@ export async function SiteFooter() {
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <Image
-            src="/brand/berro-travel-logo.png"
+            src="/brand/berro-travel-logo-dark.png"
             alt="Berro Travel"
             width={352}
             height={112}

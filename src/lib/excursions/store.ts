@@ -1,6 +1,9 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { ManagedExcursion } from "@/lib/content/managed-excursion";
+import {
+  normalizeManagedExcursion,
+  type ManagedExcursion,
+} from "@/lib/content/managed-excursion";
 import { excursionSeed } from "@/lib/excursions/seed";
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -23,8 +26,12 @@ export async function readExcursionStore(): Promise<ManagedExcursion[]> {
   await ensureStore();
   const raw = await readFile(STORE_PATH, "utf8");
   try {
-    const parsed = JSON.parse(raw) as ManagedExcursion[];
-    return Array.isArray(parsed) ? parsed : [...excursionSeed];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [...excursionSeed];
+    const normalized = parsed
+      .map(normalizeManagedExcursion)
+      .filter((item): item is ManagedExcursion => item !== null);
+    return normalized.length > 0 ? normalized : [...excursionSeed];
   } catch {
     return [...excursionSeed];
   }

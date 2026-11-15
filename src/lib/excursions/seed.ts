@@ -1,15 +1,21 @@
 import type { ManagedExcursion } from "@/lib/content/managed-excursion";
 
+function collage(image: string): string[] {
+  return [image, image, image, image];
+}
+
 /** Initial rows migrated from the former static excursions catalog (LV listing copy). */
 export const excursionSeed: ManagedExcursion[] = [
   {
     id: "excursion-moulin-rouge",
     slug: "moulin-rouge",
     title: "Biļešu rezervācija uz kabarē “Moulin Rouge” ar vakariņu piedāvājumu",
-    image: "/excursions/moulin-rouge-logo.png",
+    images: collage("/excursions/moulin-rouge-logo.png"),
+    logoVariant: "dark",
     route: "",
     teaser:
       "Katru vakaru plkst. 19.00 piedzīvojiet izsmalcinātas vakariņas un pasaules līmeņa šovu leģendārajā Parīzes kabarē.",
+    details: "",
     region: "france",
     isActive: true,
   },
@@ -17,10 +23,12 @@ export const excursionSeed: ManagedExcursion[] = [
     id: "excursion-disneyland",
     slug: "disneyland",
     title: "Biļešu rezervācija uz Disnejlendu",
-    image: "/excursions/disneyland-mickey-minnie.png",
+    images: collage("/excursions/disneyland-mickey-minnie.png"),
+    logoVariant: "dark",
     route: "",
     teaser:
       "Tikšanās ar Disneja personāžiem, vakariņas ar Mikimausu un VIP numuri Disneyland 5★ viesnīcā.",
+    details: "",
     region: "france",
     isActive: true,
   },
@@ -28,10 +36,12 @@ export const excursionSeed: ManagedExcursion[] = [
     id: "excursion-paris",
     slug: "paris",
     title: "Parīze",
-    image: "/hero/paris.jpg",
+    images: collage("/hero/paris.jpg"),
+    logoVariant: "white",
     route: "Rīga – Berlīne – Parīze – Rīga",
     teaser:
       "Sešas dienas ar divu šoferu maiņu, nakts pieturu Berlīnē un brīvu laiku Parīzes centrā.",
+    details: "",
     region: "france",
     isActive: true,
   },
@@ -39,10 +49,12 @@ export const excursionSeed: ManagedExcursion[] = [
     id: "excursion-berlin",
     slug: "berlin",
     title: "Berlīnes nedēļas nogale",
-    image: "/hero/berlin.jpg",
+    images: collage("/hero/berlin.jpg"),
+    logoVariant: "white",
     route: "Rīga – Kauņa – Berlīne – Rīga",
     teaser:
       "Muzeju sala, Špreja vakarā un viesnīca pilsētas centrā. Piemērots uzņēmumu un skolu grupām.",
+    details: "",
     region: "germany",
     isActive: true,
   },
@@ -50,9 +62,11 @@ export const excursionSeed: ManagedExcursion[] = [
     id: "excursion-luxembourg",
     slug: "luxembourg",
     title: "Luksemburga un Beniluksa valstis",
-    image: "/hero/luxembourg.jpg",
+    images: collage("/hero/luxembourg.jpg"),
+    logoVariant: "white",
     route: "Rīga – Brisele – Luksemburga – Amsterdama – Rīga",
     teaser: "Trīs galvaspilsētas vienā braucienā, ar saulrietu virs Luksemburgas vecpilsētas.",
+    details: "",
     region: null,
     isActive: true,
   },
@@ -60,9 +74,11 @@ export const excursionSeed: ManagedExcursion[] = [
     id: "excursion-alps",
     slug: "alps",
     title: "Alpu ceļi",
-    image: "/hero/mountains.jpg",
+    images: collage("/hero/mountains.jpg"),
+    logoVariant: "white",
     route: "Rīga – Minhene – Insbruka – Zalcburga – Rīga",
     teaser: "Kalnu pārejas, ezeri un mazas pilsētiņas. Ceļš ir daļa no ceļojuma.",
+    details: "",
     region: null,
     isActive: true,
   },

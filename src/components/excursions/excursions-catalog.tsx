@@ -1,13 +1,14 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { ExcursionCollage } from "@/components/excursions/excursion-collage";
 import { RevealList } from "@/components/ui/reveal-list";
 import {
   excursionRegions,
   type ExcursionRegion,
 } from "@/lib/content/excursions";
+import type { ExcursionLogoVariant } from "@/lib/content/managed-excursion";
 
 export type ExcursionCardData = {
   slug: string;
@@ -16,8 +17,8 @@ export type ExcursionCardData = {
   route: string;
   description: string;
   cta: string;
-  image: string;
-  imageIsLogo?: boolean;
+  images: string[];
+  logoVariant: ExcursionLogoVariant;
   region?: ExcursionRegion;
 };
 
@@ -116,17 +117,14 @@ export function ExcursionsCatalog({
                   href={excursion.href}
                   tabIndex={-1}
                   aria-hidden="true"
-                  className={`relative min-h-44 overflow-hidden sm:h-full sm:min-h-0 ${
-                    excursion.imageIsLogo ? "bg-[#242426]" : ""
-                  }`}
+                  className="relative min-h-44 overflow-hidden sm:h-full sm:min-h-0"
                 >
-                  <Image
-                    src={excursion.image}
+                  <ExcursionCollage
+                    images={excursion.images}
+                    logoVariant={excursion.logoVariant}
                     alt=""
-                    fill
+                    className="absolute inset-0 h-full w-full"
                     sizes="(min-width: 1024px) 28vw, (min-width: 640px) 35vw, 90vw"
-                    className={excursion.imageIsLogo ? "object-contain p-6" : "object-cover"}
-                    style={excursion.imageIsLogo ? undefined : { objectPosition: "center center" }}
                   />
                   <div
                     aria-hidden="true"

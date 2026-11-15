@@ -10,8 +10,11 @@ export async function ServicesSection() {
   const { services } = dictionary;
 
   return (
-    <section id="services" className="scroll-mt-[var(--site-header-height)] border-t border-white/8">
-      <div className="mx-auto max-w-7xl px-5 py-14">
+    <section
+      id="services"
+      className="flex min-h-[calc(100svh-var(--site-header-height))] scroll-mt-[var(--site-header-height)] border-t border-white/8"
+    >
+      <div className="mx-auto flex w-full max-w-7xl flex-col justify-center px-5 py-10 sm:py-12">
         <div>
           <h2 className="max-w-3xl text-2xl font-medium text-ivory sm:text-3xl">
             {services.headline}
