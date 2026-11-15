@@ -22,7 +22,7 @@ import {
   type PassengerCounts,
 } from "@/components/landing/passenger-field";
 import { TravelTypeField } from "@/components/landing/travel-type-field";
-import { submitQuoteOrder } from "@/actions/orders";
+import { submitQuoteOrder } from "@/lib/orders/client";
 import { parsePlanDocument } from "@/lib/plan-document/client";
 import type { ExtractedPlanFields } from "@/lib/plan-document/types";
 import {

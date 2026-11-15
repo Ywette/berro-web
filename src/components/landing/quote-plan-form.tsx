@@ -33,7 +33,7 @@ import {
   type QuoteHeardAboutSource,
 } from "@/lib/quote-heard-about";
 import { TravelTypeField } from "@/components/landing/travel-type-field";
-import { submitQuoteOrder } from "@/actions/orders";
+import { submitQuoteOrder } from "@/lib/orders/client";
 import { isQuoteTripKind, quoteTripKinds, type QuoteTripKind } from "@/lib/quote-trips";
 import type { QuoteTravelType } from "@/lib/quote-travel-types";
 
