@@ -22,7 +22,7 @@ export type ExcursionCardData = {
   cta: string;
   images: string[];
   logoVariant: ExcursionLogoVariant;
-  region?: ExcursionRegion;
+  regions?: ExcursionRegion[];
 };
 
 type ExcursionsCatalogProps = {
@@ -43,7 +43,10 @@ export function ExcursionsCatalog({
   const [region, setRegion] = useState<ExcursionRegion | null>(null);
 
   const visible = useMemo(
-    () => (region ? items.filter((item) => item.region === region) : items),
+    () =>
+      region
+        ? items.filter((item) => (item.regions ?? []).includes(region))
+        : items,
     [items, region],
   );
 

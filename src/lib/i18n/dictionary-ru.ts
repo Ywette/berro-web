@@ -423,6 +423,8 @@ export const ru: Dictionary = {
     filterLabel: "Регион",
     filterAll: "Все",
     filterLatvia: "В Латвии",
+    filterEstonia: "В Эстонии",
+    filterLithuania: "В Литве",
     filterFrance: "Во Франции",
     filterBaltics: "В Балтии",
     filterGermany: "В Германии",
@@ -664,7 +666,8 @@ export const ru: Dictionary = {
     excursionFormTeaserHint: "Главные места и впечатления поездки.",
     excursionFormDetails: "Подробное описание",
     excursionFormDetailsHint: "Полный текст на странице экскурсии. Разделяйте абзацы пустой строкой.",
-    excursionFormRegion: "Фильтр региона",
+    excursionFormRegion: "Регионы",
+    excursionFormRegionHint: "Отметьте все страны, которые охватывает поездка (например, Латвия, Эстония и Литва).",
     excursionFormRegionNone: "Без региона",
     excursionFormPhotos: "Фото коллажа",
     excursionFormPhotosHint:

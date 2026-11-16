@@ -2,7 +2,11 @@ import {
   isExcursionLogoVariant,
   type ManagedExcursion,
 } from "@/lib/content/managed-excursion";
-import type { ExcursionRegion } from "@/lib/content/excursions";
+import {
+  isExcursionRegion,
+  parseExcursionRegions,
+  type ExcursionRegion,
+} from "@/lib/content/excursions";
 
 export type ExcursionRow = {
   id: string;
@@ -14,6 +18,7 @@ export type ExcursionRow = {
   teaser: string;
   details: string;
   region: string | null;
+  regions?: unknown;
   is_active: boolean;
 };
 
@@ -22,14 +27,14 @@ function asStringArray(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === "string");
 }
 
-function parseRegion(value: string | null): ExcursionRegion | null {
-  if (value === "latvia" || value === "france" || value === "baltics" || value === "germany") {
-    return value;
-  }
-  return null;
+function regionsFromRow(row: ExcursionRow): ExcursionRegion[] {
+  const fromList = parseExcursionRegions(row.regions);
+  if (fromList.length > 0) return fromList;
+  return isExcursionRegion(row.region) ? [row.region] : [];
 }
 
 export function excursionFromRow(row: ExcursionRow): ManagedExcursion {
+  const regions = regionsFromRow(row);
   return {
     id: row.id,
     slug: row.slug,
@@ -39,7 +44,7 @@ export function excursionFromRow(row: ExcursionRow): ManagedExcursion {
     route: row.route ?? "",
     teaser: row.teaser ?? "",
     details: row.details ?? "",
-    region: parseRegion(row.region),
+    regions,
     isActive: row.is_active !== false,
   };
 }
@@ -54,7 +59,9 @@ export function excursionToRow(excursion: ManagedExcursion): ExcursionRow {
     route: excursion.route,
     teaser: excursion.teaser,
     details: excursion.details,
-    region: excursion.region,
+    // Keep legacy single column for older readers; prefer first selected region.
+    region: excursion.regions[0] ?? null,
+    regions: excursion.regions,
     is_active: excursion.isActive,
   };
 }

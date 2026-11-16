@@ -32,13 +32,17 @@ export function ExcursionsBoardClient({
 
   const closeDialog = useCallback(() => setDialog(null), []);
 
-  const regionLabel = (region: ExcursionRegion | null) => {
-    if (!region) return "—";
+  const regionLabel = (region: ExcursionRegion) => {
     if (region === "latvia") return labels.regionLatvia;
+    if (region === "estonia") return labels.regionEstonia;
+    if (region === "lithuania") return labels.regionLithuania;
     if (region === "france") return labels.regionFrance;
     if (region === "baltics") return labels.regionBaltics;
     return labels.regionGermany;
   };
+
+  const regionsLabel = (regions: ExcursionRegion[]) =>
+    regions.length > 0 ? regions.map(regionLabel).join(", ") : "—";
 
   return (
     <div className="space-y-4">
@@ -83,7 +87,7 @@ export function ExcursionsBoardClient({
                     </button>
                   </td>
                   <td className="max-w-xs truncate px-4 py-3 text-mist">{excursion.route}</td>
-                  <td className="px-4 py-3 text-mist">{regionLabel(excursion.region)}</td>
+                  <td className="px-4 py-3 text-mist">{regionsLabel(excursion.regions)}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="inline-flex items-center gap-2">
                       <button

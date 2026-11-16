@@ -35,8 +35,10 @@ export type ExcursionDialogLabels = {
   details: string;
   detailsHint: string;
   region: string;
-  regionNone: string;
+  regionHint: string;
   regionLatvia: string;
+  regionEstonia: string;
+  regionLithuania: string;
   regionFrance: string;
   regionBaltics: string;
   regionGermany: string;
@@ -170,10 +172,13 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
 
   const regionLabels: Record<ExcursionRegion, string> = {
     latvia: labels.regionLatvia,
+    estonia: labels.regionEstonia,
+    lithuania: labels.regionLithuania,
     france: labels.regionFrance,
     baltics: labels.regionBaltics,
     germany: labels.regionGermany,
   };
+  const selectedRegions = new Set(excursion?.regions ?? []);
 
   return (
     <div
@@ -267,20 +272,29 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
             />
           </Field>
 
-          <Field label={labels.region}>
-            <select
-              name="region"
-              defaultValue={excursion?.region ?? ""}
-              className={inputClass}
-            >
-              <option value="">{labels.regionNone}</option>
+          <fieldset className="grid gap-1.5">
+            <legend className="text-[11px] font-medium tracking-wide text-ivory/80">
+              {labels.region}
+            </legend>
+            <div className="grid gap-2 rounded-lg border border-white/10 bg-white/5 p-3 sm:grid-cols-2">
               {excursionRegions.map((region) => (
-                <option key={region} value={region}>
+                <label
+                  key={region}
+                  className="flex items-center gap-2 text-sm font-normal text-ivory/90"
+                >
+                  <input
+                    type="checkbox"
+                    name="regions"
+                    value={region}
+                    defaultChecked={selectedRegions.has(region)}
+                    className="size-4 rounded border-white/30 bg-white accent-burgundy"
+                  />
                   {regionLabels[region]}
-                </option>
+                </label>
               ))}
-            </select>
-          </Field>
+            </div>
+            <span className="text-[11px] font-normal text-mist">{labels.regionHint}</span>
+          </fieldset>
 
           {clientError || state.error ? (
             <p role="alert" className="text-xs text-red-300">

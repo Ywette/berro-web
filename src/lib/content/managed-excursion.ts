@@ -1,4 +1,7 @@
-import type { ExcursionRegion } from "@/lib/content/excursions";
+import {
+  parseExcursionRegions,
+  type ExcursionRegion,
+} from "@/lib/content/excursions";
 
 export const EXCURSION_COLLAGE_PHOTO_COUNT = 4;
 
@@ -29,7 +32,8 @@ export type ManagedExcursion = {
   teaser: string;
   /** Long-form description shown on the excursion detail page. */
   details: string;
-  region: ExcursionRegion | null;
+  /** One or more regions for catalog filters (e.g. Latvia + Estonia + Lithuania). */
+  regions: ExcursionRegion[];
   isActive: boolean;
 };
 
@@ -69,13 +73,11 @@ export function normalizeManagedExcursion(raw: unknown): ManagedExcursion | null
     route: typeof item.route === "string" ? item.route : "",
     teaser: typeof item.teaser === "string" ? item.teaser : "",
     details: typeof item.details === "string" ? item.details : "",
-    region:
-      item.region === "latvia" ||
-      item.region === "france" ||
-      item.region === "baltics" ||
-      item.region === "germany"
-        ? item.region
-        : null,
+    regions: (() => {
+      const fromList = parseExcursionRegions(item.regions);
+      if (fromList.length > 0) return fromList;
+      return parseExcursionRegions(item.region);
+    })(),
     isActive: item.isActive !== false,
   };
 }

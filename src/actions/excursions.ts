@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth/session";
-import { excursionRegions, type ExcursionRegion } from "@/lib/content/excursions";
+import { isExcursionRegion, type ExcursionRegion } from "@/lib/content/excursions";
 import {
   EXCURSION_COLLAGE_PHOTO_COUNT,
   isExcursionLogoVariant,
@@ -21,11 +21,11 @@ export type ExcursionActionState = {
   success?: string;
 };
 
-function parseRegion(value: FormDataEntryValue | null): ExcursionRegion | null {
-  if (typeof value !== "string" || !value) return null;
-  return excursionRegions.includes(value as ExcursionRegion)
-    ? (value as ExcursionRegion)
-    : null;
+function parseRegions(formData: FormData): ExcursionRegion[] {
+  return formData
+    .getAll("regions")
+    .map(String)
+    .filter(isExcursionRegion);
 }
 
 async function parseExcursionForm(
@@ -37,7 +37,7 @@ async function parseExcursionForm(
       route: string;
       teaser: string;
       details: string;
-      region: ExcursionRegion | null;
+      regions: ExcursionRegion[];
       images: string[];
       logoVariant: ExcursionLogoVariant;
     }
@@ -47,7 +47,7 @@ async function parseExcursionForm(
   const route = String(formData.get("route") ?? "").trim();
   const teaser = String(formData.get("teaser") ?? "").trim();
   const details = String(formData.get("details") ?? "").trim();
-  const region = parseRegion(formData.get("region"));
+  const regions = parseRegions(formData);
   const logoRaw = String(formData.get("logoVariant") ?? "dark");
   const logoVariant: ExcursionLogoVariant = isExcursionLogoVariant(logoRaw) ? logoRaw : "dark";
   const existingPhotos = formData
@@ -94,7 +94,7 @@ async function parseExcursionForm(
     route,
     teaser,
     details,
-    region,
+    regions,
     images: orderedPaths,
     logoVariant,
   };

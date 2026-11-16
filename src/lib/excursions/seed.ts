@@ -16,7 +16,7 @@ export const excursionSeed: ManagedExcursion[] = [
     teaser:
       "Katru vakaru plkst. 19.00 piedzīvojiet izsmalcinātas vakariņas un pasaules līmeņa šovu leģendārajā Parīzes kabarē.",
     details: "",
-    region: "france",
+    regions: ["france"],
     isActive: true,
   },
   {
@@ -29,7 +29,7 @@ export const excursionSeed: ManagedExcursion[] = [
     teaser:
       "Tikšanās ar Disneja personāžiem, vakariņas ar Mikimausu un VIP numuri Disneyland 5★ viesnīcā.",
     details: "",
-    region: "france",
+    regions: ["france"],
     isActive: true,
   },
   {
@@ -42,7 +42,7 @@ export const excursionSeed: ManagedExcursion[] = [
     teaser:
       "Sešas dienas ar divu šoferu maiņu, nakts pieturu Berlīnē un brīvu laiku Parīzes centrā.",
     details: "",
-    region: "france",
+    regions: ["france"],
     isActive: true,
   },
   {
@@ -55,7 +55,7 @@ export const excursionSeed: ManagedExcursion[] = [
     teaser:
       "Muzeju sala, Špreja vakarā un viesnīca pilsētas centrā. Piemērots uzņēmumu un skolu grupām.",
     details: "",
-    region: "germany",
+    regions: ["germany"],
     isActive: true,
   },
   {
@@ -67,7 +67,7 @@ export const excursionSeed: ManagedExcursion[] = [
     route: "Rīga – Brisele – Luksemburga – Amsterdama – Rīga",
     teaser: "Trīs galvaspilsētas vienā braucienā, ar saulrietu virs Luksemburgas vecpilsētas.",
     details: "",
-    region: null,
+    regions: [],
     isActive: true,
   },
   {
@@ -79,7 +79,7 @@ export const excursionSeed: ManagedExcursion[] = [
     route: "Rīga – Minhene – Insbruka – Zalcburga – Rīga",
     teaser: "Kalnu pārejas, ezeri un mazas pilsētiņas. Ceļš ir daļa no ceļojuma.",
     details: "",
-    region: null,
+    regions: [],
     isActive: true,
   },
 ];

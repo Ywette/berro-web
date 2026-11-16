@@ -47,7 +47,7 @@ export async function createManagedExcursion(
     route: input.route,
     teaser: input.teaser,
     details: input.details,
-    region: input.region,
+    regions: input.regions,
     isActive: true,
   };
   return insertManagedExcursion(excursion);
@@ -68,7 +68,7 @@ export async function updateManagedExcursionById(
     route: input.route,
     teaser: input.teaser,
     details: input.details,
-    region: input.region,
+    regions: input.regions,
     slug: uniqueSlug(input.title, existing, id),
   };
   return updateManagedExcursion(next);

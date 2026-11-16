@@ -35,7 +35,7 @@ async function ExcursionsCatalogSection() {
     cta: dictionary.excursions.more,
     images: excursion.images,
     logoVariant: excursion.logoVariant,
-    region: excursion.region ?? undefined,
+    regions: excursion.regions,
   }));
 
   return (
@@ -47,6 +47,8 @@ async function ExcursionsCatalogSection() {
         filterEmpty={dictionary.excursions.filterEmpty}
         regionLabels={{
           latvia: dictionary.excursions.filterLatvia,
+          estonia: dictionary.excursions.filterEstonia,
+          lithuania: dictionary.excursions.filterLithuania,
           france: dictionary.excursions.filterFrance,
           baltics: dictionary.excursions.filterBaltics,
           germany: dictionary.excursions.filterGermany,

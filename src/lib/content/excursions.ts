@@ -23,14 +23,41 @@ export type ExcursionDetails = {
   closing?: Localized;
 };
 
-export type ExcursionRegion = "latvia" | "france" | "baltics" | "germany";
+export type ExcursionRegion =
+  | "latvia"
+  | "estonia"
+  | "lithuania"
+  | "france"
+  | "baltics"
+  | "germany";
 
 export const excursionRegions: readonly ExcursionRegion[] = [
   "latvia",
+  "estonia",
+  "lithuania",
   "france",
   "baltics",
   "germany",
 ];
+
+export function isExcursionRegion(value: unknown): value is ExcursionRegion {
+  return (
+    value === "latvia" ||
+    value === "estonia" ||
+    value === "lithuania" ||
+    value === "france" ||
+    value === "baltics" ||
+    value === "germany"
+  );
+}
+
+export function parseExcursionRegions(value: unknown): ExcursionRegion[] {
+  if (Array.isArray(value)) {
+    return value.filter(isExcursionRegion);
+  }
+  if (isExcursionRegion(value)) return [value];
+  return [];
+}
 
 export const bookingContact = {
   email: "berro@berro.lv",

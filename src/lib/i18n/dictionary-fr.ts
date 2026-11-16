@@ -423,6 +423,8 @@ export const fr: Dictionary = {
     filterLabel: "Région",
     filterAll: "Toutes",
     filterLatvia: "En Lettonie",
+    filterEstonia: "En Estonie",
+    filterLithuania: "En Lituanie",
     filterFrance: "En France",
     filterBaltics: "Dans les Baltiques",
     filterGermany: "En Allemagne",
@@ -664,7 +666,8 @@ export const fr: Dictionary = {
     excursionFormTeaserHint: "Courte description des principaux sites à voir.",
     excursionFormDetails: "Description détaillée",
     excursionFormDetailsHint: "Texte complet affiché sur la page de l'excursion. Séparez les paragraphes par une ligne vide.",
-    excursionFormRegion: "Filtre région",
+    excursionFormRegion: "Régions",
+    excursionFormRegionHint: "Cochez tous les pays couverts par ce voyage (p. ex. Lettonie, Estonie et Lituanie).",
     excursionFormRegionNone: "Sans région",
     excursionFormPhotos: "Photos du collage",
     excursionFormPhotosHint:
