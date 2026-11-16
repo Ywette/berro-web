@@ -667,7 +667,8 @@ export const ru: Dictionary = {
     excursionFormRegion: "Фильтр региона",
     excursionFormRegionNone: "Без региона",
     excursionFormPhotos: "Фото коллажа",
-    excursionFormPhotosHint: "Загрузите ровно 4 фото для коллажа 2×2.",
+    excursionFormPhotosHint:
+      "Загрузите ровно 4 фото для коллажа 2×2. Большие изображения уменьшаются автоматически.",
     excursionFormUploadPhotos: "Загрузить фото",
     excursionFormLogo: "Пластина логотипа в центре",
     excursionFormLogoHint:
@@ -680,7 +681,7 @@ export const ru: Dictionary = {
     excursionFormMovePhotoRight: "Вправо",
     excursionFormRemovePhoto: "Удалить",
     excursionFormPhotoType: "Используйте JPG, PNG, WEBP или GIF.",
-    excursionFormPhotoSize: "Каждое фото — не больше 4 МБ.",
+    excursionFormPhotoSize: "Не удалось уменьшить одно из фото. Попробуйте другое изображение.",
     excursionFormPhotoCount: "Нужно ровно 4 фото.",
     excursionFormPhotoInvalid: "Не удалось сохранить одно из фото.",
     excursionFormPhotoRequired: "Добавьте ровно 4 фото для коллажа.",

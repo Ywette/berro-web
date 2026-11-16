@@ -222,6 +222,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
             labels={{
               photos: labels.photos,
               photosHint: labels.photosHint,
+              photoSize: labels.photoSize,
               upload: labels.upload,
               moveLeft: labels.moveLeft,
               moveRight: labels.moveRight,

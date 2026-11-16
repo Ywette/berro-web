@@ -676,7 +676,8 @@ export const en = {
     excursionFormRegion: "Region filter",
     excursionFormRegionNone: "No region",
     excursionFormPhotos: "Collage photos",
-    excursionFormPhotosHint: "Upload exactly 4 photos for the 2×2 collage.",
+    excursionFormPhotosHint:
+      "Upload exactly 4 photos for the 2×2 collage. Larger images are resized automatically.",
     excursionFormUploadPhotos: "Upload photos",
     excursionFormLogo: "Logo plate in the center",
     excursionFormLogoHint:
@@ -689,7 +690,7 @@ export const en = {
     excursionFormMovePhotoRight: "Right",
     excursionFormRemovePhoto: "Remove",
     excursionFormPhotoType: "Use JPG, PNG, WEBP, or GIF images.",
-    excursionFormPhotoSize: "Each photo must be under 4 MB.",
+    excursionFormPhotoSize: "Could not resize one of the photos. Try another image.",
     excursionFormPhotoCount: "Exactly 4 photos are required.",
     excursionFormPhotoInvalid: "Could not save one of the photos.",
     excursionFormPhotoRequired: "Add exactly 4 pictures for the collage.",
@@ -1520,7 +1521,8 @@ export const lv: Dictionary = {
     excursionFormRegion: "Reģiona filtrs",
     excursionFormRegionNone: "Bez reģiona",
     excursionFormPhotos: "Kolāžas bildes",
-    excursionFormPhotosHint: "Augšupielādējiet tieši 4 bildes 2×2 kolāžai.",
+    excursionFormPhotosHint:
+      "Augšupielādējiet tieši 4 bildes 2×2 kolāžai. Lielākas bildes tiek automātiski samazinātas.",
     excursionFormUploadPhotos: "Augšupielādēt bildes",
     excursionFormLogo: "Logotipa plāksne vidū",
     excursionFormLogoHint:
@@ -1533,7 +1535,7 @@ export const lv: Dictionary = {
     excursionFormMovePhotoRight: "Pa labi",
     excursionFormRemovePhoto: "Noņemt",
     excursionFormPhotoType: "Izmantojiet JPG, PNG, WEBP vai GIF bildes.",
-    excursionFormPhotoSize: "Katra bilde drīkst būt līdz 4 MB.",
+    excursionFormPhotoSize: "Neizdevās samazināt kādu no bildēm. Mēģiniet citu failu.",
     excursionFormPhotoCount: "Nepieciešamas tieši 4 bildes.",
     excursionFormPhotoInvalid: "Neizdevās saglabāt kādu no bildēm.",
     excursionFormPhotoRequired: "Pievienojiet tieši 4 bildes kolāžai.",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef } from "react";
+import { useId, useRef, useState } from "react";
 import { ExcursionCollage } from "@/components/excursions/excursion-collage";
 import type { FleetPhotoDraft } from "@/components/staff/fleet-photo-manager";
 import {
@@ -8,10 +8,12 @@ import {
   excursionLogoSrc,
   type ExcursionLogoVariant,
 } from "@/lib/content/managed-excursion";
+import { prepareExcursionPhoto } from "@/lib/excursions/prepare-photo";
 
 export type ExcursionCollagePhotoLabels = {
   photos: string;
   photosHint: string;
+  photoSize: string;
   upload: string;
   moveLeft: string;
   moveRight: string;
@@ -41,22 +43,42 @@ export function ExcursionCollagePhotos({
 }: ExcursionCollagePhotosProps) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [processError, setProcessError] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false);
   const canUploadMore = photos.length < EXCURSION_COLLAGE_PHOTO_COUNT;
 
-  function addFiles(fileList: FileList | null) {
+  async function addFiles(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;
-    const next = [...photos];
-    const remaining = EXCURSION_COLLAGE_PHOTO_COUNT - next.length;
-    for (const file of Array.from(fileList).slice(0, Math.max(0, remaining))) {
-      if (!file.type.startsWith("image/")) continue;
-      next.push({
-        id: crypto.randomUUID(),
-        preview: URL.createObjectURL(file),
-        file,
-      });
+    setProcessError(null);
+    const remaining = EXCURSION_COLLAGE_PHOTO_COUNT - photos.length;
+    const selected = Array.from(fileList)
+      .filter((file) => file.type.startsWith("image/"))
+      .slice(0, Math.max(0, remaining));
+    if (selected.length === 0) {
+      if (inputRef.current) inputRef.current.value = "";
+      return;
     }
-    onPhotosChange(next);
-    if (inputRef.current) inputRef.current.value = "";
+
+    setProcessing(true);
+    try {
+      const next = [...photos];
+      for (const file of selected) {
+        try {
+          const prepared = await prepareExcursionPhoto(file);
+          next.push({
+            id: crypto.randomUUID(),
+            preview: URL.createObjectURL(prepared),
+            file: prepared,
+          });
+        } catch {
+          setProcessError(labels.photoSize);
+        }
+      }
+      onPhotosChange(next);
+    } finally {
+      setProcessing(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
   }
 
   function move(id: string, direction: -1 | 1) {
@@ -81,11 +103,18 @@ export function ExcursionCollagePhotos({
         <div>
           <p className="text-xs text-mist">{labels.photos}</p>
           <p className="mt-1 text-[11px] text-mist/80">{labels.photosHint}</p>
+          {processError ? (
+            <p className="mt-1 text-[11px] text-rose-200/90" role="alert">
+              {processError}
+            </p>
+          ) : null}
         </div>
         {canUploadMore ? (
           <label
             htmlFor={inputId}
-            className="cursor-pointer rounded-full border border-white/20 px-3 py-1.5 text-xs text-ivory hover:border-white/50"
+            className={`cursor-pointer rounded-full border border-white/20 px-3 py-1.5 text-xs text-ivory hover:border-white/50 ${
+              processing ? "pointer-events-none opacity-60" : ""
+            }`}
           >
             {labels.upload}
           </label>
@@ -97,8 +126,10 @@ export function ExcursionCollagePhotos({
           accept="image/jpeg,image/png,image/webp,image/gif"
           multiple
           className="sr-only"
-          disabled={!canUploadMore}
-          onChange={(event) => addFiles(event.target.files)}
+          disabled={!canUploadMore || processing}
+          onChange={(event) => {
+            void addFiles(event.target.files);
+          }}
         />
       </div>
 

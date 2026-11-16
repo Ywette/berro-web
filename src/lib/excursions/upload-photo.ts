@@ -1,10 +1,10 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { EXCURSION_PHOTO_MAX_BYTES } from "@/lib/excursions/photo-limits";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 
 export const EXCURSION_PHOTOS_BUCKET = "excursion-photos";
-/** Stay under Vercel’s ~4.5MB request body when uploading one file at a time. */
-export const EXCURSION_PHOTO_MAX_BYTES = 4 * 1024 * 1024;
+export { EXCURSION_PHOTO_MAX_BYTES };
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 

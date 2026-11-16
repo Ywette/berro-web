@@ -667,7 +667,8 @@ export const fr: Dictionary = {
     excursionFormRegion: "Filtre région",
     excursionFormRegionNone: "Sans région",
     excursionFormPhotos: "Photos du collage",
-    excursionFormPhotosHint: "Téléversez exactement 4 photos pour le collage 2×2.",
+    excursionFormPhotosHint:
+      "Téléversez exactement 4 photos pour le collage 2×2. Les grandes images sont redimensionnées automatiquement.",
     excursionFormUploadPhotos: "Téléverser des photos",
     excursionFormLogo: "Plaque logo au centre",
     excursionFormLogoHint:
@@ -680,7 +681,7 @@ export const fr: Dictionary = {
     excursionFormMovePhotoRight: "Droite",
     excursionFormRemovePhoto: "Retirer",
     excursionFormPhotoType: "Utilisez des images JPG, PNG, WEBP ou GIF.",
-    excursionFormPhotoSize: "Chaque photo doit faire moins de 4 Mo.",
+    excursionFormPhotoSize: "Impossible de redimensionner une photo. Essayez une autre image.",
     excursionFormPhotoCount: "Exactement 4 photos sont requises.",
     excursionFormPhotoInvalid: "Impossible d'enregistrer une des photos.",
     excursionFormPhotoRequired: "Ajoutez exactement 4 photos pour le collage.",

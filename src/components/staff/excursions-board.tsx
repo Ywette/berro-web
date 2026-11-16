@@ -55,6 +55,7 @@ export async function ExcursionsBoard() {
           regionGermany: dictionary.excursions.filterGermany,
           photos: labels.excursionFormPhotos,
           photosHint: labels.excursionFormPhotosHint,
+          photoSize: labels.excursionFormPhotoSize,
           upload: labels.excursionFormUploadPhotos,
           moveLeft: labels.excursionFormMovePhotoLeft,
           moveRight: labels.excursionFormMovePhotoRight,
