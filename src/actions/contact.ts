@@ -1,5 +1,12 @@
 "use server";
 
+import {
+  isValidContactEmail,
+  isValidContactName,
+  isValidContactPhone,
+  sanitizeContactName,
+  sanitizeContactPhone,
+} from "@/lib/contact/validation";
 import { sendContactEmail } from "@/lib/email/send-contact-email";
 import { getDictionary, getLocale } from "@/lib/i18n/get-dictionary";
 import { upsertNewsletterSubscriber } from "@/lib/newsletter/store";
@@ -14,20 +21,20 @@ export async function sendContactMessage(
   formData: FormData,
 ): Promise<ContactState> {
   const dictionary = await getDictionary();
-  const name = String(formData.get("name") ?? "").trim();
+  const name = sanitizeContactName(String(formData.get("name") ?? "")).trim();
   const email = String(formData.get("email") ?? "").trim();
-  const phone = String(formData.get("phone") ?? "").trim();
+  const phone = sanitizeContactPhone(String(formData.get("phone") ?? "")).trim();
   const message = String(formData.get("message") ?? "").trim();
 
-  if (name.length < 2 || name.length > 80) {
+  if (!isValidContactName(name)) {
     return { error: dictionary.contact.nameError };
   }
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 160) {
+  if (!isValidContactEmail(email)) {
     return { error: dictionary.contact.emailError };
   }
 
-  if (phone.length > 40) {
+  if (!isValidContactPhone(phone)) {
     return { error: dictionary.contact.phoneError };
   }
 
@@ -65,7 +72,7 @@ export async function subscribeToNews(
   const email = String(formData.get("email") ?? "").trim();
   const topics = newsletterTopics.filter((topic) => formData.get(topic) === "on");
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 160) {
+  if (!isValidContactEmail(email)) {
     return { error: dictionary.contact.emailError };
   }
 

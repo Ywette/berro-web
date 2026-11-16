@@ -14,6 +14,7 @@ type AvailabilityButtonProps = {
   route?: string;
   teaser?: string;
   destination?: string;
+  durationDays?: number | null;
   image: string;
   excursions: ExcursionQuoteOption[];
 };
@@ -31,6 +32,7 @@ function toPrefill(option: ExcursionQuoteOption): HeroBookingPrefill {
     planNote: built.planNote,
     excursionSlug: built.excursionSlug,
     excursionTitle: built.excursionTitle,
+    durationDays: built.durationDays,
   };
 }
 
@@ -40,6 +42,7 @@ export function AvailabilityButton({
   route,
   teaser,
   destination,
+  durationDays = null,
   image,
   excursions,
 }: AvailabilityButtonProps) {
@@ -47,8 +50,8 @@ export function AvailabilityButton({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const options = useMemo<ExcursionQuoteOption[]>(() => {
     if (excursions.some((item) => item.slug === slug)) return excursions;
-    return [{ slug, title, route, teaser, destination }, ...excursions];
-  }, [destination, excursions, route, slug, teaser, title]);
+    return [{ slug, title, route, teaser, destination, durationDays }, ...excursions];
+  }, [destination, durationDays, excursions, route, slug, teaser, title]);
 
   const [selectedSlug, setSelectedSlug] = useState(slug);
   const selected = useMemo(() => {
@@ -60,9 +63,10 @@ export function AvailabilityButton({
         route,
         teaser,
         destination,
+        durationDays,
       }
     );
-  }, [destination, options, route, selectedSlug, slug, teaser, title]);
+  }, [destination, durationDays, options, route, selectedSlug, slug, teaser, title]);
   const prefill = useMemo(() => toPrefill(selected), [selected]);
 
   return (
@@ -81,16 +85,16 @@ export function AvailabilityButton({
         onClick={(event) => {
           if (event.target === event.currentTarget) event.currentTarget.close();
         }}
-        className="popup-enter m-auto max-h-[calc(100dvh-1.5rem)] w-[min(40rem,calc(100vw-1.5rem))] overflow-y-auto rounded-2xl bg-transparent p-0 text-ivory backdrop:bg-black/75 backdrop:backdrop-blur-sm"
+        className="popup-enter m-auto max-h-[calc(100dvh-1rem)] w-[min(44rem,calc(100vw-1rem))] overflow-visible rounded-2xl bg-transparent p-0 text-ivory backdrop:bg-black/75 backdrop:backdrop-blur-sm"
       >
         <div
-          className="relative overflow-hidden rounded-2xl bg-cover bg-center"
+          className="relative overflow-visible rounded-2xl bg-cover bg-center"
           style={{ backgroundImage: `url('${image}')` }}
         >
-          <div className="bg-black/60 p-3 sm:p-4">
-            <div className="mb-3 flex items-start justify-between gap-3 px-1">
+          <div className="min-h-[min(36rem,calc(100dvh-3rem))] rounded-2xl bg-black/60 p-4 sm:min-h-[min(42rem,calc(100dvh-2.5rem))] sm:p-6">
+            <div className="mb-4 flex items-start justify-between gap-3 px-1">
               <div className="min-w-0">
-                <h2 id="availability-title" className="font-serif text-2xl tracking-wide">
+                <h2 id="availability-title" className="font-serif text-2xl tracking-wide sm:text-3xl">
                   {dictionary.excursions.availabilityTitle}
                 </h2>
                 <p className="mt-1 line-clamp-2 text-sm text-ivory/80">{selected.title}</p>
@@ -113,7 +117,7 @@ export function AvailabilityButton({
             </div>
             <Suspense
               fallback={
-                <div className="h-48 animate-pulse rounded-2xl bg-white/10" aria-hidden="true" />
+                <div className="h-56 animate-pulse rounded-2xl bg-white/10" aria-hidden="true" />
               }
             >
               <HeroBooking

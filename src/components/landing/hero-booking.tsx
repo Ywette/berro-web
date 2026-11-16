@@ -35,7 +35,10 @@ import {
   splitDateTime,
   toDatetimeLocalInput,
 } from "@/lib/orders/route-points";
-import type { ExcursionQuoteOption } from "@/lib/excursions/booking-prefill";
+import {
+  returnAtFromDeparture,
+  type ExcursionQuoteOption,
+} from "@/lib/excursions/booking-prefill";
 import type { QuoteTripKind } from "@/lib/quote-trips";
 import type { QuoteTravelType } from "@/lib/quote-travel-types";
 
@@ -139,6 +142,7 @@ export type HeroBookingPrefill = {
   planNote?: string;
   excursionSlug?: string;
   excursionTitle?: string;
+  durationDays?: number | null;
 };
 
 type HeroBookingProps = {
@@ -191,10 +195,15 @@ export function HeroBooking({
   );
   const oneWayResetTimerRef = useRef<number | null>(null);
   const showExcursionSelect = (excursionOptions?.length ?? 0) > 0;
+  /** Excursion availability quote: route/plan are fixed from the catalog trip. */
+  const isExcursionOrder =
+    showExcursionSelect || Boolean(prefill?.excursionSlug) || variant === "panel";
+  const selectedExcursion =
+    excursionOptions?.find((item) => item.slug === excursionSlug) ?? null;
   const selectedExcursionTitle =
-    excursionOptions?.find((item) => item.slug === excursionSlug)?.title ??
-    prefill?.excursionTitle ??
-    "";
+    selectedExcursion?.title ?? prefill?.excursionTitle ?? "";
+  const excursionDurationDays =
+    selectedExcursion?.durationDays ?? prefill?.durationDays ?? null;
 
   useEffect(() => {
     if (prefill?.service) {
@@ -371,7 +380,10 @@ export function HeroBooking({
       dropoff: resolvedDropoff,
       departure: draft.departureAt || undefined,
       returnAt: needsReturn
-        ? draft.returnAt || undefined
+        ? draft.returnAt ||
+          (isExcursionOrder
+            ? returnAtFromDeparture(draft.departureAt, excursionDurationDays) || undefined
+            : undefined)
         : draft.arrivalAt || undefined,
       passengers:
         totalPassengers(draft.passengers) > 0
@@ -400,7 +412,11 @@ export function HeroBooking({
     if (draft.tripMode === "oneWay" && !draft.arrivalAt) {
       errors.add("arrivalAt");
     }
-    if (draft.tripMode === "roundTrip" && !draft.returnAt) {
+    if (
+      draft.tripMode === "roundTrip" &&
+      !draft.returnAt &&
+      !isExcursionOrder
+    ) {
       errors.add("returnAt");
     }
     return errors;
@@ -454,7 +470,9 @@ export function HeroBooking({
 
   const shellClass =
     variant === "panel"
-      ? "relative flex max-h-[min(36rem,calc(100dvh-8rem))] w-full flex-col overflow-y-auto rounded-2xl border border-white/12 bg-black/55 p-3 shadow-[0_28px_70px_-40px_rgba(0,0,0,0.95)] backdrop-blur-md sm:p-5"
+      ? isExcursionOrder
+        ? "relative flex min-h-[22rem] w-full flex-col overflow-visible rounded-2xl border border-white/12 bg-black/55 p-4 pb-28 shadow-[0_28px_70px_-40px_rgba(0,0,0,0.95)] backdrop-blur-md sm:min-h-[26rem] sm:p-6 sm:pb-32"
+        : "relative flex max-h-[min(36rem,calc(100dvh-8rem))] w-full flex-col overflow-y-auto rounded-2xl border border-white/12 bg-black/55 p-3 shadow-[0_28px_70px_-40px_rgba(0,0,0,0.95)] backdrop-blur-md sm:p-5"
       : "relative flex max-h-[min(34rem,calc(100svh-var(--site-header-height)-5.5rem))] w-full flex-col overflow-visible rounded-none border-y border-white/12 bg-black/50 p-3 shadow-[0_28px_70px_-40px_rgba(0,0,0,0.95)] backdrop-blur-md sm:rounded-2xl sm:border sm:p-6 lg:max-h-[calc(100svh-var(--site-header-height)-4rem)]";
 
   return (
@@ -504,173 +522,217 @@ export function HeroBooking({
               </select>
             </label>
           ) : null}
-          <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)] items-stretch gap-1.5 sm:grid-cols-[5.75rem_auto_minmax(0,1.25fr)] sm:gap-2.5">
-            <div
-              className="relative col-start-1 row-start-1 grid min-h-10 w-full grid-cols-2 rounded-full border border-white/18 bg-white/5 p-0.5 sm:col-start-2 sm:w-max sm:min-w-[17.5rem]"
-              role="radiogroup"
-              aria-label={dictionary.hero.tripModeLabel}
-            >
-              <span
-                aria-hidden="true"
-                className={`pointer-events-none absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-full bg-burgundy shadow-[0_8px_18px_-12px_rgba(142,36,63,0.9)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
-                  displayedTripMode === "roundTrip" ? "translate-x-[calc(100%+2px)]" : "translate-x-0"
-                }`}
+
+          {isExcursionOrder ? (
+            <div className="grid grid-cols-2 items-stretch gap-1.5 sm:gap-2.5">
+              <PassengerField
+                className="min-w-0 w-full"
+                value={draft.passengers}
+                invalid={invalid.has("passengers")}
+                maxTotal={BUS_MAX_PASSENGERS}
+                copy={{
+                  label: dictionary.hero.passengerCount,
+                  ...dictionary.hero.passengerPicker,
+                }}
+                onChange={(passengers) => {
+                  patchDraft({ passengers });
+                  clearFieldError(setInvalid, "passengers");
+                }}
               />
-              {(
-                [
-                  ["oneWay", dictionary.hero.oneWay],
-                  ["roundTrip", dictionary.hero.roundTrip],
-                ] as const
-              ).map(([mode, label]) => {
-                const active = displayedTripMode === mode;
-                return (
-                  <button
-                    key={mode}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    onClick={() => {
-                      if (oneWayResetTimerRef.current !== null) {
-                        window.clearTimeout(oneWayResetTimerRef.current);
-                        oneWayResetTimerRef.current = null;
-                      }
+              <TravelTypeField
+                className="min-w-0"
+                value={travelType}
+                detail={travelTypeDetail}
+                invalid={invalid.has("travelType")}
+                detailInvalid={invalid.has("travelTypeOther")}
+                copy={{
+                  label: dictionary.hero.travelTypeLabel,
+                  placeholder: dictionary.hero.travelTypePlaceholder,
+                  otherPlaceholder: dictionary.hero.travelTypeOtherPlaceholder,
+                  options: dictionary.hero.travelTypeOptions,
+                }}
+                onChange={(value) => {
+                  setTravelType(value);
+                  if (value !== "other") setTravelTypeDetail("");
+                  clearFieldError(setInvalid, "travelType", "travelTypeOther");
+                }}
+                onDetailChange={(value) => {
+                  setTravelTypeDetail(value);
+                  clearFieldError(setInvalid, "travelTypeOther");
+                }}
+              />
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)] items-stretch gap-1.5 sm:grid-cols-[5.75rem_auto_minmax(0,1.25fr)] sm:gap-2.5">
+                <div
+                  className="relative col-start-1 row-start-1 grid min-h-10 w-full grid-cols-2 rounded-full border border-white/18 bg-white/5 p-0.5 sm:col-start-2 sm:w-max sm:min-w-[17.5rem]"
+                  role="radiogroup"
+                  aria-label={dictionary.hero.tripModeLabel}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`pointer-events-none absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-full bg-burgundy shadow-[0_8px_18px_-12px_rgba(142,36,63,0.9)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
+                      displayedTripMode === "roundTrip" ? "translate-x-[calc(100%+2px)]" : "translate-x-0"
+                    }`}
+                  />
+                  {(
+                    [
+                      ["oneWay", dictionary.hero.oneWay],
+                      ["roundTrip", dictionary.hero.roundTrip],
+                    ] as const
+                  ).map(([mode, label]) => {
+                    const active = displayedTripMode === mode;
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => {
+                          if (oneWayResetTimerRef.current !== null) {
+                            window.clearTimeout(oneWayResetTimerRef.current);
+                            oneWayResetTimerRef.current = null;
+                          }
 
-                      if (mode === "roundTrip") {
-                        setPendingTripMode(null);
-                        patchDraft({
-                          tripMode: "roundTrip",
-                          returnAt: draft.returnAt,
-                          arrivalAt: "",
-                          // Round trip returns to the departure place by default.
-                          dropoff: draft.pickup.trim() || draft.dropoff,
-                          // Round trips always start with at least one stop (Pietura 1).
-                          stops: draft.stops.length === 0 ? [newStop()] : draft.stops,
-                        });
-                        clearFieldError(setInvalid, "arrivalAt");
-                        return;
-                      }
+                          if (mode === "roundTrip") {
+                            setPendingTripMode(null);
+                            patchDraft({
+                              tripMode: "roundTrip",
+                              returnAt: draft.returnAt,
+                              arrivalAt: "",
+                              // Round trip returns to the departure place by default.
+                              dropoff: draft.pickup.trim() || draft.dropoff,
+                              // Round trips always start with at least one stop (Pietura 1).
+                              stops: draft.stops.length === 0 ? [newStop()] : draft.stops,
+                            });
+                            clearFieldError(setInvalid, "arrivalAt");
+                            return;
+                          }
 
-                      // Toggle moves immediately; route reset follows after 1s.
-                      setPendingTripMode("oneWay");
-                      oneWayResetTimerRef.current = window.setTimeout(() => {
-                        patchDraft({
-                          tripMode: "oneWay",
-                          dropoff: "",
-                          arrivalAt: "",
-                          returnAt: "",
-                          stops: [],
-                        });
-                        clearFieldError(setInvalid, "dropoff", "arrivalAt", "returnAt");
-                        setPendingTripMode(null);
-                        oneWayResetTimerRef.current = null;
-                      }, 1000);
-                    }}
-                    className={`relative z-10 flex h-full items-center justify-center rounded-full px-1.5 py-1 text-center text-[10px] leading-tight font-semibold tracking-wide whitespace-normal transition-colors duration-300 sm:px-3 sm:text-xs sm:leading-normal sm:whitespace-nowrap ${
-                      active ? "text-white" : "text-ivory/75 hover:text-ivory"
+                          // Toggle moves immediately; route reset follows after 1s.
+                          setPendingTripMode("oneWay");
+                          oneWayResetTimerRef.current = window.setTimeout(() => {
+                            patchDraft({
+                              tripMode: "oneWay",
+                              dropoff: "",
+                              arrivalAt: "",
+                              returnAt: "",
+                              stops: [],
+                            });
+                            clearFieldError(setInvalid, "dropoff", "arrivalAt", "returnAt");
+                            setPendingTripMode(null);
+                            oneWayResetTimerRef.current = null;
+                          }, 1000);
+                        }}
+                        className={`relative z-10 flex h-full items-center justify-center rounded-full px-1.5 py-1 text-center text-[10px] leading-tight font-semibold tracking-wide whitespace-normal transition-colors duration-300 sm:px-3 sm:text-xs sm:leading-normal sm:whitespace-nowrap ${
+                          active ? "text-white" : "text-ivory/75 hover:text-ivory"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {draft.planDocumentName ? (
+                  <div
+                    className={`col-start-2 row-start-1 flex h-10 min-w-0 w-full items-center justify-center gap-1 rounded-full border px-2 text-[10px] sm:col-start-1 sm:justify-start sm:gap-1.5 sm:px-2.5 ${
+                      readingPlan
+                        ? "border-champagne/45 bg-champagne/10 text-ivory"
+                        : "border-white/18 bg-white/5 text-ivory/85"
                     }`}
                   >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {draft.planDocumentName ? (
-              <div
-                className={`col-start-2 row-start-1 flex h-10 min-w-0 w-full items-center justify-center gap-1 rounded-full border px-2 text-[10px] sm:col-start-1 sm:justify-start sm:gap-1.5 sm:px-2.5 ${
-                  readingPlan
-                    ? "border-champagne/45 bg-champagne/10 text-ivory"
-                    : "border-white/18 bg-white/5 text-ivory/85"
-                }`}
-              >
-                {readingPlan ? (
-                  <span className="doc-read-spinner h-3 w-3 shrink-0" aria-hidden="true" />
+                    {readingPlan ? (
+                      <span className="doc-read-spinner h-3 w-3 shrink-0" aria-hidden="true" />
+                    ) : (
+                      <AttachmentIcon />
+                    )}
+                    <span
+                      className="min-w-0 truncate"
+                      title={
+                        readingPlan
+                          ? dictionary.pricing.readingWithAi
+                          : draft.planDocumentName
+                      }
+                    >
+                      {readingPlan
+                        ? dictionary.pricing.readingWithAi
+                        : draft.planDocumentName}
+                    </span>
+                    {!readingPlan ? (
+                      <button
+                        type="button"
+                        onClick={clearTravelPlan}
+                        className="ml-auto shrink-0 text-ivory/60 hover:text-ivory"
+                        aria-label={dictionary.hero.removeStop}
+                      >
+                        −
+                      </button>
+                    ) : null}
+                  </div>
                 ) : (
-                  <AttachmentIcon />
-                )}
-                <span
-                  className="min-w-0 truncate"
-                  title={
-                    readingPlan
-                      ? dictionary.pricing.readingWithAi
-                      : draft.planDocumentName
-                  }
-                >
-                  {readingPlan
-                    ? dictionary.pricing.readingWithAi
-                    : draft.planDocumentName}
-                </span>
-                {!readingPlan ? (
-                  <button
-                    type="button"
-                    onClick={clearTravelPlan}
-                    className="ml-auto shrink-0 text-ivory/60 hover:text-ivory"
-                    aria-label={dictionary.hero.removeStop}
+                  <label
+                    className="col-start-2 row-start-1 inline-flex h-10 w-full min-w-0 cursor-pointer items-center justify-center gap-1 rounded-full border border-white/18 px-2 text-[10px] font-semibold tracking-wide text-ivory/90 hover:bg-white/8 sm:col-start-1"
+                    title={dictionary.hero.attachTravelPlan}
                   >
-                    −
-                  </button>
-                ) : null}
-              </div>
-            ) : (
-              <label
-                className="col-start-2 row-start-1 inline-flex h-10 w-full min-w-0 cursor-pointer items-center justify-center gap-1 rounded-full border border-white/18 px-2 text-[10px] font-semibold tracking-wide text-ivory/90 hover:bg-white/8 sm:col-start-1"
-                title={dictionary.hero.attachTravelPlan}
-              >
-                <AttachmentIcon />
-                <span className="truncate">{dictionary.hero.attachTravelPlan}</span>
-                <input
-                  ref={planInputRef}
-                  type="file"
-                  accept={documentTypes.join(",")}
-                  className="sr-only"
-                  disabled={readingPlan}
-                  onChange={(event) => {
-                    chooseTravelPlan(event.target.files?.[0]);
-                    event.target.value = "";
+                    <AttachmentIcon />
+                    <span className="truncate">{dictionary.hero.attachTravelPlan}</span>
+                    <input
+                      ref={planInputRef}
+                      type="file"
+                      accept={documentTypes.join(",")}
+                      className="sr-only"
+                      disabled={readingPlan}
+                      onChange={(event) => {
+                        chooseTravelPlan(event.target.files?.[0]);
+                        event.target.value = "";
+                      }}
+                    />
+                  </label>
+                )}
+
+                <PassengerField
+                  className="col-start-3 row-start-1 min-w-0 w-full"
+                  value={draft.passengers}
+                  invalid={invalid.has("passengers")}
+                  maxTotal={BUS_MAX_PASSENGERS}
+                  copy={{
+                    label: dictionary.hero.passengerCount,
+                    ...dictionary.hero.passengerPicker,
+                  }}
+                  onChange={(passengers) => {
+                    patchDraft({ passengers });
+                    clearFieldError(setInvalid, "passengers");
                   }}
                 />
-              </label>
-            )}
+              </div>
 
-            <PassengerField
-              className="col-start-3 row-start-1 min-w-0 w-full"
-              value={draft.passengers}
-              invalid={invalid.has("passengers")}
-              maxTotal={BUS_MAX_PASSENGERS}
-              copy={{
-                label: dictionary.hero.passengerCount,
-                ...dictionary.hero.passengerPicker,
-              }}
-              onChange={(passengers) => {
-                patchDraft({ passengers });
-                clearFieldError(setInvalid, "passengers");
-              }}
-            />
-          </div>
+              <TravelTypeField
+                value={travelType}
+                detail={travelTypeDetail}
+                invalid={invalid.has("travelType")}
+                detailInvalid={invalid.has("travelTypeOther")}
+                copy={{
+                  label: dictionary.hero.travelTypeLabel,
+                  placeholder: dictionary.hero.travelTypePlaceholder,
+                  otherPlaceholder: dictionary.hero.travelTypeOtherPlaceholder,
+                  options: dictionary.hero.travelTypeOptions,
+                }}
+                onChange={(value) => {
+                  setTravelType(value);
+                  if (value !== "other") setTravelTypeDetail("");
+                  clearFieldError(setInvalid, "travelType", "travelTypeOther");
+                }}
+                onDetailChange={(value) => {
+                  setTravelTypeDetail(value);
+                  clearFieldError(setInvalid, "travelTypeOther");
+                }}
+              />
+            </>
+          )}
 
-          <TravelTypeField
-            value={travelType}
-            detail={travelTypeDetail}
-            invalid={invalid.has("travelType")}
-            detailInvalid={invalid.has("travelTypeOther")}
-            copy={{
-              label: dictionary.hero.travelTypeLabel,
-              placeholder: dictionary.hero.travelTypePlaceholder,
-              otherPlaceholder: dictionary.hero.travelTypeOtherPlaceholder,
-              options: dictionary.hero.travelTypeOptions,
-            }}
-            onChange={(value) => {
-              setTravelType(value);
-              if (value !== "other") setTravelTypeDetail("");
-              clearFieldError(setInvalid, "travelType", "travelTypeOther");
-            }}
-            onDetailChange={(value) => {
-              setTravelTypeDetail(value);
-              clearFieldError(setInvalid, "travelTypeOther");
-            }}
-          />
-
-          {planError ? (
+          {planError && !isExcursionOrder ? (
             <p className="text-[11px] text-red-200" role="alert">
               {planError}
             </p>
@@ -684,202 +746,236 @@ export function HeroBooking({
           ) : null}
         </div>
 
-        <div
-          className={`relative z-20 mt-2.5 space-y-2 overflow-visible px-0 py-1.5 transition-[padding,margin] duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] sm:px-2.5 sm:py-2.5 ${readingPlan ? "pointer-events-none select-none" : ""}`}
-        >
-          <div className="relative space-y-2 overflow-visible">
-            {draft.stops.length > 0 || showDestinationFields || showReturnFields ? (
-              <span
-                aria-hidden="true"
-                className={`pointer-events-none absolute top-5 left-[0.875rem] w-px -translate-x-1/2 bg-champagne/50 transition-[bottom,opacity] duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                  stopsExpanded ? "bottom-5 opacity-100" : "bottom-14 opacity-80"
-                }`}
+        {isExcursionOrder ? (
+          <div
+            className={`relative z-20 mt-2.5 grid grid-cols-1 gap-2 overflow-visible px-0 py-1.5 sm:grid-cols-2 sm:px-2.5 sm:py-2.5 ${readingPlan ? "pointer-events-none select-none" : ""}`}
+          >
+            <div className={invalid.has("departureAt") ? "relative z-40 overflow-visible" : ""}>
+              <DateTimeField
+                label={dictionary.hero.departureAt}
+                value={draft.departureAt}
+                hideLabel
+                invalid={invalid.has("departureAt")}
+                className="h-9 rounded-full sm:h-10"
+                onChange={(value) => {
+                  patchDraft({
+                    departureAt: value,
+                    returnAt: returnAtFromDeparture(value, excursionDurationDays),
+                  });
+                  clearFieldError(setInvalid, "departureAt", "returnAt");
+                }}
               />
-            ) : null}
-
-            <div className="relative grid grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-2">
-              <RouteMarker kind="start" />
-              <label
-                className={invalid.has("pickup") ? "relative z-40 overflow-visible" : ""}
-              >
-                <span className="sr-only">{dictionary.hero.route}</span>
-                <input
-                  value={draft.pickup}
-                  placeholder={dictionary.hero.route}
-                  aria-label={dictionary.hero.route}
-                  aria-invalid={invalid.has("pickup") || undefined}
-                  onChange={(event) => {
-                    const pickup = event.target.value;
-                    patchDraft({
-                      pickup,
-                      // Keep return place aligned with departure on round trips.
-                      dropoff: showReturnFields ? pickup : draft.dropoff,
-                    });
-                    clearFieldError(setInvalid, "pickup");
-                    if (showReturnFields) clearFieldError(setInvalid, "dropoff");
-                  }}
-                  className={`${fieldClass(invalid.has("pickup"))} placeholder:normal-case placeholder:tracking-normal`}
-                />
-              </label>
-              <div className={invalid.has("departureAt") ? "relative z-40 overflow-visible" : ""}>
-                <DateTimeField
-                  label={dictionary.hero.departureAt}
-                  value={draft.departureAt}
-                  hideLabel
-                  invalid={invalid.has("departureAt")}
-                  className="h-9 rounded-full sm:h-10"
-                  onChange={(value) => {
-                    patchDraft({
-                      departureAt: value,
-                      arrivalAt:
-                        draft.arrivalAt && value && draft.arrivalAt < value
-                          ? value
-                          : draft.arrivalAt,
-                      returnAt:
-                        draft.returnAt && value && draft.returnAt < value
-                          ? value
-                          : draft.returnAt,
-                    });
-                    clearFieldError(setInvalid, "departureAt");
-                  }}
-                />
-              </div>
             </div>
+            <div
+              className="flex h-9 items-center rounded-full border border-white/18 bg-white/10 px-3.5 text-xs text-ivory/90 sm:h-10 sm:text-sm"
+              aria-label={dictionary.excursions.durationLabel}
+            >
+              <span className="truncate">
+                {dictionary.excursions.durationLabel}:{" "}
+                {excursionDurationDays != null
+                  ? dictionary.excursions.days(excursionDurationDays)
+                  : dictionary.excursions.durationUnset}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div
+            className={`relative z-20 mt-2.5 space-y-2 overflow-visible px-0 py-1.5 transition-[padding,margin] duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] sm:px-2.5 sm:py-2.5 ${readingPlan ? "pointer-events-none select-none" : ""}`}
+          >
+            <div className="relative space-y-2 overflow-visible">
+              {draft.stops.length > 0 || showDestinationFields || showReturnFields ? (
+                <span
+                  aria-hidden="true"
+                  className={`pointer-events-none absolute top-5 left-[0.875rem] w-px -translate-x-1/2 bg-champagne/50 transition-[bottom,opacity] duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                    stopsExpanded ? "bottom-5 opacity-100" : "bottom-14 opacity-80"
+                  }`}
+                />
+              ) : null}
 
-            <div className="hero-route-reveal" data-open={stopsExpanded ? "true" : "false"}>
-              <div className="hero-route-reveal-inner">
-                {draft.stops.length > 0 ? (
-                  <div
-                    className={`relative max-h-40 space-y-2 overflow-y-auto overflow-x-visible py-0.5 transition-opacity duration-700 ${
-                      stopsExpanded ? "opacity-100" : "opacity-0"
-                    }`}
-                  >
-                    {draft.stops.map((stop, index) => (
-                      <div
-                        key={stop.id}
-                        className="grid grid-cols-[1.75rem_minmax(0,1fr)_2.25rem] items-center gap-x-2.5"
-                      >
-                        <RouteMarker kind="stop" />
-                        <label>
-                          <span className="sr-only">
-                            {dictionary.hero.stopPlaceholder} {index + 1}
-                          </span>
-                          <input
-                            value={stop.place}
-                            placeholder={`${dictionary.hero.stopPlaceholder} ${index + 1}`}
-                            aria-label={`${dictionary.hero.stopPlaceholder} ${index + 1}`}
-                            onChange={(event) => {
-                              const place = event.target.value;
+              <div className="relative grid grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-2">
+                <RouteMarker kind="start" />
+                <label
+                  className={invalid.has("pickup") ? "relative z-40 overflow-visible" : ""}
+                >
+                  <span className="sr-only">{dictionary.hero.route}</span>
+                  <input
+                    value={draft.pickup}
+                    placeholder={dictionary.hero.route}
+                    aria-label={dictionary.hero.route}
+                    aria-invalid={invalid.has("pickup") || undefined}
+                    onChange={(event) => {
+                      const pickup = event.target.value;
+                      patchDraft({
+                        pickup,
+                        // Keep return place aligned with departure on round trips.
+                        dropoff: showReturnFields ? pickup : draft.dropoff,
+                      });
+                      clearFieldError(setInvalid, "pickup");
+                      if (showReturnFields) clearFieldError(setInvalid, "dropoff");
+                    }}
+                    className={`${fieldClass(invalid.has("pickup"))} placeholder:normal-case placeholder:tracking-normal`}
+                  />
+                </label>
+                <div className={invalid.has("departureAt") ? "relative z-40 overflow-visible" : ""}>
+                  <DateTimeField
+                    label={dictionary.hero.departureAt}
+                    value={draft.departureAt}
+                    hideLabel
+                    invalid={invalid.has("departureAt")}
+                    className="h-9 rounded-full sm:h-10"
+                    onChange={(value) => {
+                      patchDraft({
+                        departureAt: value,
+                        arrivalAt:
+                          draft.arrivalAt && value && draft.arrivalAt < value
+                            ? value
+                            : draft.arrivalAt,
+                        returnAt:
+                          draft.returnAt && value && draft.returnAt < value
+                            ? value
+                            : draft.returnAt,
+                      });
+                      clearFieldError(setInvalid, "departureAt");
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="hero-route-reveal" data-open={stopsExpanded ? "true" : "false"}>
+                <div className="hero-route-reveal-inner">
+                  {draft.stops.length > 0 ? (
+                    <div
+                      className={`relative max-h-40 space-y-2 overflow-y-auto overflow-x-visible py-0.5 transition-opacity duration-700 ${
+                        stopsExpanded ? "opacity-100" : "opacity-0"
+                      }`}
+                    >
+                      {draft.stops.map((stop, index) => (
+                        <div
+                          key={stop.id}
+                          className="grid grid-cols-[1.75rem_minmax(0,1fr)_2.25rem] items-center gap-x-2.5"
+                        >
+                          <RouteMarker kind="stop" />
+                          <label>
+                            <span className="sr-only">
+                              {dictionary.hero.stopPlaceholder} {index + 1}
+                            </span>
+                            <input
+                              value={stop.place}
+                              placeholder={`${dictionary.hero.stopPlaceholder} ${index + 1}`}
+                              aria-label={`${dictionary.hero.stopPlaceholder} ${index + 1}`}
+                              onChange={(event) => {
+                                const place = event.target.value;
+                                patchDraft({
+                                  stops: draft.stops.map((item) =>
+                                    item.id === stop.id ? { ...item, place } : item,
+                                  ),
+                                });
+                              }}
+                              className={`${fieldClass()} placeholder:normal-case placeholder:tracking-normal`}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            aria-label={dictionary.hero.removeStop}
+                            onClick={() => {
                               patchDraft({
-                                stops: draft.stops.map((item) =>
-                                  item.id === stop.id ? { ...item, place } : item,
-                                ),
+                                stops: draft.stops.filter((item) => item.id !== stop.id),
                               });
                             }}
-                            className={`${fieldClass()} placeholder:normal-case placeholder:tracking-normal`}
-                          />
-                        </label>
-                        <button
-                          type="button"
-                          aria-label={dictionary.hero.removeStop}
-                          onClick={() => {
-                            patchDraft({
-                              stops: draft.stops.filter((item) => item.id !== stop.id),
-                            });
-                          }}
-                          className="grid h-10 w-9 place-items-center rounded-full border border-white/18 text-ivory/75 hover:bg-white/8"
-                        >
-                          −
-                        </button>
-                      </div>
-                    ))}
+                            className="grid h-10 w-9 place-items-center rounded-full border border-white/18 text-ivory/75 hover:bg-white/8"
+                          >
+                            −
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+
+              <div
+                className={`hero-route-morph relative grid grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-2 ${
+                  showDestinationFields || showReturnFields
+                    ? "translate-y-0 opacity-100"
+                    : "pointer-events-none -translate-y-1 opacity-0"
+                }`}
+              >
+                <RouteMarker kind="end" />
+                <label
+                  className={invalid.has("dropoff") ? "relative z-40 overflow-visible" : ""}
+                >
+                  <span className="sr-only">
+                    {showReturnFields ? dictionary.hero.returnPlace : dictionary.hero.destination}
+                  </span>
+                  <input
+                    value={draft.dropoff}
+                    placeholder={
+                      showReturnFields ? dictionary.hero.returnPlace : dictionary.hero.destination
+                    }
+                    aria-label={
+                      showReturnFields ? dictionary.hero.returnPlace : dictionary.hero.destination
+                    }
+                    aria-invalid={invalid.has("dropoff") || undefined}
+                    onChange={(event) => {
+                      patchDraft({ dropoff: event.target.value });
+                      clearFieldError(setInvalid, "dropoff");
+                    }}
+                    className={`${fieldClass(invalid.has("dropoff"))} placeholder:normal-case placeholder:tracking-normal transition-opacity duration-700 ${
+                      pendingTripMode === "oneWay" ? "opacity-55" : "opacity-100"
+                    }`}
+                  />
+                </label>
+                {showDestinationFields ? (
+                  <div className={invalid.has("arrivalAt") ? "relative z-40 overflow-visible" : ""}>
+                    <DateTimeField
+                      label={dictionary.hero.arrivalAt}
+                      value={draft.arrivalAt}
+                      min={draft.departureAt || undefined}
+                      hideLabel
+                      invalid={invalid.has("arrivalAt")}
+                      className="h-9 rounded-full sm:h-10"
+                      onChange={(value) => {
+                        patchDraft({ arrivalAt: value });
+                        clearFieldError(setInvalid, "arrivalAt");
+                      }}
+                    />
                   </div>
-                ) : null}
+                ) : (
+                  <div className={invalid.has("returnAt") ? "relative z-40 overflow-visible" : ""}>
+                    <DateTimeField
+                      label={dictionary.hero.returnAt}
+                      value={draft.returnAt}
+                      min={draft.departureAt || undefined}
+                      hideLabel
+                      invalid={invalid.has("returnAt")}
+                      className="h-9 rounded-full sm:h-10"
+                      onChange={(value) => {
+                        patchDraft({ returnAt: value });
+                        clearFieldError(setInvalid, "returnAt");
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
             <div
-              className={`hero-route-morph relative grid grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-2 ${
-                showDestinationFields || showReturnFields
-                  ? "translate-y-0 opacity-100"
-                  : "pointer-events-none -translate-y-1 opacity-0"
-              }`}
+              className={`hero-route-reveal pl-[calc(1.75rem+0.625rem)]`}
+              data-open={showReturnFields ? "true" : "false"}
             >
-              <RouteMarker kind="end" />
-              <label
-                className={invalid.has("dropoff") ? "relative z-40 overflow-visible" : ""}
-              >
-                <span className="sr-only">
-                  {showReturnFields ? dictionary.hero.returnPlace : dictionary.hero.destination}
-                </span>
-                <input
-                  value={draft.dropoff}
-                  placeholder={
-                    showReturnFields ? dictionary.hero.returnPlace : dictionary.hero.destination
-                  }
-                  aria-label={
-                    showReturnFields ? dictionary.hero.returnPlace : dictionary.hero.destination
-                  }
-                  aria-invalid={invalid.has("dropoff") || undefined}
-                  onChange={(event) => {
-                    patchDraft({ dropoff: event.target.value });
-                    clearFieldError(setInvalid, "dropoff");
-                  }}
-                  className={`${fieldClass(invalid.has("dropoff"))} placeholder:normal-case placeholder:tracking-normal transition-opacity duration-700 ${
-                    pendingTripMode === "oneWay" ? "opacity-55" : "opacity-100"
-                  }`}
-                />
-              </label>
-              {showDestinationFields ? (
-                <div className={invalid.has("arrivalAt") ? "relative z-40 overflow-visible" : ""}>
-                  <DateTimeField
-                    label={dictionary.hero.arrivalAt}
-                    value={draft.arrivalAt}
-                    min={draft.departureAt || undefined}
-                    hideLabel
-                    invalid={invalid.has("arrivalAt")}
-                    className="h-9 rounded-full sm:h-10"
-                    onChange={(value) => {
-                      patchDraft({ arrivalAt: value });
-                      clearFieldError(setInvalid, "arrivalAt");
-                    }}
-                  />
-                </div>
-              ) : (
-                <div className={invalid.has("returnAt") ? "relative z-40 overflow-visible" : ""}>
-                  <DateTimeField
-                    label={dictionary.hero.returnAt}
-                    value={draft.returnAt}
-                    min={draft.departureAt || undefined}
-                    hideLabel
-                    invalid={invalid.has("returnAt")}
-                    className="h-9 rounded-full sm:h-10"
-                    onChange={(value) => {
-                      patchDraft({ returnAt: value });
-                      clearFieldError(setInvalid, "returnAt");
-                    }}
-                  />
-                </div>
-              )}
+              <div className="hero-route-reveal-inner">
+                <button
+                  type="button"
+                  onClick={() => patchDraft({ stops: [...draft.stops, newStop()] })}
+                  className="inline-flex items-center gap-1.5 py-0.5 text-[11px] font-medium tracking-wide text-champagne/90 hover:text-champagne"
+                >
+                  <span aria-hidden="true">+</span>
+                  {dictionary.hero.addStop}
+                </button>
+              </div>
             </div>
           </div>
-
-          <div
-            className={`hero-route-reveal pl-[calc(1.75rem+0.625rem)]`}
-            data-open={showReturnFields ? "true" : "false"}
-          >
-            <div className="hero-route-reveal-inner">
-              <button
-                type="button"
-                onClick={() => patchDraft({ stops: [...draft.stops, newStop()] })}
-                className="inline-flex items-center gap-1.5 py-0.5 text-[11px] font-medium tracking-wide text-champagne/90 hover:text-champagne"
-              >
-                <span aria-hidden="true">+</span>
-                {dictionary.hero.addStop}
-              </button>
-            </div>
-          </div>
-        </div>
+        )}
 
         {invalid.size > 0 ? (
           <p role="alert" className="mt-2 text-[11px] text-red-200">

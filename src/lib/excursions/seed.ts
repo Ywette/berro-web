@@ -18,6 +18,7 @@ export const excursionSeed: ManagedExcursion[] = [
     details: "",
     regions: ["france"],
     price: null,
+    durationDays: null,
     isActive: true,
   },
   {
@@ -32,6 +33,7 @@ export const excursionSeed: ManagedExcursion[] = [
     details: "",
     regions: ["france"],
     price: null,
+    durationDays: null,
     isActive: true,
   },
   {
@@ -46,6 +48,7 @@ export const excursionSeed: ManagedExcursion[] = [
     details: "",
     regions: ["france"],
     price: null,
+    durationDays: null,
     isActive: true,
   },
   {
@@ -60,6 +63,7 @@ export const excursionSeed: ManagedExcursion[] = [
     details: "",
     regions: ["germany"],
     price: null,
+    durationDays: null,
     isActive: true,
   },
   {
@@ -73,6 +77,7 @@ export const excursionSeed: ManagedExcursion[] = [
     details: "",
     regions: [],
     price: null,
+    durationDays: null,
     isActive: true,
   },
   {
@@ -86,6 +91,7 @@ export const excursionSeed: ManagedExcursion[] = [
     details: "",
     regions: [],
     price: null,
+    durationDays: null,
     isActive: true,
   },
 ];

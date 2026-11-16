@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { CompanyDetails, ContactIntro } from "@/components/contact/company-details";
+import { CompanyDetails } from "@/components/contact/company-details";
 import { ContactForm } from "@/components/contact/contact-form";
 import { NewsletterForm } from "@/components/contact/newsletter-form";
 import { RouteSummary } from "@/components/contact/route-summary";
@@ -33,8 +33,6 @@ export default async function ContactPage({ searchParams }: ContactPageProps) {
   return (
     <section className="mx-auto max-w-7xl px-5 py-16 lg:py-20">
       <div className="grid gap-10 lg:gap-12">
-        <ContactIntro />
-
         <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-12">
           <div className="grid gap-8">
             <CompanyDetails />

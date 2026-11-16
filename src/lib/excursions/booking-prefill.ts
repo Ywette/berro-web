@@ -7,6 +7,7 @@ export type ExcursionQuoteOption = {
   route?: string;
   teaser?: string;
   destination?: string;
+  durationDays?: number | null;
 };
 
 export type ExcursionBookingPrefill = {
@@ -20,7 +21,32 @@ export type ExcursionBookingPrefill = {
   planNote: string;
   excursionSlug: string;
   excursionTitle: string;
+  durationDays: number | null;
 };
+
+/** Shift a `YYYY-MM-DDTHH:mm` value by whole calendar days (local wall clock). */
+export function shiftDatetimeLocal(value: string, days: number): string {
+  const match = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+  if (!match || !Number.isFinite(days) || days === 0) return value;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const date = new Date(year, month - 1, day + days, hour, minute);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  return `${y}-${m}-${d}T${hh}:${mm}`;
+}
+
+export function returnAtFromDeparture(departureAt: string, durationDays: number | null | undefined) {
+  if (!departureAt.trim()) return "";
+  const days = durationDays && durationDays >= 1 ? durationDays : 1;
+  return shiftDatetimeLocal(departureAt, days - 1);
+}
 
 function normalizePlace(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
@@ -72,6 +98,7 @@ export function buildExcursionBookingPrefill(input: {
   route?: string;
   teaser?: string;
   destination?: string;
+  durationDays?: number | null;
 }): ExcursionBookingPrefill {
   const title = input.title.trim();
   const fromRoute = input.route?.trim()
@@ -84,6 +111,10 @@ export function buildExcursionBookingPrefill(input: {
       };
 
   const noteParts = [title, input.teaser?.trim()].filter(Boolean);
+  const durationDays =
+    typeof input.durationDays === "number" && input.durationDays >= 1
+      ? input.durationDays
+      : null;
 
   return {
     service: "minibus",
@@ -96,5 +127,6 @@ export function buildExcursionBookingPrefill(input: {
     planNote: noteParts.join("\n\n"),
     excursionSlug: input.slug?.trim() || "",
     excursionTitle: title,
+    durationDays,
   };
 }

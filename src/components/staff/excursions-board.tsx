@@ -50,6 +50,8 @@ export async function ExcursionsBoard() {
           detailsHint: labels.excursionFormDetailsHint,
           price: labels.excursionFormPrice,
           priceHint: labels.excursionFormPriceHint,
+          duration: labels.excursionFormDuration,
+          durationHint: labels.excursionFormDurationHint,
           region: labels.excursionFormRegion,
           regionHint: labels.excursionFormRegionHint,
           regionLatvia: dictionary.excursions.filterLatvia,

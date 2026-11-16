@@ -36,6 +36,8 @@ export type ManagedExcursion = {
   regions: ExcursionRegion[];
   /** Optional from-price in EUR. */
   price: number | null;
+  /** Optional trip length in calendar days (return = departure + days − 1). */
+  durationDays: number | null;
   isActive: boolean;
 };
 
@@ -44,6 +46,13 @@ export function parseExcursionPrice(value: unknown): number | null {
   const amount = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(amount) || amount < 0) return null;
   return Math.round(amount * 100) / 100;
+}
+
+export function parseExcursionDurationDays(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const days = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(days) || !Number.isInteger(days) || days < 1) return null;
+  return days;
 }
 
 export function isExcursionLogoVariant(value: unknown): value is ExcursionLogoVariant {
@@ -88,6 +97,7 @@ export function normalizeManagedExcursion(raw: unknown): ManagedExcursion | null
       return parseExcursionRegions(item.region);
     })(),
     price: parseExcursionPrice(item.price),
+    durationDays: parseExcursionDurationDays(item.durationDays ?? item.duration_days),
     isActive: item.isActive !== false,
   };
 }

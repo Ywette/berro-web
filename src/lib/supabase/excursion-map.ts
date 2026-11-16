@@ -1,5 +1,6 @@
 import {
   isExcursionLogoVariant,
+  parseExcursionDurationDays,
   parseExcursionPrice,
   type ManagedExcursion,
 } from "@/lib/content/managed-excursion";
@@ -21,6 +22,7 @@ export type ExcursionRow = {
   region: string | null;
   regions?: unknown;
   price?: number | string | null;
+  duration_days?: number | string | null;
   is_active: boolean;
 };
 
@@ -48,6 +50,7 @@ export function excursionFromRow(row: ExcursionRow): ManagedExcursion {
     details: row.details ?? "",
     regions,
     price: parseExcursionPrice(row.price),
+    durationDays: parseExcursionDurationDays(row.duration_days),
     isActive: row.is_active !== false,
   };
 }
@@ -66,6 +69,7 @@ export function excursionToRow(excursion: ManagedExcursion): ExcursionRow {
     region: excursion.regions[0] ?? null,
     regions: excursion.regions,
     price: excursion.price,
+    duration_days: excursion.durationDays,
     is_active: excursion.isActive,
   };
 }

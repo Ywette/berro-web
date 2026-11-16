@@ -36,6 +36,8 @@ export type ExcursionDialogLabels = {
   detailsHint: string;
   price: string;
   priceHint: string;
+  duration: string;
+  durationHint: string;
   region: string;
   regionHint: string;
   regionLatvia: string;
@@ -259,6 +261,19 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
               step="1"
               defaultValue={excursion?.price ?? ""}
               placeholder="249"
+              className={inputClass}
+            />
+          </Field>
+
+          <Field label={labels.duration} hint={labels.durationHint}>
+            <input
+              name="durationDays"
+              type="number"
+              inputMode="numeric"
+              min="1"
+              step="1"
+              defaultValue={excursion?.durationDays ?? ""}
+              placeholder="3"
               className={inputClass}
             />
           </Field>

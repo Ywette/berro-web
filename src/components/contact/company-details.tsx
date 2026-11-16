@@ -6,18 +6,6 @@ const phoneContacts = [
   { name: "Ilgonis", display: "+371 2640 6179", wa: "37126406179" },
 ] as const;
 
-export async function ContactIntro() {
-  const dictionary = await getDictionary();
-  const { contact } = dictionary;
-
-  return (
-    <div className="max-w-3xl">
-      <h1 className="font-serif text-3xl tracking-wide text-ivory sm:text-4xl">{contact.company}</h1>
-      <p className="mt-3 text-sm leading-6 text-mist sm:text-base sm:leading-7">{contact.body}</p>
-    </div>
-  );
-}
-
 export async function CompanyDetails() {
   const dictionary = await getDictionary();
   const { contact } = dictionary;
@@ -49,25 +37,6 @@ export async function CompanyDetails() {
           <EmailChooser email={contact.emailValue} label={contact.email} />
         </li>
       </ul>
-
-      <dl className="grid gap-4 rounded-2xl border border-white/10 bg-[#141418] p-5 text-sm">
-        <div>
-          <dt className="text-mist">{contact.legalAddress}</dt>
-          <dd className="mt-1 leading-6 text-ivory">
-            {contact.addressLines.map((line) => (
-              <p key={line}>{line}</p>
-            ))}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-mist">{contact.registrationNumber}</dt>
-          <dd className="mt-1 text-ivory">{contact.registrationValue}</dd>
-        </div>
-        <div>
-          <dt className="text-mist">{contact.vatNumber}</dt>
-          <dd className="mt-1 text-ivory">{contact.vatValue}</dd>
-        </div>
-      </dl>
     </div>
   );
 }

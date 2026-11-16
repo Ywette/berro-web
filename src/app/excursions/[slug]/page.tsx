@@ -205,6 +205,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
           title={title}
           route={excursion.route}
           teaser={excursion.teaser}
+          durationDays={excursion.durationDays}
           destination={
             excursion.slug === "moulin-rouge"
               ? "Moulin Rouge"
@@ -226,6 +227,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
             title: item.title,
             route: item.route || undefined,
             teaser: item.teaser || undefined,
+            durationDays: item.durationDays,
           }))}
         />
         {details?.closing ? (

@@ -49,6 +49,7 @@ export async function createManagedExcursion(
     details: input.details,
     regions: input.regions,
     price: input.price,
+    durationDays: input.durationDays,
     isActive: true,
   };
   return insertManagedExcursion(excursion);
@@ -71,6 +72,7 @@ export async function updateManagedExcursionById(
     details: input.details,
     regions: input.regions,
     price: input.price,
+    durationDays: input.durationDays,
     slug: uniqueSlug(input.title, existing, id),
   };
   return updateManagedExcursion(next);
