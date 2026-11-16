@@ -50,6 +50,7 @@ async function ExcursionsCatalogSection() {
           estonia: dictionary.excursions.filterEstonia,
           lithuania: dictionary.excursions.filterLithuania,
           france: dictionary.excursions.filterFrance,
+          belgium: dictionary.excursions.filterBelgium,
           baltics: dictionary.excursions.filterBaltics,
           germany: dictionary.excursions.filterGermany,
         }}

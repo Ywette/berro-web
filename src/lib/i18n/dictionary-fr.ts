@@ -426,6 +426,7 @@ export const fr: Dictionary = {
     filterEstonia: "En Estonie",
     filterLithuania: "En Lituanie",
     filterFrance: "En France",
+    filterBelgium: "En Belgique",
     filterBaltics: "Dans les Baltiques",
     filterGermany: "En Allemagne",
     filterEmpty: "Aucune excursion dans cette région pour le moment.",

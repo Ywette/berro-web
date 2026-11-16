@@ -28,6 +28,7 @@ export type ExcursionRegion =
   | "estonia"
   | "lithuania"
   | "france"
+  | "belgium"
   | "baltics"
   | "germany";
 
@@ -36,6 +37,7 @@ export const excursionRegions: readonly ExcursionRegion[] = [
   "estonia",
   "lithuania",
   "france",
+  "belgium",
   "baltics",
   "germany",
 ];
@@ -46,6 +48,7 @@ export function isExcursionRegion(value: unknown): value is ExcursionRegion {
     value === "estonia" ||
     value === "lithuania" ||
     value === "france" ||
+    value === "belgium" ||
     value === "baltics" ||
     value === "germany"
   );

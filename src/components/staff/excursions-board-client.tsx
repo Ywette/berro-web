@@ -37,6 +37,7 @@ export function ExcursionsBoardClient({
     if (region === "estonia") return labels.regionEstonia;
     if (region === "lithuania") return labels.regionLithuania;
     if (region === "france") return labels.regionFrance;
+    if (region === "belgium") return labels.regionBelgium;
     if (region === "baltics") return labels.regionBaltics;
     return labels.regionGermany;
   };

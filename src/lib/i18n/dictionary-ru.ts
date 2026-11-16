@@ -426,6 +426,7 @@ export const ru: Dictionary = {
     filterEstonia: "В Эстонии",
     filterLithuania: "В Литве",
     filterFrance: "Во Франции",
+    filterBelgium: "В Бельгии",
     filterBaltics: "В Балтии",
     filterGermany: "В Германии",
     filterEmpty: "В этом регионе пока нет экскурсий.",

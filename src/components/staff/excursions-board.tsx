@@ -53,6 +53,7 @@ export async function ExcursionsBoard() {
           regionEstonia: dictionary.excursions.filterEstonia,
           regionLithuania: dictionary.excursions.filterLithuania,
           regionFrance: dictionary.excursions.filterFrance,
+          regionBelgium: dictionary.excursions.filterBelgium,
           regionBaltics: dictionary.excursions.filterBaltics,
           regionGermany: dictionary.excursions.filterGermany,
           photos: labels.excursionFormPhotos,

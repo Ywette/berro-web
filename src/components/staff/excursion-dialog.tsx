@@ -40,6 +40,7 @@ export type ExcursionDialogLabels = {
   regionEstonia: string;
   regionLithuania: string;
   regionFrance: string;
+  regionBelgium: string;
   regionBaltics: string;
   regionGermany: string;
 } & ExcursionCollagePhotoLabels;
@@ -175,6 +176,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
     estonia: labels.regionEstonia,
     lithuania: labels.regionLithuania,
     france: labels.regionFrance,
+    belgium: labels.regionBelgium,
     baltics: labels.regionBaltics,
     germany: labels.regionGermany,
   };
