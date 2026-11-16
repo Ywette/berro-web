@@ -103,17 +103,123 @@ function ServiceCard({
           </div>
         </div>
 
-        <ul className="grid gap-2.5 content-start">
-          {features.map((feature) => (
+        <ul className="grid gap-3 content-start">
+          {features.map((feature, index) => (
             <li
               key={feature}
-              className="rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-3 text-sm leading-5 text-ivory/90"
+              className="flex items-center gap-2.5 text-sm leading-5 text-ivory/90"
             >
-              {feature}
+              <span className="grid h-7 w-7 shrink-0 place-items-center text-champagne">
+                {featureIcon(variant, index)}
+              </span>
+              <span>{feature}</span>
             </li>
           ))}
         </ul>
       </div>
     </article>
+  );
+}
+
+function featureIcon(variant: "primary" | "secondary", index: number) {
+  const icons =
+    variant === "primary"
+      ? [<GroupsIcon key="groups" />, <BusinessIcon key="business" />, <EventsIcon key="events" />]
+      : [<NatureIcon key="nature" />, <CultureIcon key="culture" />, <ThemeIcon key="theme" />];
+  return icons[index] ?? icons[0];
+}
+
+function GroupsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
+      <path
+        d="M16 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3ZM8 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3ZM8.2 13.5c-2.4 0-4.7 1.2-4.7 3.2V18h9.4v-1.3c0-2-2.3-3.2-4.7-3.2ZM16.1 13.5c-.4 0-.8 0-1.2.1 1.2.8 2 2 2 3.3V18h5v-1.3c0-2-2.2-3.2-4.8-3.2Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function BusinessIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
+      <path
+        d="M8 7V5.8A1.8 1.8 0 0 1 9.8 4h4.4A1.8 1.8 0 0 1 16 5.8V7M4 10h16M6 7h12a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function EventsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
+      <path
+        d="M8 3v3M16 3v3M4.5 9h15M6 6h12a1.5 1.5 0 0 1 1.5 1.5v11A1.5 1.5 0 0 1 18 20H6a1.5 1.5 0 0 1-1.5-1.5v-11A1.5 1.5 0 0 1 6 6Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9 13h.01M12 13h.01M15 13h.01M9 16h.01M12 16h.01"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function NatureIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
+      <path
+        d="M12 21V11M12 11c-2.8-1.2-5.5.2-7 2.5 3.2.4 5.3-.2 7-2.5ZM12 11c2.8-1.2 5.5.2 7 2.5-3.2.4-5.3-.2-7-2.5ZM12 14c-1.8-3.5-1-7.2 1.5-9.5C11 6.8 9.8 10 12 14Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function CultureIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
+      <path
+        d="M4 20h16M6 20V9l6-4 6 4v11M10 20v-5h4v5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9.5 12.5h.01M14.5 12.5h.01"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function ThemeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
+      <path
+        d="M12 3.5 13.8 9H19l-4.2 3.2L16.6 18 12 14.8 7.4 18l1.8-5.8L5 9h5.2L12 3.5Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

@@ -1179,7 +1179,7 @@ export const lv: Dictionary = {
   },
   fleet: {
     title: "Mūsu autoparks",
-    details: "Sīkāk",
+    details: "Vairāk",
     passengers: "pasažieri",
     wifi: "Wi-Fi",
     leather: "Ādas sēdekļi",
