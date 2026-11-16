@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import {
   ExcursionsCatalog,
   type ExcursionCardData,
@@ -6,12 +7,22 @@ import {
 import { listActiveManagedExcursions } from "@/lib/data/managed-excursions";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 
+export const instant = false;
+
 export async function generateMetadata(): Promise<Metadata> {
   const dictionary = await getDictionary();
   return { title: dictionary.nav.excursions };
 }
 
-export default async function ExcursionsPage() {
+export default function ExcursionsPage() {
+  return (
+    <Suspense fallback={<section className="mx-auto max-w-7xl px-5 py-12 md:py-14" />}>
+      <ExcursionsCatalogSection />
+    </Suspense>
+  );
+}
+
+async function ExcursionsCatalogSection() {
   const dictionary = await getDictionary();
   const managed = await listActiveManagedExcursions();
 
