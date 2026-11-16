@@ -417,6 +417,7 @@ export const fr: Dictionary = {
     bookingBody: "Pour vérifier la disponibilité ou réserver, contactez-nous :",
     checkAvailability: "Vérifier la disponibilité",
     availabilityTitle: "Vérifier la disponibilité",
+    excursionLabel: "Excursion",
     choosePassengers: "Choisir les passagers",
     email: "E-mail",
     phone: "Téléphone",

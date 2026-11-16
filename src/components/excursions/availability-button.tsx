@@ -1,40 +1,69 @@
 "use client";
 
-import { Suspense, useMemo, useRef } from "react";
+import { Suspense, useMemo, useRef, useState } from "react";
 import { useDictionary } from "@/components/i18n/locale-provider";
 import { HeroBooking, type HeroBookingPrefill } from "@/components/landing/hero-booking";
-import { buildExcursionBookingPrefill } from "@/lib/excursions/booking-prefill";
+import {
+  buildExcursionBookingPrefill,
+  type ExcursionQuoteOption,
+} from "@/lib/excursions/booking-prefill";
 
 type AvailabilityButtonProps = {
+  slug: string;
   title: string;
   route?: string;
   teaser?: string;
   destination?: string;
   image: string;
+  excursions: ExcursionQuoteOption[];
 };
 
+function toPrefill(option: ExcursionQuoteOption): HeroBookingPrefill {
+  const built = buildExcursionBookingPrefill(option);
+  return {
+    service: built.service,
+    pickup: built.pickup,
+    dropoff: built.dropoff,
+    tripMode: built.tripMode,
+    stops: built.stops,
+    travelType: built.travelType,
+    travelTypeDetail: built.travelTypeDetail,
+    planNote: built.planNote,
+    excursionSlug: built.excursionSlug,
+    excursionTitle: built.excursionTitle,
+  };
+}
+
 export function AvailabilityButton({
+  slug,
   title,
   route,
   teaser,
   destination,
   image,
+  excursions,
 }: AvailabilityButtonProps) {
   const dictionary = useDictionary();
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const prefill = useMemo<HeroBookingPrefill>(() => {
-    const built = buildExcursionBookingPrefill({ title, route, teaser, destination });
-    return {
-      service: built.service,
-      pickup: built.pickup,
-      dropoff: built.dropoff,
-      tripMode: built.tripMode,
-      stops: built.stops,
-      travelType: built.travelType,
-      travelTypeDetail: built.travelTypeDetail,
-      planNote: built.planNote,
-    };
-  }, [title, route, teaser, destination]);
+  const options = useMemo<ExcursionQuoteOption[]>(() => {
+    if (excursions.some((item) => item.slug === slug)) return excursions;
+    return [{ slug, title, route, teaser, destination }, ...excursions];
+  }, [destination, excursions, route, slug, teaser, title]);
+
+  const [selectedSlug, setSelectedSlug] = useState(slug);
+  const selected = useMemo(() => {
+    return (
+      options.find((item) => item.slug === selectedSlug) ??
+      options[0] ?? {
+        slug,
+        title,
+        route,
+        teaser,
+        destination,
+      }
+    );
+  }, [destination, options, route, selectedSlug, slug, teaser, title]);
+  const prefill = useMemo(() => toPrefill(selected), [selected]);
 
   return (
     <>
@@ -64,7 +93,7 @@ export function AvailabilityButton({
                 <h2 id="availability-title" className="font-serif text-2xl tracking-wide">
                   {dictionary.excursions.availabilityTitle}
                 </h2>
-                <p className="mt-1 line-clamp-2 text-sm text-ivory/80">{title}</p>
+                <p className="mt-1 line-clamp-2 text-sm text-ivory/80">{selected.title}</p>
               </div>
               <button
                 type="button"
@@ -87,7 +116,13 @@ export function AvailabilityButton({
                 <div className="h-48 animate-pulse rounded-2xl bg-white/10" aria-hidden="true" />
               }
             >
-              <HeroBooking prefill={prefill} variant="panel" />
+              <HeroBooking
+                key={selected.slug}
+                prefill={prefill}
+                variant="panel"
+                excursionOptions={options}
+                onExcursionChange={setSelectedSlug}
+              />
             </Suspense>
           </div>
         </div>

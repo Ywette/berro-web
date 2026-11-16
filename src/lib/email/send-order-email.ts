@@ -36,10 +36,15 @@ export async function sendNewOrderEmail(order: StaffOrder, input?: QuoteOrderInp
       ? `${order.travelType ?? "other"}: ${order.travelTypeDetail.trim()}`
       : order.travelType || "—";
 
+  const excursion =
+    input?.excursionTitle?.trim() ||
+    (input?.excursionSlug?.trim() ? input.excursionSlug.trim() : null);
+
   const lines = [
     `New quote request ${order.reference}`,
     "",
     `Reference: ${order.reference}`,
+    excursion ? `Excursion: ${excursion}` : null,
     `Travel type: ${travelType}`,
     `Route: ${routeLine(order)}`,
     `Departure: ${order.departureOn || input?.departure || "—"}`,

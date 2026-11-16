@@ -1,6 +1,14 @@
 import type { QuoteTripMode } from "@/lib/orders/session-orders";
 import type { QuoteTravelType } from "@/lib/quote-travel-types";
 
+export type ExcursionQuoteOption = {
+  slug: string;
+  title: string;
+  route?: string;
+  teaser?: string;
+  destination?: string;
+};
+
 export type ExcursionBookingPrefill = {
   service: "bus" | "minibus" | "transfer";
   pickup: string;
@@ -10,6 +18,8 @@ export type ExcursionBookingPrefill = {
   travelType: QuoteTravelType;
   travelTypeDetail: string;
   planNote: string;
+  excursionSlug: string;
+  excursionTitle: string;
 };
 
 function normalizePlace(value: string) {
@@ -57,30 +67,34 @@ export function parseExcursionRoute(route: string): {
 }
 
 export function buildExcursionBookingPrefill(input: {
+  slug?: string;
   title: string;
   route?: string;
   teaser?: string;
   destination?: string;
 }): ExcursionBookingPrefill {
+  const title = input.title.trim();
   const fromRoute = input.route?.trim()
     ? parseExcursionRoute(input.route)
     : {
         pickup: "Rīga",
-        dropoff: input.destination?.trim() || input.title,
+        dropoff: input.destination?.trim() || title,
         tripMode: "roundTrip" as const,
         stops: [] as string[],
       };
 
-  const noteParts = [input.title.trim(), input.teaser?.trim()].filter(Boolean);
+  const noteParts = [title, input.teaser?.trim()].filter(Boolean);
 
   return {
     service: "minibus",
     pickup: fromRoute.pickup || "Rīga",
-    dropoff: fromRoute.dropoff || input.title,
+    dropoff: fromRoute.dropoff || title,
     tripMode: fromRoute.tripMode,
     stops: fromRoute.stops,
     travelType: "agencyTourism",
     travelTypeDetail: "",
     planNote: noteParts.join("\n\n"),
+    excursionSlug: input.slug?.trim() || "",
+    excursionTitle: title,
   };
 }

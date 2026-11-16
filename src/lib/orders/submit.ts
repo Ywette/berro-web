@@ -35,6 +35,8 @@ export async function submitQuoteOrderFromFormData(
     returnAt: text(formData, "returnAt"),
     passengers: text(formData, "passengers"),
     planDocument: text(formData, "planDocument"),
+    excursionSlug: text(formData, "excursionSlug"),
+    excursionTitle: text(formData, "excursionTitle"),
     stops: text(formData, "stops"),
     otherWaitingMinutes: text(formData, "otherWaitingMinutes"),
     waitingMinutes: text(formData, "waitingMinutes"),

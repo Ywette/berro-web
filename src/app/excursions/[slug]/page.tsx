@@ -201,6 +201,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
           <ContactItem label={text.website} href={`https://${bookingContact.website}`} value={bookingContact.website} />
         </dl>
         <AvailabilityButton
+          slug={excursion.slug}
           title={title}
           route={excursion.route}
           teaser={excursion.teaser}
@@ -220,6 +221,12 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
                         : undefined
           }
           image={coverImage}
+          excursions={activeExcursions.map((item) => ({
+            slug: item.slug,
+            title: item.title,
+            route: item.route || undefined,
+            teaser: item.teaser || undefined,
+          }))}
         />
         {details?.closing ? (
           <p className="mt-4 text-sm text-ivory/90">{pickLocalized(details.closing, locale)}</p>

@@ -23,6 +23,9 @@ export type QuoteOrderInput = {
   passengers?: string;
   planDocument?: string;
   planDocumentPath?: string;
+  /** Selected catalog excursion (quote from excursion view). */
+  excursionSlug?: string;
+  excursionTitle?: string;
   /** JSON array of { name, waitMinutes }. */
   stops?: string;
   otherWaitingMinutes?: string;

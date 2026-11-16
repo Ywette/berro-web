@@ -417,6 +417,7 @@ export const ru: Dictionary = {
     bookingBody: "Чтобы проверить доступность или забронировать, свяжитесь с нами:",
     checkAvailability: "Проверить доступность",
     availabilityTitle: "Проверить доступность",
+    excursionLabel: "Экскурсия",
     choosePassengers: "Выберите пассажиров",
     email: "Эл. почта",
     phone: "Телефон",
