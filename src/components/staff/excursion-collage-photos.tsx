@@ -61,15 +61,16 @@ export function ExcursionCollagePhotos({
 
     setProcessing(true);
     try {
-      const preparedList = await Promise.all(
+      const preparedList: Array<FleetPhotoDraft | null> = await Promise.all(
         selected.map(async (file) => {
           try {
             const prepared = await prepareExcursionPhoto(file);
-            return {
+            const draft: FleetPhotoDraft = {
               id: crypto.randomUUID(),
               preview: URL.createObjectURL(prepared),
               file: prepared,
-            } satisfies FleetPhotoDraft;
+            };
+            return draft;
           } catch {
             return null;
           }
