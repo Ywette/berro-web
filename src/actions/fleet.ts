@@ -55,6 +55,14 @@ function buildImageFields(orderedPaths: string[], mainIndex: number) {
   };
 }
 
+function isPhotoRef(value: string): boolean {
+  return (
+    value.startsWith("/") ||
+    value.startsWith("https://") ||
+    value.startsWith("http://")
+  );
+}
+
 async function parseVehicleForm(
   formData: FormData,
   labels: Awaited<ReturnType<typeof getDictionary>>["staffDashboard"],
@@ -81,7 +89,7 @@ async function parseVehicleForm(
     .getAll("existingPhotos")
     .map(String)
     .map((value) => value.trim())
-    .filter((value) => value.startsWith("/"));
+    .filter(isPhotoRef);
   const mainPhotoIndex = Number(formData.get("mainPhotoIndex") ?? 0);
 
   if (!name || name.length > 120) return { error: labels.fleetFormNameRequired };
@@ -95,7 +103,7 @@ async function parseVehicleForm(
   if (availableIn.length === 0) return { error: labels.fleetFormCountriesRequired };
 
   const slots = formData.getAll("photoSlots").map(String);
-  const existingInSlots = slots.filter((slot) => slot.startsWith("/")).length;
+  const existingInSlots = slots.filter(isPhotoRef).length;
   const totalPhotoCount =
     slots.length > 0 ? slots.length : existingPhotos.length + formData.getAll("photos").length;
   if (totalPhotoCount > 5) {
@@ -125,7 +133,7 @@ async function parseVehicleForm(
         const path = uploadedPaths[uploadCursor];
         uploadCursor += 1;
         if (path) orderedPaths.push(path);
-      } else if (slot.startsWith("/")) {
+      } else if (isPhotoRef(slot)) {
         orderedPaths.push(slot);
       }
     }

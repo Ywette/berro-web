@@ -12,6 +12,7 @@ import { saveFleetTransport, type FleetActionState } from "@/actions/fleet";
 import { FleetPhotoManager, type FleetPhotoDraft } from "@/components/staff/fleet-photo-manager";
 import { countryLabel, fleetCountries } from "@/lib/content/countries";
 import type { FleetVehicle } from "@/lib/content/fleet";
+import { prepareExcursionPhoto } from "@/lib/excursions/prepare-photo";
 import type { Locale } from "@/lib/i18n/locale";
 
 export type FleetTransportDialogLabels = {
@@ -95,6 +96,8 @@ export function FleetTransportDialog({
   const [photos, setPhotos] = useState<FleetPhotoDraft[]>(seed.photos);
   const [mainPhotoId, setMainPhotoId] = useState<string | null>(seed.mainId);
   const [state, formAction, pending] = useActionState(saveFleetTransport, initialState);
+  const [uploading, setUploading] = useState(false);
+  const [clientError, setClientError] = useState<string | null>(null);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -114,8 +117,9 @@ export function FleetTransportDialog({
     onClose();
   }, [state.success, onClose]);
 
-  function onSubmit(event: FormEvent<HTMLFormElement>) {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setClientError(null);
     const form = event.currentTarget;
     const formData = new FormData(form);
 
@@ -130,19 +134,43 @@ export function FleetTransportDialog({
     );
     formData.set("mainPhotoIndex", String(mainIndex === -1 ? 0 : mainIndex));
 
-    for (const photo of photos) {
-      if (photo.file) {
-        formData.append("photoSlots", "new");
-        formData.append("photos", photo.file);
-      } else if (photo.src) {
-        formData.append("photoSlots", photo.src);
-        formData.append("existingPhotos", photo.src);
-      }
-    }
+    setUploading(true);
+    try {
+      const resolvedUrls = await Promise.all(
+        photos.map(async (photo) => {
+          if (photo.src && !photo.file) return photo.src;
+          if (!photo.file) return null;
+          const prepared = await prepareExcursionPhoto(photo.file);
+          const uploadData = new FormData();
+          uploadData.append("photo", prepared);
+          const response = await fetch("/api/staff/fleet-photo", {
+            method: "POST",
+            body: uploadData,
+          });
+          const payload = (await response.json().catch(() => null)) as
+            | { ok?: boolean; url?: string; error?: string }
+            | null;
+          if (!response.ok || !payload?.ok || !payload.url) {
+            throw new Error(payload?.error ?? labels.photosHint);
+          }
+          return payload.url;
+        }),
+      );
 
-    startTransition(() => {
-      formAction(formData);
-    });
+      for (const url of resolvedUrls) {
+        if (!url) continue;
+        formData.append("photoSlots", url);
+        formData.append("existingPhotos", url);
+      }
+
+      startTransition(() => {
+        formAction(formData);
+      });
+    } catch (error) {
+      setClientError(error instanceof Error ? error.message : labels.photosHint);
+    } finally {
+      setUploading(false);
+    }
   }
 
   return (
@@ -177,9 +205,9 @@ export function FleetTransportDialog({
         >
           {vehicle ? <input type="hidden" name="id" value={vehicle.id} /> : null}
 
-          {state.error ? (
+          {clientError || state.error ? (
             <p className="rounded-xl bg-burgundy/15 px-3 py-2 text-sm text-rose-200" role="alert">
-              {state.error}
+              {clientError ?? state.error}
             </p>
           ) : null}
 
@@ -360,10 +388,10 @@ export function FleetTransportDialog({
             </button>
             <button
               type="submit"
-              disabled={pending}
+              disabled={pending || uploading}
               className="rounded-full bg-burgundy px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-deep disabled:opacity-60"
             >
-              {pending ? labels.savingTransport : labels.saveTransport}
+              {pending || uploading ? labels.savingTransport : labels.saveTransport}
             </button>
           </div>
         </form>
