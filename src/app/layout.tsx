@@ -2,6 +2,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <LocalizedApp>{children}</LocalizedApp>
           </Suspense>
         </ClerkProvider>
+        <Analytics />
       </body>
     </html>
   );
