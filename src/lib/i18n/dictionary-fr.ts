@@ -287,10 +287,10 @@ export const fr: Dictionary = {
     leather: "Sièges en cuir",
     ac: "Climatisation / chauffage",
     categories: {
-      minibuses: "Minibus",
-      coaches: "Autocars",
-      carRental: "Location de voiture",
-      retroCarRental: "Location de voiture rétro",
+      minibuses: "Mikroautobuss",
+      coaches: "Autobuss",
+      carRental: "Auto",
+      retroCarRental: "RetroAuto",
     },
   },
   autoparks: {

@@ -287,10 +287,10 @@ export const ru: Dictionary = {
     leather: "Кожаные сиденья",
     ac: "Климат / отопление",
     categories: {
-      minibuses: "Микроавтобусы",
-      coaches: "Автобусы",
-      carRental: "Аренда авто",
-      retroCarRental: "Аренда ретро-авто",
+      minibuses: "Mikroautobuss",
+      coaches: "Autobuss",
+      carRental: "Auto",
+      retroCarRental: "RetroAuto",
     },
   },
   autoparks: {
