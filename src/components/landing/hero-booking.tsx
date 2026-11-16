@@ -127,15 +127,46 @@ function newStop(place = ""): HeroStop {
   return { id: createStop(place || "stop", 15).id, place };
 }
 
-export function HeroBooking() {
+export type HeroBookingPrefill = {
+  service?: ServiceId;
+  pickup?: string;
+  dropoff?: string;
+  tripMode?: QuoteTripMode;
+  stops?: string[];
+  travelType?: QuoteTravelType | "";
+  travelTypeDetail?: string;
+  planNote?: string;
+};
+
+type HeroBookingProps = {
+  prefill?: HeroBookingPrefill;
+  /** Compact panel styling for dialogs (e.g. excursion availability). */
+  variant?: "hero" | "panel";
+};
+
+export function HeroBooking({ prefill, variant = "hero" }: HeroBookingProps = {}) {
   const dictionary = useDictionary();
   const searchParams = useSearchParams();
   const planInputRef = useRef<HTMLInputElement>(null);
-  const [service, setService] = useState<ServiceId>("bus");
-  const [travelType, setTravelType] = useState<QuoteTravelType | "">("");
-  const [travelTypeDetail, setTravelTypeDetail] = useState("");
+  const [service, setService] = useState<ServiceId>(() => prefill?.service ?? "bus");
+  const [travelType, setTravelType] = useState<QuoteTravelType | "">(
+    () => prefill?.travelType ?? "",
+  );
+  const [travelTypeDetail, setTravelTypeDetail] = useState(
+    () => prefill?.travelTypeDetail ?? "",
+  );
   const [planFile, setPlanFile] = useState<File | null>(null);
-  const [draft, setDraft] = useState<HeroTripDraft>(emptyDraft);
+  const [draft, setDraft] = useState<HeroTripDraft>(() => {
+    if (!prefill) return emptyDraft();
+    return {
+      ...emptyDraft(),
+      pickup: prefill.pickup ?? "",
+      dropoff: prefill.dropoff ?? "",
+      tripMode: prefill.tripMode ?? "oneWay",
+      stops: (prefill.stops ?? []).map((place) => newStop(place)),
+      planNote: prefill.planNote ?? "",
+    };
+  });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [phase, setPhase] = useState<"contact" | "sent">("contact");
   const [invalid, setInvalid] = useState<Set<HeroFieldError>>(new Set());
@@ -143,8 +174,12 @@ export function HeroBooking() {
   const [planError, setPlanError] = useState("");
 
   useEffect(() => {
+    if (prefill?.service) {
+      setService(prefill.service);
+      return;
+    }
     setService(parseService(searchParams.get("service")));
-  }, [searchParams]);
+  }, [searchParams, prefill?.service]);
 
   function patchDraft(patch: Partial<HeroTripDraft>) {
     setDraft((current) => ({ ...current, ...patch }));
@@ -379,13 +414,14 @@ export function HeroBooking() {
       bad ? "field-error-blink" : "border-transparent"
     }`;
 
+  const shellClass =
+    variant === "panel"
+      ? "relative flex max-h-[min(36rem,calc(100dvh-8rem))] flex-col overflow-y-auto rounded-2xl border border-white/12 bg-black/55 p-4 shadow-[0_28px_70px_-40px_rgba(0,0,0,0.95)] backdrop-blur-md sm:p-5"
+      : "relative flex max-h-[min(34rem,calc(100svh-var(--site-header-height)-5.5rem))] flex-col overflow-visible rounded-2xl border border-white/12 bg-black/50 p-5 shadow-[0_28px_70px_-40px_rgba(0,0,0,0.95)] backdrop-blur-md sm:p-6 lg:max-h-[calc(100svh-var(--site-header-height)-4rem)]";
+
   return (
     <div className="hero-booking-enter w-full">
-      <form
-        noValidate
-        onSubmit={onSubmit}
-        className="relative flex max-h-[min(34rem,calc(100svh-var(--site-header-height)-5.5rem))] flex-col overflow-visible rounded-2xl border border-white/12 bg-black/50 p-5 shadow-[0_28px_70px_-40px_rgba(0,0,0,0.95)] backdrop-blur-md sm:p-6 lg:max-h-[calc(100svh-var(--site-header-height)-4rem)]"
-      >
+      <form noValidate onSubmit={onSubmit} className={shellClass}>
         {readingPlan ? (
           <div
             className="absolute inset-0 z-50 flex items-center justify-center rounded-2xl bg-night/70 px-5 backdrop-blur-[2px]"

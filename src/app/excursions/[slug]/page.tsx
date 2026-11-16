@@ -196,6 +196,8 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
         </dl>
         <AvailabilityButton
           title={title}
+          route={excursion.route}
+          teaser={excursion.teaser}
           destination={
             excursion.slug === "moulin-rouge"
               ? "Moulin Rouge"
