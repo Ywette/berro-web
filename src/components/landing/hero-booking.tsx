@@ -360,9 +360,9 @@ export function HeroBooking({ prefill, variant = "hero" }: HeroBookingProps = {}
     }
     if (!draft.pickup.trim()) errors.add("pickup");
     if (!draft.departureAt) errors.add("departureAt");
-    if (draft.tripMode === "oneWay") {
-      if (!draft.dropoff.trim()) errors.add("dropoff");
-      if (!draft.arrivalAt) errors.add("arrivalAt");
+    if (!draft.dropoff.trim()) errors.add("dropoff");
+    if (draft.tripMode === "oneWay" && !draft.arrivalAt) {
+      errors.add("arrivalAt");
     }
     if (draft.tripMode === "roundTrip" && !draft.returnAt) {
       errors.add("returnAt");
@@ -410,14 +410,14 @@ export function HeroBooking({ prefill, variant = "hero" }: HeroBookingProps = {}
   const formReady = collectErrors().size === 0;
 
   const fieldClass = (bad = false) =>
-    `h-10 w-full rounded-full border bg-white/95 px-3.5 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 ${
+    `h-9 w-full rounded-full border bg-white/95 px-2.5 text-xs text-neutral-900 outline-none placeholder:text-neutral-400 sm:h-10 sm:px-3.5 sm:text-sm ${
       bad ? "field-error-blink" : "border-transparent"
     }`;
 
   const shellClass =
     variant === "panel"
-      ? "relative flex max-h-[min(36rem,calc(100dvh-8rem))] flex-col overflow-y-auto rounded-2xl border border-white/12 bg-black/55 p-4 shadow-[0_28px_70px_-40px_rgba(0,0,0,0.95)] backdrop-blur-md sm:p-5"
-      : "relative flex max-h-[min(34rem,calc(100svh-var(--site-header-height)-5.5rem))] flex-col overflow-visible rounded-2xl border border-white/12 bg-black/50 p-5 shadow-[0_28px_70px_-40px_rgba(0,0,0,0.95)] backdrop-blur-md sm:p-6 lg:max-h-[calc(100svh-var(--site-header-height)-4rem)]";
+      ? "relative flex max-h-[min(36rem,calc(100dvh-8rem))] w-full flex-col overflow-y-auto rounded-2xl border border-white/12 bg-black/55 p-3 shadow-[0_28px_70px_-40px_rgba(0,0,0,0.95)] backdrop-blur-md sm:p-5"
+      : "relative flex max-h-[min(34rem,calc(100svh-var(--site-header-height)-5.5rem))] w-full flex-col overflow-visible rounded-none border-y border-white/12 bg-black/50 p-3 shadow-[0_28px_70px_-40px_rgba(0,0,0,0.95)] backdrop-blur-md sm:rounded-2xl sm:border sm:p-6 lg:max-h-[calc(100svh-var(--site-header-height)-4rem)]";
 
   return (
     <div className="hero-booking-enter w-full">
@@ -527,9 +527,14 @@ export function HeroBooking({ prefill, variant = "hero" }: HeroBookingProps = {}
                         tripMode: mode,
                         returnAt: mode === "roundTrip" ? draft.returnAt : "",
                         arrivalAt: mode === "oneWay" ? draft.arrivalAt : "",
+                        // Round trip returns to the departure place by default.
+                        dropoff:
+                          mode === "roundTrip"
+                            ? draft.pickup.trim() || draft.dropoff
+                            : draft.dropoff,
                       });
                       if (mode === "oneWay") clearFieldError(setInvalid, "returnAt");
-                      else clearFieldError(setInvalid, "dropoff", "arrivalAt");
+                      else clearFieldError(setInvalid, "arrivalAt");
                     }}
                     className={`relative z-10 h-full whitespace-nowrap rounded-full px-2.5 text-[11px] font-semibold tracking-wide transition-colors duration-300 sm:px-3 sm:text-xs ${
                       active ? "text-white" : "text-ivory/75 hover:text-ivory"
@@ -594,17 +599,17 @@ export function HeroBooking({ prefill, variant = "hero" }: HeroBookingProps = {}
         </div>
 
         <div
-          className={`relative z-20 mt-2.5 space-y-2 overflow-visible px-2.5 py-2.5 ${readingPlan ? "pointer-events-none select-none" : ""}`}
+          className={`relative z-20 mt-2.5 space-y-2 overflow-visible px-0 py-1.5 sm:px-2.5 sm:py-2.5 ${readingPlan ? "pointer-events-none select-none" : ""}`}
         >
           <div className="relative space-y-2 overflow-visible">
-            {needsDestination || draft.stops.length > 0 ? (
+            {draft.stops.length > 0 || needsDestination || needsReturn ? (
               <span
                 aria-hidden="true"
                 className="pointer-events-none absolute top-5 bottom-5 left-[0.875rem] w-px -translate-x-1/2 bg-champagne/50"
               />
             ) : null}
 
-            <div className="relative grid grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-x-2.5 gap-y-2 sm:grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)]">
+            <div className="relative grid grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-2">
               <RouteMarker kind="start" />
               <label
                 className={invalid.has("pickup") ? "relative z-40 overflow-visible" : ""}
@@ -616,8 +621,14 @@ export function HeroBooking({ prefill, variant = "hero" }: HeroBookingProps = {}
                   aria-label={dictionary.hero.route}
                   aria-invalid={invalid.has("pickup") || undefined}
                   onChange={(event) => {
-                    patchDraft({ pickup: event.target.value });
+                    const pickup = event.target.value;
+                    patchDraft({
+                      pickup,
+                      // Keep return place aligned with departure on round trips.
+                      dropoff: needsReturn ? pickup : draft.dropoff,
+                    });
                     clearFieldError(setInvalid, "pickup");
+                    if (needsReturn) clearFieldError(setInvalid, "dropoff");
                   }}
                   className={`${fieldClass(invalid.has("pickup"))} placeholder:normal-case placeholder:tracking-normal`}
                 />
@@ -628,7 +639,7 @@ export function HeroBooking({ prefill, variant = "hero" }: HeroBookingProps = {}
                   value={draft.departureAt}
                   hideLabel
                   invalid={invalid.has("departureAt")}
-                  className="h-10 rounded-full"
+                  className="h-9 rounded-full sm:h-10"
                   onChange={(value) => {
                     patchDraft({
                       departureAt: value,
@@ -691,17 +702,23 @@ export function HeroBooking({ prefill, variant = "hero" }: HeroBookingProps = {}
               </div>
             ) : null}
 
-            {needsDestination ? (
-              <div className="relative grid grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-x-2.5 gap-y-2 sm:grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)]">
+            {needsDestination || needsReturn ? (
+              <div className="relative grid grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-2">
                 <RouteMarker kind="end" />
                 <label
                   className={invalid.has("dropoff") ? "relative z-40 overflow-visible" : ""}
                 >
-                  <span className="sr-only">{dictionary.hero.destination}</span>
+                  <span className="sr-only">
+                    {needsReturn ? dictionary.hero.returnPlace : dictionary.hero.destination}
+                  </span>
                   <input
                     value={draft.dropoff}
-                    placeholder={dictionary.hero.destination}
-                    aria-label={dictionary.hero.destination}
+                    placeholder={
+                      needsReturn ? dictionary.hero.returnPlace : dictionary.hero.destination
+                    }
+                    aria-label={
+                      needsReturn ? dictionary.hero.returnPlace : dictionary.hero.destination
+                    }
                     aria-invalid={invalid.has("dropoff") || undefined}
                     onChange={(event) => {
                       patchDraft({ dropoff: event.target.value });
@@ -710,20 +727,37 @@ export function HeroBooking({ prefill, variant = "hero" }: HeroBookingProps = {}
                     className={`${fieldClass(invalid.has("dropoff"))} placeholder:normal-case placeholder:tracking-normal`}
                   />
                 </label>
-                <div className={invalid.has("arrivalAt") ? "relative z-40 overflow-visible" : ""}>
-                  <DateTimeField
-                    label={dictionary.hero.arrivalAt}
-                    value={draft.arrivalAt}
-                    min={draft.departureAt || undefined}
-                    hideLabel
-                    invalid={invalid.has("arrivalAt")}
-                    className="h-10 rounded-full"
-                    onChange={(value) => {
-                      patchDraft({ arrivalAt: value });
-                      clearFieldError(setInvalid, "arrivalAt");
-                    }}
-                  />
-                </div>
+                {needsDestination ? (
+                  <div className={invalid.has("arrivalAt") ? "relative z-40 overflow-visible" : ""}>
+                    <DateTimeField
+                      label={dictionary.hero.arrivalAt}
+                      value={draft.arrivalAt}
+                      min={draft.departureAt || undefined}
+                      hideLabel
+                      invalid={invalid.has("arrivalAt")}
+                      className="h-9 rounded-full sm:h-10"
+                      onChange={(value) => {
+                        patchDraft({ arrivalAt: value });
+                        clearFieldError(setInvalid, "arrivalAt");
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className={invalid.has("returnAt") ? "relative z-40 overflow-visible" : ""}>
+                    <DateTimeField
+                      label={dictionary.hero.returnAt}
+                      value={draft.returnAt}
+                      min={draft.departureAt || undefined}
+                      hideLabel
+                      invalid={invalid.has("returnAt")}
+                      className="h-9 rounded-full sm:h-10"
+                      onChange={(value) => {
+                        patchDraft({ returnAt: value });
+                        clearFieldError(setInvalid, "returnAt");
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             ) : null}
           </div>
@@ -738,27 +772,6 @@ export function HeroBooking({ prefill, variant = "hero" }: HeroBookingProps = {}
               {dictionary.hero.addStop}
             </button>
           </div>
-
-          {needsReturn ? (
-            <div className="grid grid-cols-1 gap-2 overflow-visible sm:grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)] sm:gap-x-2.5">
-              <div
-                className={`sm:col-start-3 ${invalid.has("returnAt") ? "relative z-40 overflow-visible" : ""}`}
-              >
-                <DateTimeField
-                  label={dictionary.hero.returnAt}
-                  value={draft.returnAt}
-                  min={draft.departureAt || undefined}
-                  hideLabel
-                  invalid={invalid.has("returnAt")}
-                  className="h-10 rounded-full"
-                  onChange={(value) => {
-                    patchDraft({ returnAt: value });
-                    clearFieldError(setInvalid, "returnAt");
-                  }}
-                />
-              </div>
-            </div>
-          ) : null}
         </div>
 
         {invalid.size > 0 ? (

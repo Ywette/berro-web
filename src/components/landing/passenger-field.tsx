@@ -185,11 +185,16 @@ export function PassengerField({
   }
 
   function openPicker() {
-    setDraft(
-      totalPassengers(value) > 0
-        ? value
-        : { adults: 1, teens: 0, children: 0, infants: 0 },
-    );
+    if (totalPassengers(value) > 0) {
+      // Fold legacy infant counts into children (0–9).
+      setDraft({
+        ...value,
+        children: value.children + value.infants,
+        infants: 0,
+      });
+    } else {
+      setDraft({ adults: 1, teens: 0, children: 0, infants: 0 });
+    }
     setOpen(true);
   }
 
@@ -197,7 +202,6 @@ export function PassengerField({
     { key: "adults", title: copy.adults, age: copy.adultsAge },
     { key: "teens", title: copy.teens, age: copy.teensAge },
     { key: "children", title: copy.children, age: copy.childrenAge },
-    { key: "infants", title: copy.infant, age: copy.infantAge },
   ];
 
   return (

@@ -42,10 +42,16 @@ function toValue(year: number, month: number, day: number, hour: string, minute:
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T${hour}:${minute}`;
 }
 
-function formatDisplay(value: string) {
+function formatDisplay(value: string, compact = false) {
   const parsed = parseValue(value);
   if (!parsed) return "";
-  return `${String(parsed.day).padStart(2, "0")}.${String(parsed.month).padStart(2, "0")}.${parsed.year} ${parsed.hour}:${parsed.minute}`;
+  const day = String(parsed.day).padStart(2, "0");
+  const month = String(parsed.month).padStart(2, "0");
+  if (compact) {
+    const year = String(parsed.year).slice(-2);
+    return `${day}.${month}.${year} ${parsed.hour}:${parsed.minute}`;
+  }
+  return `${day}.${month}.${parsed.year} ${parsed.hour}:${parsed.minute}`;
 }
 
 function daysInMonth(year: number, month: number) {
@@ -84,11 +90,20 @@ export function DateTimeInput({
   const [draftHour, setDraftHour] = useState(parsed?.hour ?? "09");
   const [draftMinute, setDraftMinute] = useState(parsed?.minute ?? "");
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+  const [compactDisplay, setCompactDisplay] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const listId = useId();
   const minParsed = parseMin(min);
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 639px)");
+    const sync = () => setCompactDisplay(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -121,8 +136,9 @@ export function DateTimeInput({
     function updatePosition() {
       const rect = rootRef.current?.getBoundingClientRect();
       if (!rect) return;
-      const width = 420;
-      const popoverHeight = 320;
+      const narrow = window.innerWidth < 640;
+      const width = narrow ? Math.min(320, window.innerWidth - 16) : 420;
+      const popoverHeight = narrow ? 360 : 320;
       // Fixed inside <dialog> is relative to the dialog, not the viewport.
       const origin = dialog
         ? dialog.getBoundingClientRect()
@@ -186,7 +202,7 @@ export function DateTimeInput({
 
   const blanks = startWeekday(viewYear, viewMonth);
   const totalDays = daysInMonth(viewYear, viewMonth);
-  const display = formatDisplay(value);
+  const display = formatDisplay(value, compactDisplay);
 
   return (
     <div ref={rootRef} className="relative min-w-0 w-full">
@@ -199,7 +215,7 @@ export function DateTimeInput({
         aria-expanded={open}
         aria-controls={listId}
         onClick={() => setOpen((current) => !current)}
-        className={`flex h-10 w-full min-w-0 items-center gap-2 rounded-full border bg-white/95 px-3.5 text-left text-sm outline-none ${
+        className={`flex h-9 w-full min-w-0 items-center gap-1.5 rounded-full border bg-white/95 px-2.5 text-left text-xs outline-none sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${
           invalid ? "field-error-blink" : "border-transparent"
         } ${display ? "text-neutral-900" : "text-neutral-400"} ${className ?? ""}`}
       >
@@ -215,13 +231,13 @@ export function DateTimeInput({
               role="dialog"
               aria-label={ariaLabel}
               style={{ top: coords.top, left: coords.left }}
-              className="popup-enter-panel fixed z-[10000] w-[min(100vw-2rem,26.25rem)] rounded-xl border border-white/15 bg-card p-3 shadow-2xl"
+              className="popup-enter-panel fixed z-[10000] w-[min(100vw-1rem,20rem)] rounded-xl border border-white/15 bg-card p-2.5 shadow-2xl sm:w-[min(100vw-2rem,26.25rem)] sm:p-3"
               onMouseDown={(event) => event.stopPropagation()}
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-2.5 sm:flex-row sm:gap-3">
                 <div className="min-w-0 flex-1">
-                  <div className="mb-3 flex items-center justify-between gap-2">
+                  <div className="mb-2 flex items-center justify-between gap-2 sm:mb-3">
                     <button
                       type="button"
                       className="rounded-md px-2 py-1 text-sm text-ivory hover:bg-white/10"
@@ -255,14 +271,14 @@ export function DateTimeInput({
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-mist">
+                  <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] text-mist sm:gap-1">
                     {WEEKDAYS.map((day) => (
                       <span key={day} className="py-1">
                         {day}
                       </span>
                     ))}
                   </div>
-                  <div className="mt-1 grid grid-cols-7 gap-1">
+                  <div className="mt-1 grid grid-cols-7 gap-0.5 sm:gap-1">
                     {Array.from({ length: blanks }).map((_, index) => (
                       <span key={`blank-${index}`} />
                     ))}
@@ -279,7 +295,7 @@ export function DateTimeInput({
                           type="button"
                           disabled={disabled}
                           onClick={() => chooseDay(viewYear, viewMonth, day)}
-                          className={`h-8 rounded-md text-xs transition ${
+                          className={`h-7 rounded-md text-[11px] transition sm:h-8 sm:text-xs ${
                             selected
                               ? "bg-burgundy text-white"
                               : disabled
@@ -294,7 +310,7 @@ export function DateTimeInput({
                   </div>
                 </div>
 
-                <div className="flex w-[7.25rem] shrink-0 flex-col border-l border-white/10 pl-3">
+                <div className="flex w-full shrink-0 flex-col border-t border-white/10 pt-2 sm:w-[7.25rem] sm:border-t-0 sm:border-l sm:pt-0 sm:pl-3">
                   <p className="mb-2 text-[11px] text-mist">
                     {draftDate
                       ? `${String(draftDate.day).padStart(2, "0")}.${String(draftDate.month).padStart(2, "0")}.${draftDate.year}`
@@ -303,7 +319,7 @@ export function DateTimeInput({
                   <div className="grid min-h-0 flex-1 grid-cols-2 gap-2">
                     <div className="min-h-0">
                       <p className="mb-1 text-[10px] tracking-wide text-mist uppercase">HH</p>
-                      <div className="max-h-[13.5rem] overflow-y-auto rounded-md border border-white/10">
+                      <div className="max-h-[8.5rem] overflow-y-auto rounded-md border border-white/10 sm:max-h-[13.5rem]">
                         {HOURS.map((hour) => (
                           <button
                             key={hour}
@@ -323,7 +339,7 @@ export function DateTimeInput({
                     </div>
                     <div className="min-h-0">
                       <p className="mb-1 text-[10px] tracking-wide text-mist uppercase">MM</p>
-                      <div className="max-h-[13.5rem] overflow-y-auto rounded-md border border-white/10">
+                      <div className="max-h-[8.5rem] overflow-y-auto rounded-md border border-white/10 sm:max-h-[13.5rem]">
                         {MINUTES.map((minute) => (
                           <button
                             key={minute}
@@ -386,7 +402,7 @@ export function DateTimeField({
         invalid={invalid}
         placeholder={placeholder ?? (hideLabel ? label : "—")}
         aria-label={inputProps["aria-label"] ?? label}
-        className={className ?? "h-10 rounded-full"}
+        className={className ?? "h-9 rounded-full sm:h-10"}
       />
     </div>
   );
@@ -396,9 +412,9 @@ function CalendarGlyph() {
   return (
     <svg
       viewBox="0 0 24 24"
-      width={16}
-      height={16}
-      className="h-4 w-4 shrink-0 text-neutral-500"
+      width={14}
+      height={14}
+      className="h-3.5 w-3.5 shrink-0 text-neutral-500 sm:h-4 sm:w-4"
       fill="none"
       aria-hidden="true"
     >

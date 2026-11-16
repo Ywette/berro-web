@@ -58,8 +58,8 @@ export function SloganHero({ children }: { children: ReactNode }) {
         <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-night via-night/50 to-transparent lg:h-28" />
       </div>
 
-      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col justify-center gap-5 px-4 py-6 sm:gap-6 sm:px-6 lg:py-8">
-        <div className="max-w-xl">
+      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col justify-center gap-5 px-0 py-6 sm:gap-6 sm:px-6 lg:py-8">
+        <div className="max-w-xl px-4 sm:px-0">
           <h1 className="font-serif text-3xl leading-[1.1] tracking-wide text-ivory sm:text-4xl lg:text-[2.65rem] xl:text-[3rem]">
             {dictionary.hero.headline}
           </h1>
@@ -68,7 +68,7 @@ export function SloganHero({ children }: { children: ReactNode }) {
           </p>
         </div>
 
-        <div className="w-full max-w-xl min-w-0">{children}</div>
+        <div className="w-full min-w-0 sm:max-w-xl">{children}</div>
       </div>
     </section>
   );
