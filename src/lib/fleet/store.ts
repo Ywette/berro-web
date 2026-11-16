@@ -23,20 +23,6 @@ async function readFleetFileFallback(): Promise<FleetVehicle[]> {
   }
 }
 
-async function ensureFleetSeeded(
-  supabase: NonNullable<ReturnType<typeof createServiceSupabaseClient>>,
-): Promise<FleetVehicle[]> {
-  const seed = buildFleetSeed();
-  if (seed.length === 0) return seed;
-  const { error } = await supabase.from(TABLE).upsert(seed.map(fleetVehicleToRow), {
-    onConflict: "id",
-  });
-  if (error) {
-    console.error("[fleet] seed upsert failed", error.message);
-  }
-  return seed;
-}
-
 export async function readFleetStore(): Promise<FleetVehicle[]> {
   const supabase = createServiceSupabaseClient();
   if (!supabase) return readFleetFileFallback();
@@ -52,7 +38,6 @@ export async function readFleetStore(): Promise<FleetVehicle[]> {
   }
 
   const rows = (data ?? []) as FleetVehicleRow[];
-  if (rows.length === 0) return ensureFleetSeeded(supabase);
   return rows.map(fleetVehicleFromRow);
 }
 

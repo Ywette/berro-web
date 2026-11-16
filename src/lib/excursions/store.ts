@@ -30,19 +30,6 @@ async function readExcursionFileFallback(): Promise<ManagedExcursion[]> {
   }
 }
 
-async function ensureExcursionSeeded(
-  supabase: NonNullable<ReturnType<typeof createServiceSupabaseClient>>,
-): Promise<ManagedExcursion[]> {
-  const seed = [...excursionSeed];
-  const { error } = await supabase.from(TABLE).upsert(seed.map(excursionToRow), {
-    onConflict: "id",
-  });
-  if (error) {
-    console.error("[excursions] seed upsert failed", error.message);
-  }
-  return seed;
-}
-
 export async function readExcursionStore(): Promise<ManagedExcursion[]> {
   const supabase = createServiceSupabaseClient();
   if (!supabase) return readExcursionFileFallback();
@@ -58,7 +45,6 @@ export async function readExcursionStore(): Promise<ManagedExcursion[]> {
   }
 
   const rows = (data ?? []) as ExcursionRow[];
-  if (rows.length === 0) return ensureExcursionSeeded(supabase);
   return rows.map(excursionFromRow);
 }
 
