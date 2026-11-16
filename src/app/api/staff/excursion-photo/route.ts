@@ -1,14 +1,11 @@
-import { auth } from "@clerk/nextjs/server";
+import { requireUser } from "@/lib/auth/session";
 import {
   ExcursionPhotoUploadException,
   uploadExcursionPhoto,
 } from "@/lib/excursions/upload-photo";
 
 export async function POST(request: Request) {
-  const { userId } = await auth();
-  if (!userId) {
-    return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-  }
+  await requireUser();
 
   try {
     const formData = await request.formData();
