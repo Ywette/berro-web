@@ -121,21 +121,27 @@ export async function saveManagedExcursion(
   const parsed = await parseExcursionForm(formData, labels);
   if ("error" in parsed) return { error: parsed.error };
 
-  const id = String(formData.get("id") ?? "").trim();
-  if (id) {
-    const updated = await updateManagedExcursionById(id, parsed);
-    if (!updated) return { error: labels.excursionFormNotFound };
+  try {
+    const id = String(formData.get("id") ?? "").trim();
+    if (id) {
+      const updated = await updateManagedExcursionById(id, parsed);
+      if (!updated) return { error: labels.excursionFormNotFound };
+      revalidatePath("/staff/excursions");
+      revalidatePath("/excursions");
+      revalidatePath(`/excursions/${updated.slug}`);
+      return { success: labels.excursionFormUpdated };
+    }
+
+    const created = await createManagedExcursion(parsed);
     revalidatePath("/staff/excursions");
     revalidatePath("/excursions");
-    revalidatePath(`/excursions/${updated.slug}`);
-    return { success: labels.excursionFormUpdated };
+    revalidatePath(`/excursions/${created.slug}`);
+    return { success: labels.excursionFormSaved };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : labels.excursionFormPhotoInvalid;
+    console.error("[excursions] save failed", message);
+    return { error: message };
   }
-
-  const created = await createManagedExcursion(parsed);
-  revalidatePath("/staff/excursions");
-  revalidatePath("/excursions");
-  revalidatePath(`/excursions/${created.slug}`);
-  return { success: labels.excursionFormSaved };
 }
 
 export async function deleteManagedExcursionAction(formData: FormData): Promise<void> {
