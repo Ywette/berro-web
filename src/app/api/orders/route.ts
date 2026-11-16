@@ -1,7 +1,5 @@
 import { submitQuoteOrderFromFormData } from "@/lib/orders/submit";
 
-export const runtime = "nodejs";
-
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
