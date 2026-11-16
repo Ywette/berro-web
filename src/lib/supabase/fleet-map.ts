@@ -1,5 +1,5 @@
 import type { FleetVehicle } from "@/lib/content/fleet";
-import type { TransportKind } from "@/lib/content/transport/types";
+import { normalizeFleetKind } from "@/lib/fleet/kind";
 
 export type FleetVehicleRow = {
   id: string;
@@ -33,7 +33,7 @@ export function fleetVehicleFromRow(row: FleetVehicleRow): FleetVehicle {
   return {
     id: row.id,
     name: row.name,
-    kind: row.kind as TransportKind,
+    kind: normalizeFleetKind(row.kind),
     passengers: row.passengers,
     guideSeats: row.guide_seats,
     image: row.image ?? "",

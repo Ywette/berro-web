@@ -6,6 +6,7 @@ import { isFleetCountryCode } from "@/lib/content/countries";
 import type { FleetVehicle } from "@/lib/content/fleet";
 import type { TransportKind } from "@/lib/content/transport/types";
 import { createVehicle, removeVehicle, updateVehicle } from "@/lib/data/vehicles";
+import { normalizeFleetKind } from "@/lib/fleet/kind";
 import { FleetImageUploadException, saveFleetImageUploads } from "@/lib/fleet/upload-images";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 
@@ -38,8 +39,9 @@ function parseExtras(value: FormDataEntryValue | null): string[] {
 }
 
 function parseKind(value: FormDataEntryValue | null): TransportKind | null {
-  if (typeof value !== "string") return null;
-  return kinds.includes(value as TransportKind) ? (value as TransportKind) : null;
+  if (typeof value !== "string" || !value.trim()) return null;
+  const normalized = normalizeFleetKind(value);
+  return kinds.includes(normalized) ? normalized : null;
 }
 
 function buildImageFields(orderedPaths: string[], mainIndex: number) {

@@ -10,6 +10,7 @@ import { countryLabel } from "@/lib/content/countries";
 import type { FleetVehicle } from "@/lib/content/fleet";
 import { formatPostDate } from "@/lib/content/format-date";
 import { formatTransportSeats } from "@/lib/content/transport";
+import { normalizeFleetKind } from "@/lib/fleet/kind";
 import type { Locale } from "@/lib/i18n/locale";
 import { dateExpiryState } from "@/types/dashboard";
 
@@ -73,12 +74,13 @@ export function FleetBoardClient({
               {vehicles.map((vehicle) => {
                 const insuranceState = dateExpiryState(vehicle.insuranceExpiresOn);
                 const inspectionState = dateExpiryState(vehicle.inspectionExpiresOn);
+                const kind = normalizeFleetKind(vehicle.kind);
                 const kindLabel =
-                  vehicle.kind === "coach"
+                  kind === "coach"
                     ? labels.kindCoach
-                    : vehicle.kind === "vip"
+                    : kind === "vip"
                       ? labels.kindVip
-                      : vehicle.kind === "retro"
+                      : kind === "retro"
                         ? labels.kindRetro
                         : labels.kindVan;
 

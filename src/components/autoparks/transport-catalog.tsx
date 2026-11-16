@@ -17,6 +17,7 @@ import {
   type TransportPhoto,
   type TransportSectionId,
 } from "@/lib/content/transport";
+import { fleetKindMatchesSection, normalizeFleetKind } from "@/lib/fleet/kind";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/locale";
 
@@ -34,7 +35,11 @@ const sectionKinds: Record<TransportSectionId, FleetVehicle["kind"][]> = {
 };
 
 export function TransportCatalog({ vehicles, locale, labels }: TransportCatalogProps) {
-  const active = useMemo(() => vehicles.filter((vehicle) => vehicle.isActive), [vehicles]);
+  // Same inventory as staff fleet; normalize kind aliases (e.g. Mikroautobuss → van).
+  const active = useMemo(
+    () => vehicles.map((vehicle) => ({ ...vehicle, kind: normalizeFleetKind(vehicle.kind) })),
+    [vehicles],
+  );
   const [place, setPlace] = useState<FleetCountryCode | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -108,7 +113,9 @@ export function TransportCatalog({ vehicles, locale, labels }: TransportCatalogP
             key={section}
             section={section}
             title={labels.sections[section]}
-            vehicles={filtered.filter((vehicle) => sectionKinds[section].includes(vehicle.kind))}
+            vehicles={filtered.filter((vehicle) =>
+              fleetKindMatchesSection(vehicle.kind, sectionKinds[section]),
+            )}
             selectedId={selectedId}
             onOpen={setSelectedId}
             locale={locale}
