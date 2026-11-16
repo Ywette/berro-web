@@ -17,6 +17,7 @@ export const excursionSeed: ManagedExcursion[] = [
       "Katru vakaru plkst. 19.00 piedzīvojiet izsmalcinātas vakariņas un pasaules līmeņa šovu leģendārajā Parīzes kabarē.",
     details: "",
     regions: ["france"],
+    price: null,
     isActive: true,
   },
   {
@@ -30,6 +31,7 @@ export const excursionSeed: ManagedExcursion[] = [
       "Tikšanās ar Disneja personāžiem, vakariņas ar Mikimausu un VIP numuri Disneyland 5★ viesnīcā.",
     details: "",
     regions: ["france"],
+    price: null,
     isActive: true,
   },
   {
@@ -43,6 +45,7 @@ export const excursionSeed: ManagedExcursion[] = [
       "Sešas dienas ar divu šoferu maiņu, nakts pieturu Berlīnē un brīvu laiku Parīzes centrā.",
     details: "",
     regions: ["france"],
+    price: null,
     isActive: true,
   },
   {
@@ -56,6 +59,7 @@ export const excursionSeed: ManagedExcursion[] = [
       "Muzeju sala, Špreja vakarā un viesnīca pilsētas centrā. Piemērots uzņēmumu un skolu grupām.",
     details: "",
     regions: ["germany"],
+    price: null,
     isActive: true,
   },
   {
@@ -68,6 +72,7 @@ export const excursionSeed: ManagedExcursion[] = [
     teaser: "Trīs galvaspilsētas vienā braucienā, ar saulrietu virs Luksemburgas vecpilsētas.",
     details: "",
     regions: [],
+    price: null,
     isActive: true,
   },
   {
@@ -80,6 +85,7 @@ export const excursionSeed: ManagedExcursion[] = [
     teaser: "Kalnu pārejas, ezeri un mazas pilsētiņas. Ceļš ir daļa no ceļojuma.",
     details: "",
     regions: [],
+    price: null,
     isActive: true,
   },
 ];

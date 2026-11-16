@@ -69,6 +69,12 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
         <p className="mt-3 text-sm font-medium tracking-wide text-champagne/90">{excursion.route}</p>
       ) : null}
 
+      {excursion.price != null ? (
+        <p className="mt-3 text-lg font-medium text-burgundy">
+          {text.fromPrice(formatEuro(excursion.price, locale))}
+        </p>
+      ) : null}
+
       {excursion.teaser ? (
         <p className="mt-4 text-base leading-7 text-ivory/90">{excursion.teaser}</p>
       ) : null}

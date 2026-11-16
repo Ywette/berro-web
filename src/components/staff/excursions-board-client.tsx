@@ -17,6 +17,7 @@ type Labels = ExcursionDialogLabels & {
   delete: string;
   routeColumn: string;
   regionColumn: string;
+  priceColumn: string;
 };
 
 export function ExcursionsBoardClient({
@@ -69,6 +70,7 @@ export function ExcursionsBoardClient({
                 <th className="px-4 py-3 font-medium">{labels.boardTitle}</th>
                 <th className="px-4 py-3 font-medium">{labels.routeColumn}</th>
                 <th className="px-4 py-3 font-medium">{labels.regionColumn}</th>
+                <th className="px-4 py-3 font-medium">{labels.priceColumn}</th>
                 <th className="px-4 py-3 font-medium" />
               </tr>
             </thead>
@@ -89,6 +91,9 @@ export function ExcursionsBoardClient({
                   </td>
                   <td className="max-w-xs truncate px-4 py-3 text-mist">{excursion.route}</td>
                   <td className="px-4 py-3 text-mist">{regionsLabel(excursion.regions)}</td>
+                  <td className="px-4 py-3 text-mist">
+                    {excursion.price != null ? `€${excursion.price}` : "—"}
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <div className="inline-flex items-center gap-2">
                       <button

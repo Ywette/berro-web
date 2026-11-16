@@ -34,6 +34,8 @@ export type ExcursionDialogLabels = {
   teaserHint: string;
   details: string;
   detailsHint: string;
+  price: string;
+  priceHint: string;
   region: string;
   regionHint: string;
   regionLatvia: string;
@@ -250,6 +252,19 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
               maxLength={200}
               defaultValue={excursion?.route ?? ""}
               placeholder="Riga → Paris → Riga"
+              className={inputClass}
+            />
+          </Field>
+
+          <Field label={labels.price} hint={labels.priceHint}>
+            <input
+              name="price"
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="1"
+              defaultValue={excursion?.price ?? ""}
+              placeholder="249"
               className={inputClass}
             />
           </Field>

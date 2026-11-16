@@ -23,6 +23,8 @@ export type ExcursionCardData = {
   images: string[];
   logoVariant: ExcursionLogoVariant;
   regions?: ExcursionRegion[];
+  /** Preformatted "from €X" label when a price is set. */
+  priceLabel?: string;
 };
 
 type ExcursionsCatalogProps = {
@@ -101,6 +103,9 @@ export function ExcursionsCatalog({
                     <p className="mt-3 text-sm font-medium tracking-wide text-champagne/90">
                       {excursion.route}
                     </p>
+                  ) : null}
+                  {excursion.priceLabel ? (
+                    <p className="mt-2 text-sm font-medium text-burgundy">{excursion.priceLabel}</p>
                   ) : null}
                   {excursion.description ? (
                     <p className="mt-3 text-sm leading-6 text-mist">{excursion.description}</p>

@@ -34,8 +34,17 @@ export type ManagedExcursion = {
   details: string;
   /** One or more regions for catalog filters (e.g. Latvia + Estonia + Lithuania). */
   regions: ExcursionRegion[];
+  /** Optional from-price in EUR. */
+  price: number | null;
   isActive: boolean;
 };
+
+export function parseExcursionPrice(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const amount = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(amount) || amount < 0) return null;
+  return Math.round(amount * 100) / 100;
+}
 
 export function isExcursionLogoVariant(value: unknown): value is ExcursionLogoVariant {
   return value === "dark" || value === "white";
@@ -78,6 +87,7 @@ export function normalizeManagedExcursion(raw: unknown): ManagedExcursion | null
       if (fromList.length > 0) return fromList;
       return parseExcursionRegions(item.region);
     })(),
+    price: parseExcursionPrice(item.price),
     isActive: item.isActive !== false,
   };
 }

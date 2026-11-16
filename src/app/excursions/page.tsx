@@ -4,6 +4,7 @@ import {
   ExcursionsCatalog,
   type ExcursionCardData,
 } from "@/components/excursions/excursions-catalog";
+import { formatEuro } from "@/lib/content/format-price";
 import { listActiveManagedExcursions } from "@/lib/data/managed-excursions";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 
@@ -36,6 +37,10 @@ async function ExcursionsCatalogSection() {
     images: excursion.images,
     logoVariant: excursion.logoVariant,
     regions: excursion.regions,
+    priceLabel:
+      excursion.price != null
+        ? dictionary.excursions.fromPrice(formatEuro(excursion.price, dictionary.locale))
+        : undefined,
   }));
 
   return (

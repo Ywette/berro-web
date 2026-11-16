@@ -1,5 +1,6 @@
 import {
   isExcursionLogoVariant,
+  parseExcursionPrice,
   type ManagedExcursion,
 } from "@/lib/content/managed-excursion";
 import {
@@ -19,6 +20,7 @@ export type ExcursionRow = {
   details: string;
   region: string | null;
   regions?: unknown;
+  price?: number | string | null;
   is_active: boolean;
 };
 
@@ -45,6 +47,7 @@ export function excursionFromRow(row: ExcursionRow): ManagedExcursion {
     teaser: row.teaser ?? "",
     details: row.details ?? "",
     regions,
+    price: parseExcursionPrice(row.price),
     isActive: row.is_active !== false,
   };
 }
@@ -62,6 +65,7 @@ export function excursionToRow(excursion: ManagedExcursion): ExcursionRow {
     // Keep legacy single column for older readers; prefer first selected region.
     region: excursion.regions[0] ?? null,
     regions: excursion.regions,
+    price: excursion.price,
     is_active: excursion.isActive,
   };
 }

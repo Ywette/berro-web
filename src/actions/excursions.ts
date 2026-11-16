@@ -6,6 +6,7 @@ import { isExcursionRegion, type ExcursionRegion } from "@/lib/content/excursion
 import {
   EXCURSION_COLLAGE_PHOTO_COUNT,
   isExcursionLogoVariant,
+  parseExcursionPrice,
   type ExcursionLogoVariant,
 } from "@/lib/content/managed-excursion";
 import {
@@ -38,6 +39,7 @@ async function parseExcursionForm(
       teaser: string;
       details: string;
       regions: ExcursionRegion[];
+      price: number | null;
       images: string[];
       logoVariant: ExcursionLogoVariant;
     }
@@ -48,6 +50,7 @@ async function parseExcursionForm(
   const teaser = String(formData.get("teaser") ?? "").trim();
   const details = String(formData.get("details") ?? "").trim();
   const regions = parseRegions(formData);
+  const priceRaw = String(formData.get("price") ?? "").trim();
   const logoRaw = String(formData.get("logoVariant") ?? "dark");
   const logoVariant: ExcursionLogoVariant = isExcursionLogoVariant(logoRaw) ? logoRaw : "dark";
   const existingPhotos = formData
@@ -57,6 +60,13 @@ async function parseExcursionForm(
   const photoSlots = formData.getAll("photoSlots").map(String);
 
   if (!title) return { error: labels.excursionFormTitleRequired };
+
+  let price: number | null = null;
+  if (priceRaw) {
+    const parsedPrice = parseExcursionPrice(priceRaw.replace(",", "."));
+    if (parsedPrice === null) return { error: labels.excursionFormPriceInvalid };
+    price = parsedPrice;
+  }
 
   let uploaded: string[] = [];
   try {
@@ -95,6 +105,7 @@ async function parseExcursionForm(
     teaser,
     details,
     regions,
+    price,
     images: orderedPaths,
     logoVariant,
   };

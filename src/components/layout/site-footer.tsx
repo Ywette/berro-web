@@ -17,6 +17,7 @@ export async function SiteFooter() {
     { href: "/staff/orders", label: dictionary.staffDashboard.orders },
     { href: "/staff/fleet", label: dictionary.staffDashboard.fleet },
     { href: "/staff/excursions", label: dictionary.staffDashboard.excursionsNav },
+    { href: "/staff/documents", label: dictionary.staffDashboard.documentsNav },
     { href: "/staff/employees", label: dictionary.staffDashboard.employees },
     { href: "/staff/calculation", label: dictionary.staffDashboard.calculation },
   ] as const;
