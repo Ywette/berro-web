@@ -8,7 +8,10 @@ import {
   excursionRegions,
   type ExcursionRegion,
 } from "@/lib/content/excursions";
-import type { ExcursionLogoVariant } from "@/lib/content/managed-excursion";
+import {
+  excursionLogoPlateFromIndex,
+  type ExcursionLogoVariant,
+} from "@/lib/content/managed-excursion";
 
 export type ExcursionCardData = {
   slug: string;
@@ -121,18 +124,18 @@ export function ExcursionsCatalog({
                 >
                   <ExcursionCollage
                     images={excursion.images}
-                    logoVariant={excursion.logoVariant}
+                    logoVariant={excursionLogoPlateFromIndex(index)}
                     alt=""
                     className="absolute inset-0 h-full w-full"
                     sizes="(min-width: 1024px) 28vw, (min-width: 640px) 35vw, 90vw"
                   />
                   <div
                     aria-hidden="true"
-                    className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-[#141418] via-[#141418]/70 to-transparent"
+                    className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[#141418] via-[#141418]/90 to-transparent"
                   />
                   <div
                     aria-hidden="true"
-                    className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#141418] via-[#141418]/70 to-transparent"
+                    className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#141418] via-[#141418]/90 to-transparent"
                   />
                 </Link>
               </div>

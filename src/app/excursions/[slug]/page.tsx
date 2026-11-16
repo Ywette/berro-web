@@ -7,7 +7,10 @@ import { AvailabilityButton } from "@/components/excursions/availability-button"
 import { ExcursionCollage } from "@/components/excursions/excursion-collage";
 import { bookingContact, getExcursionDetails } from "@/lib/content/excursions";
 import { formatEuro } from "@/lib/content/format-price";
-import { excursionCoverImage } from "@/lib/content/managed-excursion";
+import {
+  excursionCoverImage,
+  excursionLogoPlateFromIndex,
+} from "@/lib/content/managed-excursion";
 import {
   getManagedExcursionBySlug,
   listActiveManagedExcursions,
@@ -49,6 +52,9 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
   const text = dictionary.excursions;
   const title = excursion.title;
   const coverImage = excursionCoverImage(excursion);
+  const activeExcursions = await listActiveManagedExcursions();
+  const listIndex = activeExcursions.findIndex((item) => item.slug === slug);
+  const logoVariant = excursionLogoPlateFromIndex(listIndex < 0 ? 0 : listIndex);
 
   return (
     <article className="mx-auto max-w-4xl px-5 py-12">
@@ -69,7 +75,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
 
       <ExcursionCollage
         images={excursion.images}
-        logoVariant={excursion.logoVariant}
+        logoVariant={logoVariant}
         alt={title}
         priority
         className="relative mt-8 h-72 overflow-hidden rounded-2xl sm:h-96"

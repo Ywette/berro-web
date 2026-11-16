@@ -28,6 +28,10 @@ export function ExcursionCollage({
 }: ExcursionCollageProps) {
   const tiles = images.slice(0, EXCURSION_COLLAGE_PHOTO_COUNT);
   const logoSrc = excursionLogoSrc[logoVariant];
+  const plateClass =
+    logoVariant === "white"
+      ? "bg-white shadow-[0_12px_28px_-10px_rgba(0,0,0,0.45)]"
+      : "bg-black shadow-[0_12px_28px_-10px_rgba(0,0,0,0.65)]";
 
   if (!hasExcursionCollage(tiles)) {
     const src = tiles[0];
@@ -76,7 +80,9 @@ export function ExcursionCollage({
       </div>
 
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-3">
-        <div className="flex w-[42%] max-w-[9.5rem] flex-col items-center rounded-xl bg-burgundy px-2.5 py-2 shadow-[0_12px_28px_-10px_rgba(0,0,0,0.65)] sm:rounded-2xl sm:px-3 sm:py-2.5">
+        <div
+          className={`flex w-[42%] max-w-[9.5rem] flex-col items-center rounded-xl px-2.5 py-2 sm:rounded-2xl sm:px-3 sm:py-2.5 ${plateClass}`}
+        >
           {unoptimized ? (
             // eslint-disable-next-line @next/next/no-img-element -- staff preview
             <img src={logoSrc} alt="Berro Travel" className="h-auto w-full object-contain" />
@@ -84,14 +90,11 @@ export function ExcursionCollage({
             <Image
               src={logoSrc}
               alt="Berro Travel"
-              width={160}
-              height={64}
+              width={352}
+              height={112}
               className="h-auto w-full object-contain"
             />
           )}
-          <span className="mt-1 text-[8px] font-medium tracking-[0.14em] text-white/95 sm:text-[9px]">
-            www.berro.lv
-          </span>
         </div>
       </div>
     </div>

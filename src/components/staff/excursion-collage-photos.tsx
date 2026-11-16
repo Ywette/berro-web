@@ -134,7 +134,11 @@ export function ExcursionCollagePhotos({
                     : "border-white/12 bg-[#141418] hover:border-white/30"
                 }`}
               >
-                <span className="block rounded-lg bg-burgundy px-2 py-2">
+                <span
+                  className={`block rounded-lg px-2 py-2 ${
+                    variant === "white" ? "bg-white" : "bg-black"
+                  }`}
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element -- static brand assets */}
                   <img
                     src={excursionLogoSrc[variant]}

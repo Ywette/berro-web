@@ -88,6 +88,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
   );
   const [state, formAction, pending] = useActionState(saveManagedExcursion, initialState);
   const [clientError, setClientError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -107,7 +108,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
     onClose();
   }, [state.success, onClose]);
 
-  function onSubmit(event: FormEvent<HTMLFormElement>) {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setClientError(null);
 
@@ -124,19 +125,46 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
     formData.delete("existingPhotos");
     formData.set("logoVariant", logoVariant);
 
-    for (const photo of photos) {
-      if (photo.file) {
-        formData.append("photoSlots", "new");
-        formData.append("photos", photo.file);
-      } else if (photo.src) {
-        formData.append("photoSlots", photo.src);
-        formData.append("existingPhotos", photo.src);
+    setUploading(true);
+    try {
+      const resolvedUrls: string[] = [];
+      for (const photo of photos) {
+        if (photo.file) {
+          const uploadData = new FormData();
+          uploadData.append("photo", photo.file);
+          const response = await fetch("/api/staff/excursion-photo", {
+            method: "POST",
+            body: uploadData,
+          });
+          const payload = (await response.json().catch(() => null)) as
+            | { ok?: boolean; url?: string; error?: string }
+            | null;
+          if (!response.ok || !payload?.ok || !payload.url) {
+            setClientError(payload?.error ?? labels.photosHint);
+            return;
+          }
+          resolvedUrls.push(payload.url);
+        } else if (photo.src) {
+          resolvedUrls.push(photo.src);
+        }
       }
-    }
 
-    startTransition(() => {
-      formAction(formData);
-    });
+      if (resolvedUrls.length !== EXCURSION_COLLAGE_PHOTO_COUNT) {
+        setClientError(labels.photosHint);
+        return;
+      }
+
+      for (const url of resolvedUrls) {
+        formData.append("photoSlots", url);
+        formData.append("existingPhotos", url);
+      }
+
+      startTransition(() => {
+        formAction(formData);
+      });
+    } finally {
+      setUploading(false);
+    }
   }
 
   const regionLabels: Record<ExcursionRegion, string> = {
@@ -260,10 +288,10 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
 
           <button
             type="submit"
-            disabled={pending}
+            disabled={pending || uploading}
             className="mt-1 inline-flex h-11 w-full items-center justify-center rounded-lg bg-burgundy px-4 text-sm font-semibold text-white hover:bg-burgundy-deep disabled:opacity-60"
           >
-            {pending ? labels.saving : labels.save}
+            {pending || uploading ? labels.saving : labels.save}
           </button>
         </form>
       </div>

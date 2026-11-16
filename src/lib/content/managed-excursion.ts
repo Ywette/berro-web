@@ -6,9 +6,16 @@ export const excursionLogoVariants = ["dark", "white"] as const;
 export type ExcursionLogoVariant = (typeof excursionLogoVariants)[number];
 
 export const excursionLogoSrc: Record<ExcursionLogoVariant, string> = {
+  /** Light letters — use on black plate. */
   dark: "/brand/berro-travel-logo-dark.png",
+  /** Dark letters — use on white plate. */
   white: "/brand/berro-travel-logo-white.png",
 };
+
+/** Even list rows → white plate; odd → black plate. */
+export function excursionLogoPlateFromIndex(index: number): ExcursionLogoVariant {
+  return index % 2 === 0 ? "white" : "dark";
+}
 
 /** Staff-managed excursion listing card (JSON store). */
 export type ManagedExcursion = {
