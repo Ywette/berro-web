@@ -127,9 +127,10 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
 
     setUploading(true);
     try {
-      const resolvedUrls: string[] = [];
-      for (const photo of photos) {
-        if (photo.file) {
+      const uploadResults = await Promise.all(
+        photos.map(async (photo) => {
+          if (photo.src && !photo.file) return photo.src;
+          if (!photo.file) return null;
           const uploadData = new FormData();
           uploadData.append("photo", photo.file);
           const response = await fetch("/api/staff/excursion-photo", {
@@ -140,15 +141,13 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
             | { ok?: boolean; url?: string; error?: string }
             | null;
           if (!response.ok || !payload?.ok || !payload.url) {
-            setClientError(payload?.error ?? labels.photosHint);
-            return;
+            throw new Error(payload?.error ?? labels.photosHint);
           }
-          resolvedUrls.push(payload.url);
-        } else if (photo.src) {
-          resolvedUrls.push(photo.src);
-        }
-      }
+          return payload.url;
+        }),
+      );
 
+      const resolvedUrls = uploadResults.filter((url): url is string => Boolean(url));
       if (resolvedUrls.length !== EXCURSION_COLLAGE_PHOTO_COUNT) {
         setClientError(labels.photosHint);
         return;
@@ -162,6 +161,8 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
       startTransition(() => {
         formAction(formData);
       });
+    } catch (error) {
+      setClientError(error instanceof Error ? error.message : labels.photosHint);
     } finally {
       setUploading(false);
     }

@@ -61,20 +61,27 @@ export function ExcursionCollagePhotos({
 
     setProcessing(true);
     try {
-      const next = [...photos];
-      for (const file of selected) {
-        try {
-          const prepared = await prepareExcursionPhoto(file);
-          next.push({
-            id: crypto.randomUUID(),
-            preview: URL.createObjectURL(prepared),
-            file: prepared,
-          });
-        } catch {
-          setProcessError(labels.photoSize);
-        }
+      const preparedList = await Promise.all(
+        selected.map(async (file) => {
+          try {
+            const prepared = await prepareExcursionPhoto(file);
+            return {
+              id: crypto.randomUUID(),
+              preview: URL.createObjectURL(prepared),
+              file: prepared,
+            } satisfies FleetPhotoDraft;
+          } catch {
+            return null;
+          }
+        }),
+      );
+      const added = preparedList.filter((item): item is FleetPhotoDraft => item !== null);
+      if (added.length < selected.length) {
+        setProcessError(labels.photoSize);
       }
-      onPhotosChange(next);
+      if (added.length > 0) {
+        onPhotosChange([...photos, ...added]);
+      }
     } finally {
       setProcessing(false);
       if (inputRef.current) inputRef.current.value = "";

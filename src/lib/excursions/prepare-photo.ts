@@ -1,7 +1,9 @@
 import { EXCURSION_PHOTO_MAX_BYTES } from "@/lib/excursions/photo-limits";
 
-const MAX_EDGE = 2400;
-const QUALITIES = [0.86, 0.78, 0.7, 0.6, 0.5, 0.42];
+/** Collage display size; smaller = faster encode + upload. */
+const MAX_EDGE = 1600;
+/** Aim well under the hard limit so we rarely need retry passes. */
+const TARGET_BYTES = 1.25 * 1024 * 1024;
 
 function canvasToBlob(
   canvas: HTMLCanvasElement,
@@ -23,47 +25,56 @@ function scaleSize(width: number, height: number, maxEdge: number) {
   };
 }
 
-/** Resize/compress a collage photo so it stays under the upload byte limit. */
+function toJpegFile(blob: Blob, originalName: string): File {
+  const baseName = originalName.replace(/\.[^.]+$/, "") || "photo";
+  return new File([blob], `${baseName}.jpg`, {
+    type: "image/jpeg",
+    lastModified: Date.now(),
+  });
+}
+
+/** Resize/compress a collage photo for fast upload under the byte limit. */
 export async function prepareExcursionPhoto(
   file: File,
   maxBytes = EXCURSION_PHOTO_MAX_BYTES,
 ): Promise<File> {
   if (!file.type.startsWith("image/")) return file;
-  if (file.size <= maxBytes) return file;
+  // Already small enough for a quick upload — skip canvas work.
+  if (file.size <= TARGET_BYTES) return file;
 
   const bitmap = await createImageBitmap(file);
   try {
     let { width, height } = scaleSize(bitmap.width, bitmap.height, MAX_EDGE);
+    // Extra downscale when the source file is very large.
+    if (file.size > 8 * 1024 * 1024) {
+      width = Math.max(1, Math.round(width * 0.85));
+      height = Math.max(1, Math.round(height * 0.85));
+    }
+
     const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d");
+    const context = canvas.getContext("2d", { alpha: false });
     if (!context) return file;
 
-    let outputType = file.type === "image/png" || file.type === "image/webp" ? file.type : "image/jpeg";
-    // Animated/large GIFs compress more reliably as JPEG for collage use.
-    if (file.type === "image/gif") outputType = "image/jpeg";
+    const attempts: { edgeScale: number; quality: number }[] = [
+      { edgeScale: 1, quality: 0.72 },
+      { edgeScale: 1, quality: 0.58 },
+      { edgeScale: 0.75, quality: 0.55 },
+    ];
 
-    for (let pass = 0; pass < 4; pass += 1) {
-      canvas.width = width;
-      canvas.height = height;
-      context.clearRect(0, 0, width, height);
-      context.drawImage(bitmap, 0, 0, width, height);
+    for (const attempt of attempts) {
+      const w = Math.max(1, Math.round(width * attempt.edgeScale));
+      const h = Math.max(1, Math.round(height * attempt.edgeScale));
+      canvas.width = w;
+      canvas.height = h;
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, w, h);
+      context.drawImage(bitmap, 0, 0, w, h);
 
-      for (const quality of QUALITIES) {
-        const blob = await canvasToBlob(canvas, outputType, quality);
-        if (!blob) continue;
-        if (blob.size <= maxBytes) {
-          const extension = outputType === "image/png" ? "png" : outputType === "image/webp" ? "webp" : "jpg";
-          const baseName = file.name.replace(/\.[^.]+$/, "") || "photo";
-          return new File([blob], `${baseName}.${extension}`, {
-            type: outputType,
-            lastModified: Date.now(),
-          });
-        }
+      const blob = await canvasToBlob(canvas, "image/jpeg", attempt.quality);
+      if (!blob) continue;
+      if (blob.size <= maxBytes) {
+        return toJpegFile(blob, file.name);
       }
-
-      width = Math.max(1, Math.round(width * 0.75));
-      height = Math.max(1, Math.round(height * 0.75));
-      outputType = "image/jpeg";
     }
   } finally {
     bitmap.close();
