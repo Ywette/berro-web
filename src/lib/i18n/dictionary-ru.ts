@@ -676,7 +676,7 @@ export const ru: Dictionary = {
     excursionFormRegionNone: "Без региона",
     excursionFormPhotos: "Фото коллажа",
     excursionFormPhotosHint:
-      "Загрузите ровно 4 фото для коллажа 2×2. Большие изображения уменьшаются автоматически.",
+      "Загрузите ровно 4 фото. Стрелками на коллаже перемещайте фото вверх, вниз, влево или вправо. Нажмите на фото, чтобы заменить его.",
     excursionFormUploadPhotos: "Загрузить фото",
     excursionFormLogo: "Пластина логотипа в центре",
     excursionFormLogoHint:
@@ -685,6 +685,8 @@ export const ru: Dictionary = {
     excursionFormLogoWhite: "Белая пластина",
     excursionFormPreview: "Превью коллажа",
     excursionFormSlot: "Фото",
+    excursionFormMovePhotoUp: "Вверх",
+    excursionFormMovePhotoDown: "Вниз",
     excursionFormMovePhotoLeft: "Влево",
     excursionFormMovePhotoRight: "Вправо",
     excursionFormRemovePhoto: "Удалить",

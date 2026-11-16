@@ -1,7 +1,6 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
-import { ExcursionCollage } from "@/components/excursions/excursion-collage";
 import type { FleetPhotoDraft } from "@/components/staff/fleet-photo-manager";
 import {
   EXCURSION_COLLAGE_PHOTO_COUNT,
@@ -15,13 +14,10 @@ export type ExcursionCollagePhotoLabels = {
   photosHint: string;
   photoSize: string;
   upload: string;
+  moveUp: string;
+  moveDown: string;
   moveLeft: string;
   moveRight: string;
-  remove: string;
-  logo: string;
-  logoHint: string;
-  logoDark: string;
-  logoWhite: string;
   preview: string;
   slot: string;
 };
@@ -30,32 +26,97 @@ type ExcursionCollagePhotosProps = {
   photos: FleetPhotoDraft[];
   logoVariant: ExcursionLogoVariant;
   onPhotosChange: (photos: FleetPhotoDraft[]) => void;
-  onLogoVariantChange: (variant: ExcursionLogoVariant) => void;
   labels: ExcursionCollagePhotoLabels;
 };
+
+type MoveDirection = "up" | "down" | "left" | "right";
+
+function neighborIndex(index: number, direction: MoveDirection): number | null {
+  switch (direction) {
+    case "up":
+      return index >= 2 ? index - 2 : null;
+    case "down":
+      return index < 2 ? index + 2 : null;
+    case "left":
+      return index % 2 === 1 ? index - 1 : null;
+    case "right":
+      return index % 2 === 0 ? index + 1 : null;
+  }
+}
+
+function ArrowButton({
+  label,
+  direction,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  direction: MoveDirection;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  const positionClass =
+    direction === "up"
+      ? "left-1/2 top-1.5 -translate-x-1/2"
+      : direction === "down"
+        ? "bottom-1.5 left-1/2 -translate-x-1/2"
+        : direction === "left"
+          ? "left-1.5 top-1/2 -translate-y-1/2"
+          : "right-1.5 top-1/2 -translate-y-1/2";
+
+  const icon =
+    direction === "up" ? "↑" : direction === "down" ? "↓" : direction === "left" ? "←" : "→";
+
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className={`absolute z-10 grid size-7 place-items-center rounded-full border border-white/40 bg-night/75 text-sm text-ivory shadow-sm backdrop-blur-sm transition hover:bg-night/90 disabled:pointer-events-none disabled:opacity-0 ${positionClass}`}
+    >
+      {icon}
+    </button>
+  );
+}
 
 export function ExcursionCollagePhotos({
   photos,
   logoVariant,
   onPhotosChange,
-  onLogoVariantChange,
   labels,
 }: ExcursionCollagePhotosProps) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [processError, setProcessError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [targetSlot, setTargetSlot] = useState<number | null>(null);
   const canUploadMore = photos.length < EXCURSION_COLLAGE_PHOTO_COUNT;
+  const logoSrc = excursionLogoSrc[logoVariant];
+  const plateClass =
+    logoVariant === "white"
+      ? "bg-white shadow-[0_12px_28px_-10px_rgba(0,0,0,0.45)]"
+      : "bg-black shadow-[0_12px_28px_-10px_rgba(0,0,0,0.65)]";
 
-  async function addFiles(fileList: FileList | null) {
+  const slots: Array<FleetPhotoDraft | null> = Array.from(
+    { length: EXCURSION_COLLAGE_PHOTO_COUNT },
+    (_, index) => photos[index] ?? null,
+  );
+
+  async function addFiles(fileList: FileList | null, slotIndex: number | null) {
     if (!fileList || fileList.length === 0) return;
     setProcessError(null);
-    const remaining = EXCURSION_COLLAGE_PHOTO_COUNT - photos.length;
+
+    const replacing = slotIndex !== null && Boolean(photos[slotIndex]);
+    const remaining = replacing
+      ? 1
+      : Math.max(0, EXCURSION_COLLAGE_PHOTO_COUNT - photos.length);
     const selected = Array.from(fileList)
       .filter((file) => file.type.startsWith("image/"))
-      .slice(0, Math.max(0, remaining));
+      .slice(0, remaining);
     if (selected.length === 0) {
       if (inputRef.current) inputRef.current.value = "";
+      setTargetSlot(null);
       return;
     }
 
@@ -80,33 +141,44 @@ export function ExcursionCollagePhotos({
       if (added.length < selected.length) {
         setProcessError(labels.photoSize);
       }
-      if (added.length > 0) {
-        onPhotosChange([...photos, ...added]);
+      if (added.length === 0) return;
+
+      if (slotIndex !== null && photos[slotIndex]) {
+        const next = [...photos];
+        const previous = next[slotIndex];
+        if (previous?.file) URL.revokeObjectURL(previous.preview);
+        next[slotIndex] = added[0]!;
+        onPhotosChange(next);
+      } else {
+        onPhotosChange([...photos, ...added].slice(0, EXCURSION_COLLAGE_PHOTO_COUNT));
       }
     } finally {
       setProcessing(false);
+      setTargetSlot(null);
       if (inputRef.current) inputRef.current.value = "";
     }
   }
 
-  function move(id: string, direction: -1 | 1) {
-    const index = photos.findIndex((photo) => photo.id === id);
-    const target = index + direction;
-    if (index < 0 || target < 0 || target >= photos.length) return;
+  function swap(index: number, direction: MoveDirection) {
+    const target = neighborIndex(index, direction);
+    if (target === null) return;
+    if (!photos[index] || !photos[target]) return;
     const next = [...photos];
-    const [item] = next.splice(index, 1);
-    next.splice(target, 0, item!);
+    const temp = next[index]!;
+    next[index] = next[target]!;
+    next[target] = temp;
     onPhotosChange(next);
   }
 
-  function remove(id: string) {
-    const photo = photos.find((item) => item.id === id);
-    if (photo?.file) URL.revokeObjectURL(photo.preview);
-    onPhotosChange(photos.filter((item) => item.id !== id));
+  function openPicker(slotIndex: number | null) {
+    const replacing = slotIndex !== null && Boolean(photos[slotIndex]);
+    if (!replacing && !canUploadMore) return;
+    setTargetSlot(slotIndex);
+    inputRef.current?.click();
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-xs text-mist">{labels.photos}</p>
@@ -118,125 +190,118 @@ export function ExcursionCollagePhotos({
           ) : null}
         </div>
         {canUploadMore ? (
-          <label
-            htmlFor={inputId}
-            className={`cursor-pointer rounded-full border border-white/20 px-3 py-1.5 text-xs text-ivory hover:border-white/50 ${
-              processing ? "pointer-events-none opacity-60" : ""
-            }`}
+          <button
+            type="button"
+            onClick={() => openPicker(null)}
+            disabled={processing}
+            className="rounded-full border border-white/20 px-3 py-1.5 text-xs text-ivory hover:border-white/50 disabled:opacity-60"
           >
             {labels.upload}
-          </label>
+          </button>
         ) : null}
         <input
           ref={inputRef}
           id={inputId}
           type="file"
           accept="image/jpeg,image/png,image/webp,image/gif"
-          multiple
+          multiple={targetSlot === null}
           className="sr-only"
-          disabled={!canUploadMore || processing}
+          disabled={processing}
           onChange={(event) => {
-            void addFiles(event.target.files);
+            void addFiles(event.target.files, targetSlot);
           }}
         />
       </div>
 
-      {photos.length > 0 ? (
-        <div className="space-y-2">
-          <p className="text-[11px] text-mist">{labels.preview}</p>
-          <ExcursionCollage
-            images={photos.map((photo) => photo.preview)}
-            logoVariant={logoVariant}
-            alt=""
-            unoptimized
-            className="aspect-[4/3] w-full rounded-xl border border-white/10"
-          />
-        </div>
-      ) : null}
+      <div>
+        <p className="mb-2 text-[11px] text-mist">{labels.preview}</p>
+        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-white/10">
+          <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-0.5 bg-night">
+            {slots.map((photo, index) => {
+              const canUp = neighborIndex(index, "up") !== null && Boolean(photos[index]) && Boolean(photos[neighborIndex(index, "up")!]);
+              const canDown =
+                neighborIndex(index, "down") !== null &&
+                Boolean(photos[index]) &&
+                Boolean(photos[neighborIndex(index, "down")!]);
+              const canLeft =
+                neighborIndex(index, "left") !== null &&
+                Boolean(photos[index]) &&
+                Boolean(photos[neighborIndex(index, "left")!]);
+              const canRight =
+                neighborIndex(index, "right") !== null &&
+                Boolean(photos[index]) &&
+                Boolean(photos[neighborIndex(index, "right")!]);
 
-      <div className="space-y-2">
-        <div>
-          <p className="text-xs text-mist">{labels.logo}</p>
-          <p className="mt-1 text-[11px] text-mist/80">{labels.logoHint}</p>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          {(["dark", "white"] as const).map((variant) => {
-            const selected = logoVariant === variant;
-            return (
-              <button
-                key={variant}
-                type="button"
-                onClick={() => onLogoVariantChange(variant)}
-                className={`rounded-xl border p-2 text-left transition ${
-                  selected
-                    ? "border-burgundy bg-burgundy/20"
-                    : "border-white/12 bg-[#141418] hover:border-white/30"
-                }`}
-              >
-                <span
-                  className={`block rounded-lg px-2 py-2 ${
-                    variant === "white" ? "bg-white" : "bg-black"
-                  }`}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element -- static brand assets */}
-                  <img
-                    src={excursionLogoSrc[variant]}
-                    alt=""
-                    className="mx-auto h-8 w-auto object-contain"
-                  />
-                </span>
-                <span className="mt-2 block text-[11px] text-ivory/90">
-                  {variant === "dark" ? labels.logoDark : labels.logoWhite}
-                </span>
-              </button>
-            );
-          })}
+              return (
+                <div key={photo?.id ?? `empty-${index}`} className="relative min-h-0 overflow-hidden bg-[#242426]">
+                  {photo ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => openPicker(index)}
+                        disabled={processing}
+                        className="absolute inset-0"
+                        aria-label={`${labels.slot} ${index + 1}`}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element -- object URLs in staff preview */}
+                        <img
+                          src={photo.preview}
+                          alt=""
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                      </button>
+                      <ArrowButton
+                        label={labels.moveUp}
+                        direction="up"
+                        disabled={!canUp}
+                        onClick={() => swap(index, "up")}
+                      />
+                      <ArrowButton
+                        label={labels.moveDown}
+                        direction="down"
+                        disabled={!canDown}
+                        onClick={() => swap(index, "down")}
+                      />
+                      <ArrowButton
+                        label={labels.moveLeft}
+                        direction="left"
+                        disabled={!canLeft}
+                        onClick={() => swap(index, "left")}
+                      />
+                      <ArrowButton
+                        label={labels.moveRight}
+                        direction="right"
+                        disabled={!canRight}
+                        onClick={() => swap(index, "right")}
+                      />
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => openPicker(index)}
+                      disabled={processing || !canUploadMore}
+                      className="absolute inset-0 grid place-items-center text-xs text-mist hover:bg-white/5 disabled:opacity-50"
+                    >
+                      <span className="rounded-full border border-dashed border-white/25 px-3 py-1.5">
+                        {labels.slot} {index + 1}
+                      </span>
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-3">
+            <div
+              className={`flex w-[42%] max-w-[9.5rem] flex-col items-center rounded-xl px-2.5 py-2 sm:rounded-2xl sm:px-3 sm:py-2.5 ${plateClass}`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- staff preview */}
+              <img src={logoSrc} alt="Berro Travel" className="h-auto w-full object-contain" />
+            </div>
+          </div>
         </div>
       </div>
-
-      {photos.length > 0 ? (
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {photos.map((photo, index) => (
-            <li
-              key={photo.id}
-              className="overflow-hidden rounded-xl border border-white/12 bg-[#141418]"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element -- local object URLs + uploads */}
-              <img src={photo.preview} alt="" className="aspect-[4/3] w-full object-cover" />
-              <div className="space-y-2 p-2.5">
-                <span className="text-[11px] text-mist">
-                  {labels.slot} {index + 1}
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => move(photo.id, -1)}
-                    disabled={index === 0}
-                    className="rounded-md border border-white/15 px-2 py-1 text-[11px] text-mist disabled:opacity-40"
-                  >
-                    {labels.moveLeft}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => move(photo.id, 1)}
-                    disabled={index === photos.length - 1}
-                    className="rounded-md border border-white/15 px-2 py-1 text-[11px] text-mist disabled:opacity-40"
-                  >
-                    {labels.moveRight}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => remove(photo.id)}
-                    className="rounded-md border border-white/15 px-2 py-1 text-[11px] text-rose-200/90"
-                  >
-                    {labels.remove}
-                  </button>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : null}
     </div>
   );
 }

@@ -88,9 +88,7 @@ const inputClass =
 
 export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionDialogProps) {
   const [photos, setPhotos] = useState<FleetPhotoDraft[]>(() => photosFromExcursion(excursion));
-  const [logoVariant, setLogoVariant] = useState<ExcursionLogoVariant>(
-    () => excursion?.logoVariant ?? "dark",
-  );
+  const logoVariant: ExcursionLogoVariant = excursion?.logoVariant ?? "dark";
   const [state, formAction, pending] = useActionState(saveManagedExcursion, initialState);
   const [clientError, setClientError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -228,19 +226,15 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
             photos={photos}
             logoVariant={logoVariant}
             onPhotosChange={setPhotos}
-            onLogoVariantChange={setLogoVariant}
             labels={{
               photos: labels.photos,
               photosHint: labels.photosHint,
               photoSize: labels.photoSize,
               upload: labels.upload,
+              moveUp: labels.moveUp,
+              moveDown: labels.moveDown,
               moveLeft: labels.moveLeft,
               moveRight: labels.moveRight,
-              remove: labels.remove,
-              logo: labels.logo,
-              logoHint: labels.logoHint,
-              logoDark: labels.logoDark,
-              logoWhite: labels.logoWhite,
               preview: labels.preview,
               slot: labels.slot,
             }}

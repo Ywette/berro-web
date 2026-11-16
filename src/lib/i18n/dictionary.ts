@@ -685,7 +685,7 @@ export const en = {
     excursionFormRegionNone: "No region",
     excursionFormPhotos: "Collage photos",
     excursionFormPhotosHint:
-      "Upload exactly 4 photos for the 2×2 collage. Larger images are resized automatically.",
+      "Upload exactly 4 photos. Use the arrows on the collage to move a photo up, down, left, or right. Click a photo to replace it.",
     excursionFormUploadPhotos: "Upload photos",
     excursionFormLogo: "Logo plate in the center",
     excursionFormLogoHint:
@@ -694,8 +694,10 @@ export const en = {
     excursionFormLogoWhite: "White plate",
     excursionFormPreview: "Collage preview",
     excursionFormSlot: "Photo",
-    excursionFormMovePhotoLeft: "Left",
-    excursionFormMovePhotoRight: "Right",
+    excursionFormMovePhotoUp: "Move up",
+    excursionFormMovePhotoDown: "Move down",
+    excursionFormMovePhotoLeft: "Move left",
+    excursionFormMovePhotoRight: "Move right",
     excursionFormRemovePhoto: "Remove",
     excursionFormPhotoType: "Use JPG, PNG, WEBP, or GIF images.",
     excursionFormPhotoSize: "Could not resize one of the photos. Try another image.",
@@ -1560,7 +1562,7 @@ export const lv: Dictionary = {
     excursionFormRegionNone: "Bez reģiona",
     excursionFormPhotos: "Kolāžas bildes",
     excursionFormPhotosHint:
-      "Augšupielādējiet tieši 4 bildes 2×2 kolāžai. Lielākas bildes tiek automātiski samazinātas.",
+      "Augšupielādējiet tieši 4 bildes. Ar bultiņām uz kolāžas pārvietojiet bildi uz augšu, leju, pa kreisi vai pa labi. Klikšķiniet uz bildes, lai to nomainītu.",
     excursionFormUploadPhotos: "Augšupielādēt bildes",
     excursionFormLogo: "Logotipa plāksne vidū",
     excursionFormLogoHint:
@@ -1569,6 +1571,8 @@ export const lv: Dictionary = {
     excursionFormLogoWhite: "Balta plāksne",
     excursionFormPreview: "Kolāžas priekšskatījums",
     excursionFormSlot: "Bilde",
+    excursionFormMovePhotoUp: "Uz augšu",
+    excursionFormMovePhotoDown: "Uz leju",
     excursionFormMovePhotoLeft: "Pa kreisi",
     excursionFormMovePhotoRight: "Pa labi",
     excursionFormRemovePhoto: "Noņemt",

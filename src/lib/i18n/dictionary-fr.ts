@@ -676,7 +676,7 @@ export const fr: Dictionary = {
     excursionFormRegionNone: "Sans région",
     excursionFormPhotos: "Photos du collage",
     excursionFormPhotosHint:
-      "Téléversez exactement 4 photos pour le collage 2×2. Les grandes images sont redimensionnées automatiquement.",
+      "Téléversez exactement 4 photos. Utilisez les flèches du collage pour déplacer une photo en haut, en bas, à gauche ou à droite. Cliquez une photo pour la remplacer.",
     excursionFormUploadPhotos: "Téléverser des photos",
     excursionFormLogo: "Plaque logo au centre",
     excursionFormLogoHint:
@@ -685,6 +685,8 @@ export const fr: Dictionary = {
     excursionFormLogoWhite: "Plaque blanche",
     excursionFormPreview: "Aperçu du collage",
     excursionFormSlot: "Photo",
+    excursionFormMovePhotoUp: "Haut",
+    excursionFormMovePhotoDown: "Bas",
     excursionFormMovePhotoLeft: "Gauche",
     excursionFormMovePhotoRight: "Droite",
     excursionFormRemovePhoto: "Retirer",
