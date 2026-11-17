@@ -95,7 +95,7 @@ export function FleetBoardClient({
                         onClick={() => setDialog({ mode: "edit", vehicle })}
                         className="text-left font-medium text-ivory underline-offset-2 hover:underline"
                       >
-                        {vehicle.name}
+                        {vehicle.name.lv || vehicle.name.en}
                       </button>
                     </td>
                     <td className="px-4 py-3 text-mist">{kindLabel}</td>

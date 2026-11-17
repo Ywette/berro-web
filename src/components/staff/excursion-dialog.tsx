@@ -20,6 +20,7 @@ import {
   type ExcursionLogoVariant,
   type ManagedExcursion,
 } from "@/lib/content/managed-excursion";
+import { pickLocalizedText } from "@/lib/i18n/localized-content";
 
 export type ExcursionDialogLabels = {
   addTitle: string;
@@ -218,7 +219,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
               name="title"
               required
               maxLength={160}
-              defaultValue={excursion?.title ?? ""}
+              defaultValue={excursion ? pickLocalizedText(excursion.title, "lv") : ""}
               placeholder='kabarē “Moulin Rouge” ar vakariņu piedāvājumu'
               className={inputClass}
             />
@@ -246,7 +247,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
             <input
               name="route"
               maxLength={200}
-              defaultValue={excursion?.route ?? ""}
+              defaultValue={excursion ? pickLocalizedText(excursion.route, "lv") : ""}
               placeholder="Riga → Paris → Riga"
               className={inputClass}
             />
@@ -283,7 +284,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
               name="teaser"
               rows={4}
               maxLength={800}
-              defaultValue={excursion?.teaser ?? ""}
+              defaultValue={excursion ? pickLocalizedText(excursion.teaser, "lv") : ""}
               className="w-full resize-y rounded-lg border border-white/10 bg-white px-3 py-2 text-sm text-neutral-900 outline-none"
             />
           </Field>
@@ -293,7 +294,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
               name="details"
               rows={10}
               maxLength={8000}
-              defaultValue={excursion?.details ?? ""}
+              defaultValue={excursion ? pickLocalizedText(excursion.details, "lv") : ""}
               className="w-full resize-y rounded-lg border border-white/10 bg-white px-3 py-2 text-sm text-neutral-900 outline-none"
             />
           </Field>

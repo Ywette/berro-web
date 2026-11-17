@@ -7,6 +7,7 @@ import {
 import { formatEuro } from "@/lib/content/format-price";
 import { listActiveManagedExcursions } from "@/lib/data/managed-excursions";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { pickLocalizedText } from "@/lib/i18n/localized-content";
 
 export const instant = false;
 
@@ -27,19 +28,20 @@ async function ExcursionsCatalogSection() {
   const dictionary = await getDictionary();
   const managed = await listActiveManagedExcursions();
 
+  const locale = dictionary.locale;
   const items: ExcursionCardData[] = managed.map((excursion) => ({
     slug: excursion.slug,
     href: `/excursions/${excursion.slug}`,
-    title: excursion.title,
-    route: excursion.route,
-    description: excursion.teaser,
+    title: pickLocalizedText(excursion.title, locale),
+    route: pickLocalizedText(excursion.route, locale),
+    description: pickLocalizedText(excursion.teaser, locale),
     cta: dictionary.excursions.more,
     images: excursion.images,
     logoVariant: excursion.logoVariant,
     regions: excursion.regions,
     priceLabel:
       excursion.price != null
-        ? dictionary.excursions.fromPrice(formatEuro(excursion.price, dictionary.locale))
+        ? dictionary.excursions.fromPrice(formatEuro(excursion.price, locale))
         : undefined,
   }));
 

@@ -9,16 +9,18 @@ import {
   parseExcursionRegions,
   type ExcursionRegion,
 } from "@/lib/content/excursions";
+import type { Localized } from "@/lib/i18n/locale";
+import { parseLocalizedText } from "@/lib/i18n/localized-content";
 
 export type ExcursionRow = {
   id: string;
   slug: string;
-  title: string;
+  title: Localized | string;
   images: unknown;
   logo_variant: string;
-  route: string;
-  teaser: string;
-  details: string;
+  route: Localized | string;
+  teaser: Localized | string;
+  details: Localized | string;
   region: string | null;
   regions?: unknown;
   price?: number | string | null;
@@ -42,12 +44,12 @@ export function excursionFromRow(row: ExcursionRow): ManagedExcursion {
   return {
     id: row.id,
     slug: row.slug,
-    title: row.title,
+    title: parseLocalizedText(row.title),
     images: asStringArray(row.images),
     logoVariant: isExcursionLogoVariant(row.logo_variant) ? row.logo_variant : "dark",
-    route: row.route ?? "",
-    teaser: row.teaser ?? "",
-    details: row.details ?? "",
+    route: parseLocalizedText(row.route),
+    teaser: parseLocalizedText(row.teaser),
+    details: parseLocalizedText(row.details),
     regions,
     price: parseExcursionPrice(row.price),
     durationDays: parseExcursionDurationDays(row.duration_days),

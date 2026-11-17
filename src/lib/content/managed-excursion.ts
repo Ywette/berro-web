@@ -2,6 +2,12 @@ import {
   parseExcursionRegions,
   type ExcursionRegion,
 } from "@/lib/content/excursions";
+import type { Localized } from "@/lib/i18n/locale";
+import {
+  localizedFromSeed,
+  parseLocalizedText,
+  pickLocalizedText,
+} from "@/lib/i18n/localized-content";
 
 export const EXCURSION_COLLAGE_PHOTO_COUNT = 4;
 
@@ -20,18 +26,18 @@ export function excursionLogoPlateFromIndex(index: number): ExcursionLogoVariant
   return index % 2 === 0 ? "white" : "dark";
 }
 
-/** Staff-managed excursion listing card (JSON store). */
+/** Staff-managed excursion listing card (JSON store / Supabase). */
 export type ManagedExcursion = {
   id: string;
   slug: string;
-  title: string;
+  title: Localized;
   /** Exactly four cover photos for the 2×2 collage. */
   images: string[];
   logoVariant: ExcursionLogoVariant;
-  route: string;
-  teaser: string;
+  route: Localized;
+  teaser: Localized;
   /** Long-form description shown on the excursion detail page. */
-  details: string;
+  details: Localized;
   /** One or more regions for catalog filters (e.g. Latvia + Estonia + Lithuania). */
   regions: ExcursionRegion[];
   /** Optional from-price in EUR. */
@@ -72,8 +78,8 @@ export function normalizeManagedExcursion(raw: unknown): ManagedExcursion | null
   const item = raw as Record<string, unknown>;
   const id = typeof item.id === "string" ? item.id : "";
   const slug = typeof item.slug === "string" ? item.slug : "";
-  const title = typeof item.title === "string" ? item.title : "";
-  if (!id || !slug || !title) return null;
+  const title = parseLocalizedText(item.title);
+  if (!id || !slug || !pickLocalizedText(title, "lv").trim()) return null;
 
   const fromArray = Array.isArray(item.images)
     ? item.images.filter((value): value is string => typeof value === "string" && Boolean(value))
@@ -88,9 +94,9 @@ export function normalizeManagedExcursion(raw: unknown): ManagedExcursion | null
     title,
     images,
     logoVariant: isExcursionLogoVariant(item.logoVariant) ? item.logoVariant : "dark",
-    route: typeof item.route === "string" ? item.route : "",
-    teaser: typeof item.teaser === "string" ? item.teaser : "",
-    details: typeof item.details === "string" ? item.details : "",
+    route: parseLocalizedText(item.route),
+    teaser: parseLocalizedText(item.teaser),
+    details: parseLocalizedText(item.details),
     regions: (() => {
       const fromList = parseExcursionRegions(item.regions);
       if (fromList.length > 0) return fromList;
@@ -102,8 +108,9 @@ export function normalizeManagedExcursion(raw: unknown): ManagedExcursion | null
   };
 }
 
-export function slugifyExcursionTitle(title: string): string {
-  const base = title
+export function slugifyExcursionTitle(title: string | Localized): string {
+  const source = typeof title === "string" ? title : pickLocalizedText(title, "lv");
+  const base = source
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
@@ -112,3 +119,5 @@ export function slugifyExcursionTitle(title: string): string {
     .slice(0, 72);
   return base || `excursion-${Date.now().toString(36)}`;
 }
+
+export { localizedFromSeed };

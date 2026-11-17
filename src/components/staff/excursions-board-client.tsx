@@ -86,10 +86,12 @@ export function ExcursionsBoardClient({
                       onClick={() => setDialog({ mode: "edit", excursion })}
                       className="text-left font-medium text-ivory underline-offset-2 hover:underline"
                     >
-                      {excursion.title}
+                      {excursion.title.lv || excursion.title.en}
                     </button>
                   </td>
-                  <td className="max-w-xs truncate px-4 py-3 text-mist">{excursion.route}</td>
+                  <td className="max-w-xs truncate px-4 py-3 text-mist">
+                    {excursion.route.lv || excursion.route.en}
+                  </td>
                   <td className="px-4 py-3 text-mist">{regionsLabel(excursion.regions)}</td>
                   <td className="px-4 py-3 text-mist">
                     {excursion.price != null ? `€${excursion.price}` : "—"}

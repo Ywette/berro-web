@@ -1,10 +1,12 @@
 import type { FleetVehicle } from "@/lib/content/fleet";
 import { readJsonFile, writeJsonFile } from "@/lib/data/json-file-store";
 import { buildFleetSeed } from "@/lib/fleet/seed";
+import { pickLocalizedText } from "@/lib/i18n/localized-content";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 import {
   fleetVehicleFromRow,
   fleetVehicleToRow,
+  normalizeFleetVehicle,
   type FleetVehicleRow,
 } from "@/lib/supabase/fleet-map";
 
@@ -15,9 +17,12 @@ async function readFleetFileFallback(): Promise<FleetVehicle[]> {
   const raw = await readJsonFile(STORE_FILE);
   if (!raw) return buildFleetSeed();
   try {
-    const parsed = JSON.parse(raw) as FleetVehicle[];
+    const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed) || parsed.length === 0) return buildFleetSeed();
-    return parsed;
+    const normalized = parsed
+      .map(normalizeFleetVehicle)
+      .filter((item): item is FleetVehicle => item !== null);
+    return normalized.length > 0 ? normalized : buildFleetSeed();
   } catch {
     return buildFleetSeed();
   }
@@ -27,10 +32,7 @@ export async function readFleetStore(): Promise<FleetVehicle[]> {
   const supabase = createServiceSupabaseClient();
   if (!supabase) return readFleetFileFallback();
 
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select("*")
-    .order("name", { ascending: true });
+  const { data, error } = await supabase.from(TABLE).select("*");
 
   if (error) {
     console.error("[fleet] supabase read failed", error.message);
@@ -38,7 +40,11 @@ export async function readFleetStore(): Promise<FleetVehicle[]> {
   }
 
   const rows = (data ?? []) as FleetVehicleRow[];
-  return rows.map(fleetVehicleFromRow);
+  return rows
+    .map(fleetVehicleFromRow)
+    .sort((a, b) =>
+      pickLocalizedText(a.name, "lv").localeCompare(pickLocalizedText(b.name, "lv"), "lv"),
+    );
 }
 
 export async function writeFleetStore(vehicles: FleetVehicle[]): Promise<void> {

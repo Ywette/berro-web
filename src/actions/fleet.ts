@@ -9,6 +9,11 @@ import { createVehicle, removeVehicle, updateVehicle } from "@/lib/data/vehicles
 import { normalizeFleetKind } from "@/lib/fleet/kind";
 import { FleetImageUploadException, saveFleetImageUploads } from "@/lib/fleet/upload-images";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
+import {
+  localizedLinesFromForm,
+  localizedTextFromForm,
+  pickLocalizedText,
+} from "@/lib/i18n/localized-content";
 
 export type FleetActionState = {
   error?: string;
@@ -16,27 +21,6 @@ export type FleetActionState = {
 };
 
 const kinds: TransportKind[] = ["van", "coach", "vip", "retro"];
-
-/** Split multi-line form fields on newlines only (commas are part of prose). */
-function parseLines(value: FormDataEntryValue | null): string[] {
-  if (typeof value !== "string") return [];
-  return value
-    .split(/\r?\n/)
-    .map((part) => part.trim())
-    .filter(Boolean);
-}
-
-/** Extras may be entered one-per-line or as a comma / bullet list. */
-function parseExtras(value: FormDataEntryValue | null): string[] {
-  const lines = parseLines(value);
-  if (lines.length !== 1) return lines;
-  const single = lines[0] ?? "";
-  if (!/[•|;,]/.test(single)) return [single];
-  return single
-    .split(/\s*[•|;,]\s*/)
-    .map((part) => part.trim())
-    .filter(Boolean);
-}
 
 function parseKind(value: FormDataEntryValue | null): TransportKind | null {
   if (typeof value !== "string" || !value.trim()) return null;
@@ -69,20 +53,20 @@ async function parseVehicleForm(
   formData: FormData,
   labels: Awaited<ReturnType<typeof getDictionary>>["staffDashboard"],
 ): Promise<{ vehicle: Omit<FleetVehicle, "id" | "readinessNote" | "isActive"> } | { error: string }> {
-  const name = String(formData.get("name") ?? "").trim();
+  const name = localizedTextFromForm(formData, "name");
   const kind = parseKind(formData.get("kind"));
   const passengers = Number(formData.get("passengers"));
   const guideSeats = Number(formData.get("guideSeats") ?? 0);
   const plate = String(formData.get("plate") ?? "").trim() || null;
   const insuranceExpiresOn = String(formData.get("insuranceExpiresOn") ?? "").trim() || null;
   const inspectionExpiresOn = String(formData.get("inspectionExpiresOn") ?? "").trim() || null;
-  const interiorColor = String(formData.get("interiorColor") ?? "").trim();
-  const bodyColor = String(formData.get("bodyColor") ?? "").trim();
-  const summary = String(formData.get("summary") ?? "").trim();
+  const interiorColor = localizedTextFromForm(formData, "interiorColor");
+  const bodyColor = localizedTextFromForm(formData, "bodyColor");
+  const summary = localizedTextFromForm(formData, "summary");
   const videoUrl = String(formData.get("videoUrl") ?? "").trim() || null;
-  const extras = parseExtras(formData.get("extras"));
-  const description = parseLines(formData.get("description"));
-  const closingNotes = parseLines(formData.get("closingNotes"));
+  const extras = localizedLinesFromForm(formData, "extras");
+  const description = localizedLinesFromForm(formData, "description");
+  const closingNotes = localizedLinesFromForm(formData, "closingNotes");
   const availableIn = formData
     .getAll("availableIn")
     .map(String)
@@ -94,7 +78,8 @@ async function parseVehicleForm(
     .filter(isPhotoRef);
   const mainPhotoIndex = Number(formData.get("mainPhotoIndex") ?? 0);
 
-  if (!name || name.length > 120) return { error: labels.fleetFormNameRequired };
+  const nameLv = pickLocalizedText(name, "lv");
+  if (!nameLv || nameLv.length > 120) return { error: labels.fleetFormNameRequired };
   if (!kind) return { error: labels.fleetFormKindRequired };
   if (!Number.isFinite(passengers) || passengers < 1 || passengers > 80) {
     return { error: labels.fleetFormPassengersRequired };

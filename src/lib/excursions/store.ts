@@ -5,6 +5,7 @@ import {
 import { readJsonFile, writeJsonFile } from "@/lib/data/json-file-store";
 import { excursionSeed } from "@/lib/excursions/seed";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
+import { pickLocalizedText } from "@/lib/i18n/localized-content";
 import {
   excursionFromRow,
   excursionToRow,
@@ -34,10 +35,7 @@ export async function readExcursionStore(): Promise<ManagedExcursion[]> {
   const supabase = createServiceSupabaseClient();
   if (!supabase) return readExcursionFileFallback();
 
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select("*")
-    .order("title", { ascending: true });
+  const { data, error } = await supabase.from(TABLE).select("*");
 
   if (error) {
     console.error("[excursions] supabase read failed", error.message);
@@ -45,7 +43,11 @@ export async function readExcursionStore(): Promise<ManagedExcursion[]> {
   }
 
   const rows = (data ?? []) as ExcursionRow[];
-  return rows.map(excursionFromRow);
+  return rows
+    .map(excursionFromRow)
+    .sort((a, b) =>
+      pickLocalizedText(a.title, "lv").localeCompare(pickLocalizedText(b.title, "lv"), "lv"),
+    );
 }
 
 export async function writeExcursionStore(excursions: ManagedExcursion[]): Promise<void> {

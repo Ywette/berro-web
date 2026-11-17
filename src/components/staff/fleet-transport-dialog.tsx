@@ -14,6 +14,11 @@ import { countryLabel, fleetCountries } from "@/lib/content/countries";
 import type { FleetVehicle } from "@/lib/content/fleet";
 import { prepareExcursionPhoto } from "@/lib/excursions/prepare-photo";
 import type { Locale } from "@/lib/i18n/locale";
+import {
+  joinLines,
+  pickLocalizedLines,
+  pickLocalizedText,
+} from "@/lib/i18n/localized-content";
 
 export type FleetTransportDialogLabels = {
   addTitle: string;
@@ -217,7 +222,7 @@ export function FleetTransportDialog({
                 name="name"
                 required
                 maxLength={120}
-                defaultValue={vehicle?.name ?? ""}
+                defaultValue={vehicle ? pickLocalizedText(vehicle.name, "lv") : ""}
                 className={inputClass}
               />
             </Field>
@@ -282,14 +287,14 @@ export function FleetTransportDialog({
             <Field label={labels.bodyColor}>
               <input
                 name="bodyColor"
-                defaultValue={vehicle?.bodyColor ?? ""}
+                defaultValue={vehicle ? pickLocalizedText(vehicle.bodyColor, "lv") : ""}
                 className={inputClass}
               />
             </Field>
             <Field label={labels.interiorColor}>
               <input
                 name="interiorColor"
-                defaultValue={vehicle?.interiorColor ?? ""}
+                defaultValue={vehicle ? pickLocalizedText(vehicle.interiorColor, "lv") : ""}
                 className={inputClass}
               />
             </Field>
@@ -349,7 +354,7 @@ export function FleetTransportDialog({
           <Field label={labels.summary}>
             <input
               name="summary"
-              defaultValue={vehicle?.summary ?? ""}
+              defaultValue={vehicle ? pickLocalizedText(vehicle.summary, "lv") : ""}
               className={inputClass}
             />
           </Field>
@@ -357,7 +362,9 @@ export function FleetTransportDialog({
             <textarea
               name="description"
               rows={4}
-              defaultValue={vehicle?.description.join("\n") ?? ""}
+              defaultValue={
+                vehicle ? joinLines(pickLocalizedLines(vehicle.description, "lv")) : ""
+              }
               className={inputClass}
             />
           </Field>
@@ -365,7 +372,7 @@ export function FleetTransportDialog({
             <textarea
               name="extras"
               rows={3}
-              defaultValue={vehicle?.extras.join("\n") ?? ""}
+              defaultValue={vehicle ? joinLines(pickLocalizedLines(vehicle.extras, "lv")) : ""}
               className={inputClass}
             />
           </Field>
@@ -373,7 +380,9 @@ export function FleetTransportDialog({
             <textarea
               name="closingNotes"
               rows={3}
-              defaultValue={vehicle?.closingNotes.join("\n") ?? ""}
+              defaultValue={
+                vehicle ? joinLines(pickLocalizedLines(vehicle.closingNotes, "lv")) : ""
+              }
               className={inputClass}
             />
           </Field>

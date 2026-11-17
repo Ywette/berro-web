@@ -1,4 +1,6 @@
 import type { TransportKind } from "@/lib/content/transport/types";
+import type { Localized } from "@/lib/i18n/locale";
+import type { LocalizedLines } from "@/lib/i18n/localized-content";
 
 export type FleetCategoryId = "minibuses" | "coaches" | "carRental" | "retroCarRental";
 
@@ -9,10 +11,10 @@ export type FleetModel = {
   image: string;
 };
 
-/** Staff + Autoparks transport record (file-backed store). */
+/** Staff + Autoparks transport record (file-backed store / Supabase). */
 export type FleetVehicle = {
   id: string;
-  name: string;
+  name: Localized;
   kind: TransportKind;
   passengers: number;
   guideSeats: number;
@@ -26,12 +28,12 @@ export type FleetVehicle = {
   inspectionExpiresOn: string | null;
   /** ISO country codes where this vehicle can operate. */
   availableIn: string[];
-  interiorColor: string;
-  bodyColor: string;
-  extras: string[];
-  summary: string;
-  description: string[];
-  closingNotes: string[];
+  interiorColor: Localized;
+  bodyColor: Localized;
+  extras: LocalizedLines;
+  summary: Localized;
+  description: LocalizedLines;
+  closingNotes: LocalizedLines;
   readinessNote: string | null;
   isActive: boolean;
 };

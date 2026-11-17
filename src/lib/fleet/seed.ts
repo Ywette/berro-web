@@ -4,6 +4,24 @@ import {
   listModelPhotos,
   transportModels,
 } from "@/lib/content/transport";
+import type { Localized } from "@/lib/i18n/locale";
+import {
+  localizedFromSeed,
+  type LocalizedLines,
+} from "@/lib/i18n/localized-content";
+
+function paragraphsToLines(paragraphs: Localized[]): LocalizedLines {
+  return {
+    lv: paragraphs.map((item) => item.lv),
+    en: paragraphs.map((item) => item.en),
+    fr: paragraphs.map((item) => item.fr ?? item.en),
+    ru: paragraphs.map((item) => item.ru ?? item.lv),
+  };
+}
+
+function extrasToLines(extras: Localized[]): LocalizedLines {
+  return paragraphsToLines(extras);
+}
 
 /** Built-in fleet rows from the committed transport catalog (works on Vercel). */
 export function buildFleetSeed(): FleetVehicle[] {
@@ -17,7 +35,7 @@ export function buildFleetSeed(): FleetVehicle[] {
 
       return {
         id: `fleet-seed-${model.id}`,
-        name: model.name,
+        name: localizedFromSeed(model.name),
         kind: model.kind,
         passengers: model.passengers,
         guideSeats: model.guideSeats,
@@ -28,12 +46,12 @@ export function buildFleetSeed(): FleetVehicle[] {
         insuranceExpiresOn: null,
         inspectionExpiresOn: null,
         availableIn: ["LV"],
-        interiorColor: model.interiorColor.lv,
-        bodyColor: model.bodyColor.lv,
-        extras: model.extras.map((item) => item.lv),
-        summary: model.summary.lv,
-        description: model.description.map((item) => item.lv),
-        closingNotes: model.closingNotes.map((item) => item.lv),
+        interiorColor: model.interiorColor,
+        bodyColor: model.bodyColor,
+        extras: extrasToLines(model.extras),
+        summary: model.summary,
+        description: paragraphsToLines(model.description),
+        closingNotes: paragraphsToLines(model.closingNotes),
         readinessNote: null,
         isActive: true,
       };

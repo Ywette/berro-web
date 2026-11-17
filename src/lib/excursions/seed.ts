@@ -1,4 +1,4 @@
-import type { ManagedExcursion } from "@/lib/content/managed-excursion";
+import { localizedFromSeed, type ManagedExcursion } from "@/lib/content/managed-excursion";
 
 function collage(image: string): string[] {
   return [image, image, image, image];
@@ -9,13 +9,16 @@ export const excursionSeed: ManagedExcursion[] = [
   {
     id: "excursion-moulin-rouge",
     slug: "moulin-rouge",
-    title: "Biļešu rezervācija uz kabarē “Moulin Rouge” ar vakariņu piedāvājumu",
+    title: localizedFromSeed(
+      "Biļešu rezervācija uz kabarē “Moulin Rouge” ar vakariņu piedāvājumu",
+    ),
     images: collage("/excursions/moulin-rouge-logo.png"),
     logoVariant: "dark",
-    route: "",
-    teaser:
+    route: localizedFromSeed(""),
+    teaser: localizedFromSeed(
       "Katru vakaru plkst. 19.00 piedzīvojiet izsmalcinātas vakariņas un pasaules līmeņa šovu leģendārajā Parīzes kabarē.",
-    details: "",
+    ),
+    details: localizedFromSeed(""),
     regions: ["france"],
     price: null,
     durationDays: null,
@@ -24,13 +27,14 @@ export const excursionSeed: ManagedExcursion[] = [
   {
     id: "excursion-disneyland",
     slug: "disneyland",
-    title: "Biļešu rezervācija uz Disnejlendu",
+    title: localizedFromSeed("Biļešu rezervācija uz Disnejlendu"),
     images: collage("/excursions/disneyland-mickey-minnie.png"),
     logoVariant: "dark",
-    route: "",
-    teaser:
+    route: localizedFromSeed(""),
+    teaser: localizedFromSeed(
       "Tikšanās ar Disneja personāžiem, vakariņas ar Mikimausu un VIP numuri Disneyland 5★ viesnīcā.",
-    details: "",
+    ),
+    details: localizedFromSeed(""),
     regions: ["france"],
     price: null,
     durationDays: null,
@@ -39,13 +43,14 @@ export const excursionSeed: ManagedExcursion[] = [
   {
     id: "excursion-paris",
     slug: "paris",
-    title: "Parīze",
+    title: localizedFromSeed("Parīze"),
     images: collage("/hero/paris.jpg"),
     logoVariant: "white",
-    route: "Rīga – Berlīne – Parīze – Rīga",
-    teaser:
+    route: localizedFromSeed("Rīga – Berlīne – Parīze – Rīga"),
+    teaser: localizedFromSeed(
       "Sešas dienas ar divu šoferu maiņu, nakts pieturu Berlīnē un brīvu laiku Parīzes centrā.",
-    details: "",
+    ),
+    details: localizedFromSeed(""),
     regions: ["france"],
     price: null,
     durationDays: null,
@@ -54,13 +59,14 @@ export const excursionSeed: ManagedExcursion[] = [
   {
     id: "excursion-berlin",
     slug: "berlin",
-    title: "Berlīnes nedēļas nogale",
+    title: localizedFromSeed("Berlīnes nedēļas nogale"),
     images: collage("/hero/berlin.jpg"),
     logoVariant: "white",
-    route: "Rīga – Kauņa – Berlīne – Rīga",
-    teaser:
+    route: localizedFromSeed("Rīga – Kauņa – Berlīne – Rīga"),
+    teaser: localizedFromSeed(
       "Muzeju sala, Špreja vakarā un viesnīca pilsētas centrā. Piemērots uzņēmumu un skolu grupām.",
-    details: "",
+    ),
+    details: localizedFromSeed(""),
     regions: ["germany"],
     price: null,
     durationDays: null,
@@ -69,12 +75,14 @@ export const excursionSeed: ManagedExcursion[] = [
   {
     id: "excursion-luxembourg",
     slug: "luxembourg",
-    title: "Luksemburga un Beniluksa valstis",
+    title: localizedFromSeed("Luksemburga un Beniluksa valstis"),
     images: collage("/hero/luxembourg.jpg"),
     logoVariant: "white",
-    route: "Rīga – Brisele – Luksemburga – Amsterdama – Rīga",
-    teaser: "Trīs galvaspilsētas vienā braucienā, ar saulrietu virs Luksemburgas vecpilsētas.",
-    details: "",
+    route: localizedFromSeed("Rīga – Brisele – Luksemburga – Amsterdama – Rīga"),
+    teaser: localizedFromSeed(
+      "Trīs galvaspilsētas vienā braucienā, ar saulrietu virs Luksemburgas vecpilsētas.",
+    ),
+    details: localizedFromSeed(""),
     regions: [],
     price: null,
     durationDays: null,
@@ -83,12 +91,14 @@ export const excursionSeed: ManagedExcursion[] = [
   {
     id: "excursion-alps",
     slug: "alps",
-    title: "Alpu ceļi",
+    title: localizedFromSeed("Alpu ceļi"),
     images: collage("/hero/mountains.jpg"),
     logoVariant: "white",
-    route: "Rīga – Minhene – Insbruka – Zalcburga – Rīga",
-    teaser: "Kalnu pārejas, ezeri un mazas pilsētiņas. Ceļš ir daļa no ceļojuma.",
-    details: "",
+    route: localizedFromSeed("Rīga – Minhene – Insbruka – Zalcburga – Rīga"),
+    teaser: localizedFromSeed(
+      "Kalnu pārejas, ezeri un mazas pilsētiņas. Ceļš ir daļa no ceļojuma.",
+    ),
+    details: localizedFromSeed(""),
     regions: [],
     price: null,
     durationDays: null,

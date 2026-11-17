@@ -90,7 +90,8 @@ export function vehicleChoices(order: StaffOrder, vehicles: FleetVehicle[], orde
 }
 
 export function vehicleLabel(vehicle: FleetVehicle) {
-  return vehicle.plate ? `${vehicle.name} · ${vehicle.plate}` : vehicle.name;
+  const name = vehicle.name.lv || vehicle.name.en || "";
+  return vehicle.plate ? `${name} · ${vehicle.plate}` : name;
 }
 
 function occupiesEmployee(order: StaffOrder, employeeId: string, span: DateSpan) {

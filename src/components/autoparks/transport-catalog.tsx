@@ -20,6 +20,10 @@ import {
 import { fleetKindMatchesSection, normalizeFleetKind } from "@/lib/fleet/kind";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/locale";
+import {
+  pickLocalizedLines,
+  pickLocalizedText,
+} from "@/lib/i18n/localized-content";
 
 type TransportCatalogProps = {
   vehicles: FleetVehicle[];
@@ -203,7 +207,9 @@ function TransportSection({
                     }}
                   />
                 </div>
-                <h3 className="mt-4 line-clamp-2 text-sm font-medium text-ivory">{vehicle.name}</h3>
+                <h3 className="mt-4 line-clamp-2 text-sm font-medium text-ivory">
+                  {pickLocalizedText(vehicle.name, locale)}
+                </h3>
                 <p className="mt-2 flex items-center gap-2 text-xs text-mist">
                   <SeatIcon />
                   <span>{seats}</span>
@@ -246,6 +252,12 @@ function TransportSummaryDialog({
   const photos = toVehiclePhotos(vehicle);
   const primarySrc = vehicle.image || photos[0]?.src || "";
   const videoEmbed = toYouTubeEmbedUrl(vehicle.videoUrl);
+  const name = pickLocalizedText(vehicle.name, locale);
+  const interiorColor = pickLocalizedText(vehicle.interiorColor, locale);
+  const summary = pickLocalizedText(vehicle.summary, locale);
+  const description = pickLocalizedLines(vehicle.description, locale);
+  const extras = pickLocalizedLines(vehicle.extras, locale);
+  const closingNotes = pickLocalizedLines(vehicle.closingNotes, locale);
   const countries =
     vehicle.availableIn.length > 0
       ? vehicle.availableIn.map((code) => countryLabel(code, locale)).join(", ")
@@ -290,7 +302,7 @@ function TransportSummaryDialog({
               // eslint-disable-next-line @next/next/no-img-element -- full natural aspect for fleet previews
               <img
                 src={primarySrc}
-                alt={vehicle.name}
+                alt={name}
                 className="h-auto w-full rounded-xl border border-white/10 bg-[#141418]"
               />
             ) : null}
@@ -307,7 +319,7 @@ function TransportSummaryDialog({
                 <div className="mt-2 aspect-video overflow-hidden rounded-xl border border-white/10 bg-night">
                   <iframe
                     src={videoEmbed}
-                    title={`${vehicle.name} — ${labels.video}`}
+                    title={`${name} — ${labels.video}`}
                     className="h-full w-full"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -319,7 +331,7 @@ function TransportSummaryDialog({
 
           <div className="space-y-8">
             <h2 id={titleId} className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-              {vehicle.name}
+              {name}
             </h2>
 
             <dl className="grid grid-cols-1 gap-6 sm:grid-cols-3">
@@ -332,12 +344,12 @@ function TransportSummaryDialog({
                   </dd>
                 </div>
               </div>
-              {vehicle.interiorColor ? (
+              {interiorColor ? (
                 <div className="flex items-start gap-3">
                   <CabinIcon />
                   <div>
                     <dt className="text-sm text-white/55">{labels.interiorColor}</dt>
-                    <dd className="mt-1 text-base font-semibold text-white">{vehicle.interiorColor}</dd>
+                    <dd className="mt-1 text-base font-semibold text-white">{interiorColor}</dd>
                   </div>
                 </div>
               ) : null}
@@ -352,23 +364,23 @@ function TransportSummaryDialog({
               ) : null}
             </dl>
 
-            {vehicle.summary || vehicle.description.length > 0 ? (
+            {summary || description.length > 0 ? (
               <section>
                 <h3 className="text-lg font-semibold text-white">{labels.descriptionHeading}</h3>
                 <div className="mt-3 space-y-3 text-sm leading-7 text-white/80">
-                  {vehicle.summary ? <p>{vehicle.summary}</p> : null}
-                  {vehicle.description.map((paragraph) => (
+                  {summary ? <p>{summary}</p> : null}
+                  {description.map((paragraph) => (
                     <p key={paragraph}>{paragraph}</p>
                   ))}
                 </div>
               </section>
             ) : null}
 
-            {vehicle.extras.length > 0 ? (
+            {extras.length > 0 ? (
               <section>
                 <h3 className="text-lg font-semibold text-white">{labels.amenities}</h3>
                 <ul className="mt-4 grid grid-cols-1 gap-x-8 gap-y-3 text-sm text-white/85 sm:grid-cols-2">
-                  {vehicle.extras.map((extra) => (
+                  {extras.map((extra) => (
                     <li key={extra} className="flex items-start gap-2.5">
                       <CheckIcon />
                       <span>{extra}</span>
@@ -378,9 +390,9 @@ function TransportSummaryDialog({
               </section>
             ) : null}
 
-            {vehicle.closingNotes.length > 0 ? (
+            {closingNotes.length > 0 ? (
               <ul className="space-y-1.5 text-sm text-white/65">
-                {vehicle.closingNotes.map((note) => (
+                {closingNotes.map((note) => (
                   <li key={note}>{note}</li>
                 ))}
               </ul>
@@ -413,12 +425,7 @@ function toVehiclePhotos(vehicle: FleetVehicle): TransportPhoto[] {
     src,
     kind: vehicle.kind,
     showInGallery: false,
-    alt: {
-      lv: vehicle.name,
-      en: vehicle.name,
-      fr: vehicle.name,
-      ru: vehicle.name,
-    },
+    alt: vehicle.name,
   }));
 }
 

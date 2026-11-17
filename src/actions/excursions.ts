@@ -17,6 +17,11 @@ import {
 } from "@/lib/data/managed-excursions";
 import { FleetImageUploadException, saveFleetImageUploads } from "@/lib/fleet/upload-images";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
+import type { Localized } from "@/lib/i18n/locale";
+import {
+  localizedTextFromForm,
+  pickLocalizedText,
+} from "@/lib/i18n/localized-content";
 
 export type ExcursionActionState = {
   error?: string;
@@ -35,10 +40,10 @@ async function parseExcursionForm(
   labels: Awaited<ReturnType<typeof getDictionary>>["staffDashboard"],
 ): Promise<
   | {
-      title: string;
-      route: string;
-      teaser: string;
-      details: string;
+      title: Localized;
+      route: Localized;
+      teaser: Localized;
+      details: Localized;
       regions: ExcursionRegion[];
       price: number | null;
       durationDays: number | null;
@@ -47,10 +52,10 @@ async function parseExcursionForm(
     }
   | { error: string }
 > {
-  const title = String(formData.get("title") ?? "").trim();
-  const route = String(formData.get("route") ?? "").trim();
-  const teaser = String(formData.get("teaser") ?? "").trim();
-  const details = String(formData.get("details") ?? "").trim();
+  const title = localizedTextFromForm(formData, "title");
+  const route = localizedTextFromForm(formData, "route");
+  const teaser = localizedTextFromForm(formData, "teaser");
+  const details = localizedTextFromForm(formData, "details");
   const regions = parseRegions(formData);
   const priceRaw = String(formData.get("price") ?? "").trim();
   const durationRaw = String(formData.get("durationDays") ?? "").trim();
@@ -62,7 +67,9 @@ async function parseExcursionForm(
     .filter(Boolean);
   const photoSlots = formData.getAll("photoSlots").map(String);
 
-  if (!title) return { error: labels.excursionFormTitleRequired };
+  if (!pickLocalizedText(title, "lv")) {
+    return { error: labels.excursionFormTitleRequired };
+  }
 
   let price: number | null = null;
   if (priceRaw) {

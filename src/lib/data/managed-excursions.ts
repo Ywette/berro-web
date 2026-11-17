@@ -6,6 +6,8 @@ import {
   readExcursionStore,
   updateManagedExcursion,
 } from "@/lib/excursions/store";
+import type { Localized } from "@/lib/i18n/locale";
+import { pickLocalizedText } from "@/lib/i18n/localized-content";
 
 export async function listManagedExcursions(): Promise<ManagedExcursion[]> {
   return readExcursionStore();
@@ -23,7 +25,7 @@ export async function getManagedExcursionBySlug(
   return items.find((item) => item.slug === slug && item.isActive) ?? null;
 }
 
-function uniqueSlug(title: string, existing: ManagedExcursion[], excludeId?: string): string {
+function uniqueSlug(title: Localized | string, existing: ManagedExcursion[], excludeId?: string): string {
   const base = slugifyExcursionTitle(title);
   let slug = base;
   let n = 2;

@@ -17,6 +17,7 @@ import {
 } from "@/lib/data/managed-excursions";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { pickLocalized } from "@/lib/i18n/locale";
+import { pickLocalizedText } from "@/lib/i18n/localized-content";
 
 export const instant = false;
 
@@ -28,7 +29,11 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps<"/excursions/[slug]">): Promise<Metadata> {
   const [{ slug }, dictionary] = await Promise.all([params, getDictionary()]);
   const excursion = await getManagedExcursionBySlug(slug);
-  return { title: excursion?.title ?? dictionary.nav.excursions };
+  return {
+    title: excursion
+      ? pickLocalizedText(excursion.title, dictionary.locale)
+      : dictionary.nav.excursions,
+  };
 }
 
 export default function ExcursionPage({ params }: PageProps<"/excursions/[slug]">) {
@@ -50,7 +55,10 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
   const locale = dictionary.locale;
   const details = getExcursionDetails(slug);
   const text = dictionary.excursions;
-  const title = excursion.title;
+  const title = pickLocalizedText(excursion.title, locale);
+  const route = pickLocalizedText(excursion.route, locale);
+  const teaser = pickLocalizedText(excursion.teaser, locale);
+  const detailsText = pickLocalizedText(excursion.details, locale);
   const coverImage = excursionCoverImage(excursion);
   const activeExcursions = await listActiveManagedExcursions();
   const listIndex = activeExcursions.findIndex((item) => item.slug === slug);
@@ -65,8 +73,8 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
         {title}
       </h1>
 
-      {excursion.route ? (
-        <p className="mt-3 text-sm font-medium tracking-wide text-champagne/90">{excursion.route}</p>
+      {route ? (
+        <p className="mt-3 text-sm font-medium tracking-wide text-champagne/90">{route}</p>
       ) : null}
 
       {excursion.price != null ? (
@@ -75,8 +83,8 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
         </p>
       ) : null}
 
-      {excursion.teaser ? (
-        <p className="mt-4 text-base leading-7 text-ivory/90">{excursion.teaser}</p>
+      {teaser ? (
+        <p className="mt-4 text-base leading-7 text-ivory/90">{teaser}</p>
       ) : null}
 
       <ExcursionCollage
@@ -88,9 +96,9 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
         sizes="(min-width: 896px) 896px, 100vw"
       />
 
-      {excursion.details ? (
+      {detailsText ? (
         <div className="mt-8 grid gap-4 text-base leading-8 text-ivory/90">
-          {excursion.details
+          {detailsText
             .split(/\n\s*\n/)
             .map((paragraph) => paragraph.trim())
             .filter(Boolean)
@@ -203,8 +211,8 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
         <AvailabilityButton
           slug={excursion.slug}
           title={title}
-          route={excursion.route}
-          teaser={excursion.teaser}
+          route={route || undefined}
+          teaser={teaser || undefined}
           durationDays={excursion.durationDays}
           destination={
             excursion.slug === "moulin-rouge"
@@ -224,9 +232,9 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
           image={coverImage}
           excursions={activeExcursions.map((item) => ({
             slug: item.slug,
-            title: item.title,
-            route: item.route || undefined,
-            teaser: item.teaser || undefined,
+            title: pickLocalizedText(item.title, locale),
+            route: pickLocalizedText(item.route, locale) || undefined,
+            teaser: pickLocalizedText(item.teaser, locale) || undefined,
             durationDays: item.durationDays,
           }))}
         />
