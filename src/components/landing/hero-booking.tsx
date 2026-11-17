@@ -355,11 +355,20 @@ export function HeroBooking({
   }
 
   function buildQuoteInput(contact: OfferContactSubmit): QuoteOrderInput {
-    const needsDestination = draft.tripMode === "oneWay";
     const needsReturn = draft.tripMode === "roundTrip";
-    const resolvedDropoff = needsDestination
-      ? draft.dropoff.trim() || draft.pickup.trim()
-      : draft.dropoff.trim() || draft.pickup.trim();
+    const catalogTitle = selectedExcursionTitle || prefill?.excursionTitle || "";
+    const resolvedPickup =
+      draft.pickup.trim() ||
+      prefill?.pickup?.trim() ||
+      (isExcursionOrder ? "Rīga" : "");
+    const resolvedDropoff =
+      draft.dropoff.trim() ||
+      prefill?.dropoff?.trim() ||
+      (isExcursionOrder ? catalogTitle || resolvedPickup : resolvedPickup);
+    const derivedEnd =
+      isExcursionOrder && draft.departureAt
+        ? returnAtFromDeparture(draft.departureAt, excursionDurationDays)
+        : "";
     const stops = draft.stops
       .map((stop) => createStop(stop.place))
       .filter((stop) => stop.name.length > 0);
@@ -376,15 +385,12 @@ export function HeroBooking({
       travelType: travelType || undefined,
       travelTypeDetail:
         travelType === "other" ? travelTypeDetail.trim() || undefined : undefined,
-      pickup: draft.pickup.trim(),
+      pickup: resolvedPickup,
       dropoff: resolvedDropoff,
       departure: draft.departureAt || undefined,
       returnAt: needsReturn
-        ? draft.returnAt ||
-          (isExcursionOrder
-            ? returnAtFromDeparture(draft.departureAt, excursionDurationDays) || undefined
-            : undefined)
-        : draft.arrivalAt || undefined,
+        ? draft.returnAt || derivedEnd || undefined
+        : draft.arrivalAt || derivedEnd || undefined,
       passengers:
         totalPassengers(draft.passengers) > 0
           ? String(totalPassengers(draft.passengers))
@@ -392,7 +398,7 @@ export function HeroBooking({
       stops: stops.length > 0 ? encodeStops(stops) : undefined,
       planDocument: draft.planDocumentName || draft.planNote || undefined,
       excursionSlug: excursionSlug || undefined,
-      excursionTitle: selectedExcursionTitle || prefill?.excursionTitle || undefined,
+      excursionTitle: catalogTitle || undefined,
     };
   }
 
@@ -406,18 +412,19 @@ export function HeroBooking({
     if (travelType === "other" && travelTypeDetail.trim().length < 2) {
       errors.add("travelTypeOther");
     }
-    if (!draft.pickup.trim()) errors.add("pickup");
     if (!draft.departureAt) errors.add("departureAt");
-    if (!draft.dropoff.trim()) errors.add("dropoff");
-    if (draft.tripMode === "oneWay" && !draft.arrivalAt) {
-      errors.add("arrivalAt");
-    }
-    if (
-      draft.tripMode === "roundTrip" &&
-      !draft.returnAt &&
-      !isExcursionOrder
-    ) {
-      errors.add("returnAt");
+
+    // Excursion availability form hides route / end-time fields — those come from the
+    // catalog trip (+ duration). Only travellers, trip type, and departure are required.
+    if (!isExcursionOrder) {
+      if (!draft.pickup.trim()) errors.add("pickup");
+      if (!draft.dropoff.trim()) errors.add("dropoff");
+      if (draft.tripMode === "oneWay" && !draft.arrivalAt) {
+        errors.add("arrivalAt");
+      }
+      if (draft.tripMode === "roundTrip" && !draft.returnAt) {
+        errors.add("returnAt");
+      }
     }
     return errors;
   }
@@ -758,11 +765,13 @@ export function HeroBooking({
                 invalid={invalid.has("departureAt")}
                 className="h-9 rounded-full sm:h-10"
                 onChange={(value) => {
+                  const endAt = returnAtFromDeparture(value, excursionDurationDays);
                   patchDraft({
                     departureAt: value,
-                    returnAt: returnAtFromDeparture(value, excursionDurationDays),
+                    returnAt: draft.tripMode === "roundTrip" ? endAt : "",
+                    arrivalAt: draft.tripMode === "oneWay" ? endAt : "",
                   });
-                  clearFieldError(setInvalid, "departureAt", "returnAt");
+                  clearFieldError(setInvalid, "departureAt", "returnAt", "arrivalAt");
                 }}
               />
             </div>
