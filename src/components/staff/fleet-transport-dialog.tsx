@@ -13,11 +13,15 @@ import { FleetPhotoManager, type FleetPhotoDraft } from "@/components/staff/flee
 import { countryLabel, fleetCountries } from "@/lib/content/countries";
 import type { FleetVehicle } from "@/lib/content/fleet";
 import { prepareExcursionPhoto } from "@/lib/excursions/prepare-photo";
-import type { Locale } from "@/lib/i18n/locale";
+import {
+  fleetPhotoFolderFromUrl,
+  fleetVehiclePhotoFolder,
+} from "@/lib/fleet/photo-folder";
+import { locales, type Locale, type Localized } from "@/lib/i18n/locale";
 import {
   joinLines,
-  pickLocalizedLines,
-  pickLocalizedText,
+  localeFieldLabels,
+  type LocalizedLines,
 } from "@/lib/i18n/localized-content";
 
 export type FleetTransportDialogLabels = {
@@ -90,6 +94,57 @@ function photosFromVehicle(vehicle: FleetVehicle | null): {
   return { photos, mainId: main?.id ?? null };
 }
 
+/** Exact locale value for editing (no cross-locale fallback). */
+function fieldLocaleValue(value: Localized | string | null | undefined, locale: Locale): string {
+  if (value == null) return "";
+  if (typeof value === "string") return locale === "lv" ? value : "";
+  const text = value[locale];
+  return typeof text === "string" ? text : "";
+}
+
+function linesLocaleValue(
+  value: LocalizedLines | string[] | null | undefined,
+  locale: Locale,
+): string {
+  if (value == null) return "";
+  if (Array.isArray(value)) return locale === "lv" ? joinLines(value) : "";
+  const lines = value[locale];
+  return Array.isArray(lines) ? joinLines(lines) : "";
+}
+
+const inputClass =
+  "mt-1.5 w-full rounded-lg border border-white/15 bg-night px-3 py-2 text-sm text-ivory [color-scheme:dark]";
+
+const textareaClass =
+  "mt-1.5 w-full resize-y rounded-lg border border-white/15 bg-night px-3 py-2 text-sm text-ivory [color-scheme:dark]";
+
+function Field({
+  label,
+  required,
+  hint,
+  children,
+  as = "label",
+}: {
+  label: string;
+  required?: boolean;
+  hint?: string;
+  children: ReactNode;
+  /** Use `div` when children include their own labels (e.g. checkboxes). */
+  as?: "label" | "div";
+}) {
+  const Tag = as;
+  return (
+    <Tag className="block text-xs text-mist">
+      <span>
+        {label}
+        {required ? " *" : ""}
+      </span>
+      {children}
+      {hint ? <span className="mt-1 block text-[11px] text-mist/80">{hint}</span> : null}
+    </Tag>
+  );
+}
+
 export function FleetTransportDialog({
   vehicle,
   mode,
@@ -103,6 +158,11 @@ export function FleetTransportDialog({
   const [state, formAction, pending] = useActionState(saveFleetTransport, initialState);
   const [uploading, setUploading] = useState(false);
   const [clientError, setClientError] = useState<string | null>(null);
+  const [contentLocale, setContentLocale] = useState<Locale>("lv");
+  /** Stable id for new vehicles so photo folder matches the DB row. */
+  const [vehicleKey] = useState(
+    () => vehicle?.id ?? `fleet-${crypto.randomUUID()}`,
+  );
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -122,6 +182,14 @@ export function FleetTransportDialog({
     onClose();
   }, [state.success, onClose]);
 
+  useEffect(() => {
+    if (!state.error && !clientError) return;
+    document.getElementById("fleet-transport-form-error")?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+    });
+  }, [state.error, clientError]);
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setClientError(null);
@@ -139,6 +207,35 @@ export function FleetTransportDialog({
     );
     formData.set("mainPhotoIndex", String(mainIndex === -1 ? 0 : mainIndex));
 
+    const nameLv = String(formData.get("name_lv") ?? formData.get("name") ?? "").trim();
+    const existingFolder =
+      photos
+        .map((photo) => photo.src)
+        .filter((src): src is string => Boolean(src))
+        .map(fleetPhotoFolderFromUrl)
+        .find(Boolean) ?? null;
+    const photoFolder =
+      existingFolder ||
+      fleetVehiclePhotoFolder({
+        vehicleId: vehicleKey,
+        name: nameLv || undefined,
+      });
+    formData.set("id", vehicleKey);
+    formData.set("photoFolder", photoFolder);
+
+    // Re-sync country checkboxes from the live form (nested labels used to clear these).
+    formData.delete("availableIn");
+    const checkedCountries = Array.from(
+      form.querySelectorAll<HTMLInputElement>('input[name="availableIn"]:checked'),
+    ).map((input) => input.value);
+    for (const code of checkedCountries) {
+      formData.append("availableIn", code);
+    }
+    if (checkedCountries.length === 0) {
+      setClientError(labels.countriesHint || "Select at least one country.");
+      return;
+    }
+
     setUploading(true);
     try {
       const resolvedUrls = await Promise.all(
@@ -148,6 +245,9 @@ export function FleetTransportDialog({
           const prepared = await prepareExcursionPhoto(photo.file);
           const uploadData = new FormData();
           uploadData.append("photo", prepared);
+          uploadData.append("vehicleId", vehicleKey);
+          uploadData.append("vehicleName", nameLv);
+          uploadData.append("folder", photoFolder);
           const response = await fetch("/api/staff/fleet-photo", {
             method: "POST",
             body: uploadData,
@@ -208,24 +308,124 @@ export function FleetTransportDialog({
           onSubmit={onSubmit}
           className="space-y-4 px-5 py-5"
         >
-          {vehicle ? <input type="hidden" name="id" value={vehicle.id} /> : null}
+          <input type="hidden" name="id" value={vehicleKey} />
+          <input type="hidden" name="formMode" value={mode} />
 
           {clientError || state.error ? (
-            <p className="rounded-xl bg-burgundy/15 px-3 py-2 text-sm text-rose-200" role="alert">
+            <p
+              id="fleet-transport-form-error"
+              className="rounded-xl bg-burgundy/15 px-3 py-2 text-sm text-rose-200"
+              role="alert"
+            >
               {clientError ?? state.error}
             </p>
           ) : null}
 
+          <div className="space-y-3">
+            <div
+              role="tablist"
+              aria-label="Content language"
+              className="flex flex-wrap gap-1 rounded-lg border border-white/10 bg-white/5 p-1"
+            >
+              {locales.map((tabLocale) => {
+                const active = contentLocale === tabLocale;
+                return (
+                  <button
+                    key={tabLocale}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setContentLocale(tabLocale)}
+                    className={[
+                      "min-w-12 flex-1 rounded-md px-3 py-1.5 text-xs font-semibold tracking-wide transition",
+                      active
+                        ? "bg-burgundy text-white"
+                        : "text-ivory/70 hover:bg-white/10 hover:text-white",
+                    ].join(" ")}
+                  >
+                    {localeFieldLabels[tabLocale]}
+                  </button>
+                );
+              })}
+            </div>
+
+            {locales.map((tabLocale) => {
+              const visible = contentLocale === tabLocale;
+              const requireName = tabLocale === "lv";
+              return (
+                <div
+                  key={tabLocale}
+                  role="tabpanel"
+                  hidden={!visible}
+                  className={visible ? "space-y-4" : "hidden"}
+                >
+                  <Field label={labels.name} required={requireName}>
+                    <input
+                      name={`name_${tabLocale}`}
+                      required={requireName}
+                      maxLength={120}
+                      defaultValue={fieldLocaleValue(vehicle?.name, tabLocale)}
+                      className={inputClass}
+                    />
+                  </Field>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label={labels.bodyColor}>
+                      <input
+                        name={`bodyColor_${tabLocale}`}
+                        defaultValue={fieldLocaleValue(vehicle?.bodyColor, tabLocale)}
+                        className={inputClass}
+                      />
+                    </Field>
+                    <Field label={labels.interiorColor}>
+                      <input
+                        name={`interiorColor_${tabLocale}`}
+                        defaultValue={fieldLocaleValue(vehicle?.interiorColor, tabLocale)}
+                        className={inputClass}
+                      />
+                    </Field>
+                  </div>
+
+                  <Field label={labels.summary}>
+                    <input
+                      name={`summary_${tabLocale}`}
+                      defaultValue={fieldLocaleValue(vehicle?.summary, tabLocale)}
+                      className={inputClass}
+                    />
+                  </Field>
+
+                  <Field label={labels.description} hint={labels.descriptionHint}>
+                    <textarea
+                      name={`description_${tabLocale}`}
+                      rows={4}
+                      defaultValue={linesLocaleValue(vehicle?.description, tabLocale)}
+                      className={textareaClass}
+                    />
+                  </Field>
+
+                  <Field label={labels.extras} hint={labels.extrasHint}>
+                    <textarea
+                      name={`extras_${tabLocale}`}
+                      rows={3}
+                      defaultValue={linesLocaleValue(vehicle?.extras, tabLocale)}
+                      className={textareaClass}
+                    />
+                  </Field>
+
+                  <Field label={labels.closingNotes} hint={labels.closingNotesHint}>
+                    <textarea
+                      name={`closingNotes_${tabLocale}`}
+                      rows={3}
+                      defaultValue={linesLocaleValue(vehicle?.closingNotes, tabLocale)}
+                      className={textareaClass}
+                    />
+                  </Field>
+                </div>
+              );
+            })}
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={labels.name} required>
-              <input
-                name="name"
-                required
-                maxLength={120}
-                defaultValue={vehicle ? pickLocalizedText(vehicle.name, "lv") : ""}
-                className={inputClass}
-              />
-            </Field>
             <Field label={labels.kind} required>
               <select
                 name="kind"
@@ -284,20 +484,6 @@ export function FleetTransportDialog({
                 className={inputClass}
               />
             </Field>
-            <Field label={labels.bodyColor}>
-              <input
-                name="bodyColor"
-                defaultValue={vehicle ? pickLocalizedText(vehicle.bodyColor, "lv") : ""}
-                className={inputClass}
-              />
-            </Field>
-            <Field label={labels.interiorColor}>
-              <input
-                name="interiorColor"
-                defaultValue={vehicle ? pickLocalizedText(vehicle.interiorColor, "lv") : ""}
-                className={inputClass}
-              />
-            </Field>
             <Field label={labels.videoUrl}>
               <input
                 name="videoUrl"
@@ -308,12 +494,14 @@ export function FleetTransportDialog({
             </Field>
           </div>
 
-          <Field label={labels.availableIn} required hint={labels.countriesHint}>
-            <div className="flex flex-wrap gap-2">
+          <Field label={labels.availableIn} required hint={labels.countriesHint} as="div">
+            <div className="mt-1.5 flex flex-wrap gap-2">
               {fleetCountries.map((country) => {
-                const checked = vehicle
-                  ? vehicle.availableIn.includes(country.code)
-                  : country.code === "LV";
+                const selected = vehicle?.availableIn ?? [];
+                const checked =
+                  selected.length > 0
+                    ? selected.includes(country.code)
+                    : country.code === "LV";
                 return (
                   <label
                     key={country.code}
@@ -351,86 +539,31 @@ export function FleetTransportDialog({
             }}
           />
 
-          <Field label={labels.summary}>
-            <input
-              name="summary"
-              defaultValue={vehicle ? pickLocalizedText(vehicle.summary, "lv") : ""}
-              className={inputClass}
-            />
-          </Field>
-          <Field label={labels.description} hint={labels.descriptionHint}>
-            <textarea
-              name="description"
-              rows={4}
-              defaultValue={
-                vehicle ? joinLines(pickLocalizedLines(vehicle.description, "lv")) : ""
-              }
-              className={inputClass}
-            />
-          </Field>
-          <Field label={labels.extras} hint={labels.extrasHint}>
-            <textarea
-              name="extras"
-              rows={3}
-              defaultValue={vehicle ? joinLines(pickLocalizedLines(vehicle.extras, "lv")) : ""}
-              className={inputClass}
-            />
-          </Field>
-          <Field label={labels.closingNotes} hint={labels.closingNotesHint}>
-            <textarea
-              name="closingNotes"
-              rows={3}
-              defaultValue={
-                vehicle ? joinLines(pickLocalizedLines(vehicle.closingNotes, "lv")) : ""
-              }
-              className={inputClass}
-            />
-          </Field>
-
-          <div className="flex flex-wrap justify-end gap-2 border-t border-white/10 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-full border border-white/20 px-4 py-2 text-sm text-ivory hover:border-white/50"
-            >
-              {labels.close}
-            </button>
-            <button
-              type="submit"
-              disabled={pending || uploading}
-              className="rounded-full bg-burgundy px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-deep disabled:opacity-60"
-            >
-              {pending || uploading ? labels.savingTransport : labels.saveTransport}
-            </button>
+          <div className="space-y-3 border-t border-white/10 pt-4">
+            {clientError || state.error ? (
+              <p className="rounded-xl bg-burgundy/15 px-3 py-2 text-sm text-rose-200" role="alert">
+                {clientError ?? state.error}
+              </p>
+            ) : null}
+            <div className="flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full border border-white/20 px-4 py-2 text-sm text-ivory hover:border-white/50"
+              >
+                {labels.close}
+              </button>
+              <button
+                type="submit"
+                disabled={pending || uploading}
+                className="rounded-full bg-burgundy px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-deep disabled:opacity-60"
+              >
+                {pending || uploading ? labels.savingTransport : labels.saveTransport}
+              </button>
+            </div>
           </div>
         </form>
       </div>
     </div>
-  );
-}
-
-const inputClass =
-  "mt-1.5 w-full rounded-lg border border-white/15 bg-night px-3 py-2 text-sm text-ivory [color-scheme:dark]";
-
-function Field({
-  label,
-  required,
-  hint,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  hint?: string;
-  children: ReactNode;
-}) {
-  return (
-    <label className="block text-xs text-mist">
-      <span>
-        {label}
-        {required ? " *" : ""}
-      </span>
-      {children}
-      {hint ? <span className="mt-1 block text-[11px] text-mist/80">{hint}</span> : null}
-    </label>
   );
 }

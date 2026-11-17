@@ -20,7 +20,8 @@ import {
   type ExcursionLogoVariant,
   type ManagedExcursion,
 } from "@/lib/content/managed-excursion";
-import { pickLocalizedText } from "@/lib/i18n/localized-content";
+import { locales, type Locale, type Localized } from "@/lib/i18n/locale";
+import { localeFieldLabels } from "@/lib/i18n/localized-content";
 
 export type ExcursionDialogLabels = {
   addTitle: string;
@@ -68,6 +69,14 @@ function photosFromExcursion(excursion: ManagedExcursion | null): FleetPhotoDraf
   }));
 }
 
+/** Exact locale value for editing (no cross-locale fallback). */
+function fieldLocaleValue(value: Localized | string | null | undefined, locale: Locale): string {
+  if (value == null) return "";
+  if (typeof value === "string") return locale === "lv" ? value : "";
+  const text = value[locale];
+  return typeof text === "string" ? text : "";
+}
+
 function Field({
   label,
   children,
@@ -89,12 +98,16 @@ function Field({
 const inputClass =
   "h-10 w-full rounded-lg border border-white/10 bg-white px-3 text-sm text-neutral-900 outline-none";
 
+const textareaClass =
+  "w-full resize-y rounded-lg border border-white/10 bg-white px-3 py-2 text-sm text-neutral-900 outline-none";
+
 export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionDialogProps) {
   const [photos, setPhotos] = useState<FleetPhotoDraft[]>(() => photosFromExcursion(excursion));
   const logoVariant: ExcursionLogoVariant = excursion?.logoVariant ?? "dark";
   const [state, formAction, pending] = useActionState(saveManagedExcursion, initialState);
   const [clientError, setClientError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [contentLocale, setContentLocale] = useState<Locale>("lv");
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -214,44 +227,92 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
         <form noValidate onSubmit={onSubmit} className="mt-5 grid gap-4">
           {excursion ? <input type="hidden" name="id" value={excursion.id} /> : null}
 
-          <Field label={labels.title}>
-            <input
-              name="title"
-              required
-              maxLength={160}
-              defaultValue={excursion ? pickLocalizedText(excursion.title, "lv") : ""}
-              placeholder='kabarē “Moulin Rouge” ar vakariņu piedāvājumu'
-              className={inputClass}
-            />
-          </Field>
+          <div className="grid gap-3">
+            <div
+              role="tablist"
+              aria-label="Content language"
+              className="flex flex-wrap gap-1 rounded-lg border border-white/10 bg-white/5 p-1"
+            >
+              {locales.map((locale) => {
+                const active = contentLocale === locale;
+                return (
+                  <button
+                    key={locale}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setContentLocale(locale)}
+                    className={[
+                      "min-w-12 flex-1 rounded-md px-3 py-1.5 text-xs font-semibold tracking-wide transition",
+                      active
+                        ? "bg-burgundy text-white"
+                        : "text-ivory/70 hover:bg-white/10 hover:text-white",
+                    ].join(" ")}
+                  >
+                    {localeFieldLabels[locale]}
+                  </button>
+                );
+              })}
+            </div>
 
-          <ExcursionCollagePhotos
-            photos={photos}
-            logoVariant={logoVariant}
-            onPhotosChange={setPhotos}
-            labels={{
-              photos: labels.photos,
-              photosHint: labels.photosHint,
-              photoSize: labels.photoSize,
-              upload: labels.upload,
-              moveUp: labels.moveUp,
-              moveDown: labels.moveDown,
-              moveLeft: labels.moveLeft,
-              moveRight: labels.moveRight,
-              preview: labels.preview,
-              slot: labels.slot,
-            }}
-          />
+            {locales.map((locale) => {
+              const visible = contentLocale === locale;
+              const requireTitle = locale === "lv";
+              return (
+                <div
+                  key={locale}
+                  role="tabpanel"
+                  hidden={!visible}
+                  className={visible ? "grid gap-4" : "hidden"}
+                >
+                  <Field label={labels.title}>
+                    <input
+                      name={`title_${locale}`}
+                      required={requireTitle}
+                      maxLength={160}
+                      defaultValue={fieldLocaleValue(excursion?.title, locale)}
+                      placeholder={
+                        locale === "lv"
+                          ? 'kabarē “Moulin Rouge” ar vakariņu piedāvājumu'
+                          : undefined
+                      }
+                      className={inputClass}
+                    />
+                  </Field>
 
-          <Field label={labels.route} hint={labels.routeHint}>
-            <input
-              name="route"
-              maxLength={200}
-              defaultValue={excursion ? pickLocalizedText(excursion.route, "lv") : ""}
-              placeholder="Riga → Paris → Riga"
-              className={inputClass}
-            />
-          </Field>
+                  <Field label={labels.route} hint={labels.routeHint}>
+                    <input
+                      name={`route_${locale}`}
+                      maxLength={200}
+                      defaultValue={fieldLocaleValue(excursion?.route, locale)}
+                      placeholder={locale === "en" ? "Riga → Paris → Riga" : undefined}
+                      className={inputClass}
+                    />
+                  </Field>
+
+                  <Field label={labels.teaser} hint={labels.teaserHint}>
+                    <textarea
+                      name={`teaser_${locale}`}
+                      rows={4}
+                      maxLength={800}
+                      defaultValue={fieldLocaleValue(excursion?.teaser, locale)}
+                      className={textareaClass}
+                    />
+                  </Field>
+
+                  <Field label={labels.details} hint={labels.detailsHint}>
+                    <textarea
+                      name={`details_${locale}`}
+                      rows={10}
+                      maxLength={8000}
+                      defaultValue={fieldLocaleValue(excursion?.details, locale)}
+                      className={textareaClass}
+                    />
+                  </Field>
+                </div>
+              );
+            })}
+          </div>
 
           <Field label={labels.price} hint={labels.priceHint}>
             <input
@@ -279,26 +340,6 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
             />
           </Field>
 
-          <Field label={labels.teaser} hint={labels.teaserHint}>
-            <textarea
-              name="teaser"
-              rows={4}
-              maxLength={800}
-              defaultValue={excursion ? pickLocalizedText(excursion.teaser, "lv") : ""}
-              className="w-full resize-y rounded-lg border border-white/10 bg-white px-3 py-2 text-sm text-neutral-900 outline-none"
-            />
-          </Field>
-
-          <Field label={labels.details} hint={labels.detailsHint}>
-            <textarea
-              name="details"
-              rows={10}
-              maxLength={8000}
-              defaultValue={excursion ? pickLocalizedText(excursion.details, "lv") : ""}
-              className="w-full resize-y rounded-lg border border-white/10 bg-white px-3 py-2 text-sm text-neutral-900 outline-none"
-            />
-          </Field>
-
           <fieldset className="grid gap-1.5">
             <legend className="text-[11px] font-medium tracking-wide text-ivory/80">
               {labels.region}
@@ -322,6 +363,24 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
             </div>
             <span className="text-[11px] font-normal text-mist">{labels.regionHint}</span>
           </fieldset>
+
+          <ExcursionCollagePhotos
+            photos={photos}
+            logoVariant={logoVariant}
+            onPhotosChange={setPhotos}
+            labels={{
+              photos: labels.photos,
+              photosHint: labels.photosHint,
+              photoSize: labels.photoSize,
+              upload: labels.upload,
+              moveUp: labels.moveUp,
+              moveDown: labels.moveDown,
+              moveLeft: labels.moveLeft,
+              moveRight: labels.moveRight,
+              preview: labels.preview,
+              slot: labels.slot,
+            }}
+          />
 
           {clientError || state.error ? (
             <p role="alert" className="text-xs text-red-300">

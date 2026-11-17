@@ -1,4 +1,5 @@
 import { requireUser } from "@/lib/auth/session";
+import { fleetVehiclePhotoFolder } from "@/lib/fleet/photo-folder";
 import { FleetPhotoUploadException, uploadFleetPhoto } from "@/lib/fleet/upload-photo";
 
 export async function POST(request: Request) {
@@ -11,8 +12,26 @@ export async function POST(request: Request) {
       return Response.json({ ok: false, error: "Missing photo" }, { status: 400 });
     }
 
-    const url = await uploadFleetPhoto(entry);
-    return Response.json({ ok: true, url });
+    const vehicleId = String(formData.get("vehicleId") ?? "").trim();
+    const vehicleName = String(formData.get("vehicleName") ?? "").trim();
+    const folderFromClient = String(formData.get("folder") ?? "").trim();
+
+    if (!vehicleId && !folderFromClient) {
+      return Response.json(
+        { ok: false, error: "Missing vehicle folder for photo upload." },
+        { status: 400 },
+      );
+    }
+
+    const folder =
+      folderFromClient ||
+      fleetVehiclePhotoFolder({
+        vehicleId: vehicleId || "vehicle",
+        name: vehicleName || undefined,
+      });
+
+    const url = await uploadFleetPhoto(entry, { folder });
+    return Response.json({ ok: true, url, folder });
   } catch (caught) {
     if (caught instanceof FleetPhotoUploadException) {
       const message =

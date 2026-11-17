@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import type { TransportPhoto } from "@/lib/content/transport";
 import { pickLocalized, type Locale } from "@/lib/i18n/locale";
 
@@ -10,6 +11,9 @@ type TransportPhotoStripProps = {
   closeLabel: string;
   prevLabel: string;
   nextLabel: string;
+  /** Large preview above thumbnails; opens the lightbox starting on this image. */
+  featuredSrc?: string;
+  featuredAlt?: string;
 };
 
 export function TransportPhotoStrip({
@@ -18,109 +22,201 @@ export function TransportPhotoStrip({
   closeLabel,
   prevLabel,
   nextLabel,
+  featuredSrc,
+  featuredAlt,
 }: TransportPhotoStripProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const active = activeIndex === null ? null : (photos[activeIndex] ?? null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  /** Main photo first, then the rest — lightbox starts here and chevrons step through all. */
+  const gallery = useMemo(() => {
+    if (!featuredSrc) return photos;
+    const match = photos.find((photo) => photo.src === featuredSrc);
+    const rest = photos.filter((photo) => photo.src !== featuredSrc);
+    const featured: TransportPhoto = match ?? {
+      id: "featured-main",
+      src: featuredSrc,
+      kind: photos[0]?.kind ?? "van",
+      showInGallery: false,
+      alt: photos[0]?.alt ?? { lv: featuredAlt ?? "", en: featuredAlt ?? "" },
+    };
+    return [featured, ...rest];
+  }, [photos, featuredSrc, featuredAlt]);
+
+  const active = activeIndex === null ? null : (gallery[activeIndex] ?? null);
+  const canNavigate = gallery.length > 1;
 
   useEffect(() => {
     if (activeIndex === null) return;
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
         setActiveIndex(null);
         return;
       }
+      if (!canNavigate) return;
       if (event.key === "ArrowLeft") {
         event.preventDefault();
-        setActiveIndex((index) => (index === null ? index : (index - 1 + photos.length) % photos.length));
+        event.stopImmediatePropagation();
+        setActiveIndex((index) =>
+          index === null ? index : (index - 1 + gallery.length) % gallery.length,
+        );
         return;
       }
       if (event.key === "ArrowRight") {
         event.preventDefault();
-        setActiveIndex((index) => (index === null ? index : (index + 1) % photos.length));
+        event.stopImmediatePropagation();
+        setActiveIndex((index) => (index === null ? index : (index + 1) % gallery.length));
       }
     }
 
-    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, true);
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
-      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keydown", onKeyDown, true);
       document.body.style.overflow = previous;
     };
-  }, [activeIndex, photos.length]);
+  }, [activeIndex, canNavigate, gallery.length]);
 
-  if (photos.length === 0) return null;
+  if (gallery.length === 0 && !featuredSrc) return null;
+
+  const lightbox =
+    active && mounted
+      ? createPortal(
+          <div
+            className="popup-enter-overlay fixed inset-0 z-[80] flex items-center justify-center bg-night/92 p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label={pickLocalized(active.alt, locale)}
+            onClick={() => setActiveIndex(null)}
+          >
+            <button
+              type="button"
+              className="absolute top-4 right-4 z-20 rounded-full border border-white/20 bg-night/70 px-3 py-1.5 text-xs text-ivory hover:border-white/50"
+              onClick={() => setActiveIndex(null)}
+            >
+              {closeLabel}
+            </button>
+            {canNavigate ? (
+              <>
+                <button
+                  type="button"
+                  aria-label={prevLabel}
+                  className="absolute top-1/2 left-3 z-20 grid h-12 w-12 -translate-y-1/2 place-items-center rounded-full border border-white/25 bg-night/80 text-ivory hover:border-white/60 sm:left-6"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setActiveIndex((index) =>
+                      index === null ? index : (index - 1 + gallery.length) % gallery.length,
+                    );
+                  }}
+                >
+                  <ChevronLeft />
+                </button>
+                <button
+                  type="button"
+                  aria-label={nextLabel}
+                  className="absolute top-1/2 right-3 z-20 grid h-12 w-12 -translate-y-1/2 place-items-center rounded-full border border-white/25 bg-night/80 text-ivory hover:border-white/60 sm:right-6"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setActiveIndex((index) =>
+                      index === null ? index : (index + 1) % gallery.length,
+                    );
+                  }}
+                >
+                  <ChevronRight />
+                </button>
+              </>
+            ) : null}
+            {/* eslint-disable-next-line @next/next/no-img-element -- lightbox shows full uncropped photo */}
+            <img
+              src={active.src}
+              alt={pickLocalized(active.alt, locale)}
+              className="popup-enter-panel relative z-10 max-h-[88vh] max-w-[min(96vw,1100px)] object-contain"
+              onClick={(event) => event.stopPropagation()}
+            />
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <>
-      <div className="mt-6 flex gap-3 overflow-x-auto pb-1">
-        {photos.map((photo, index) => {
-          const alt = pickLocalized(photo.alt, locale);
-          return (
-            <button
-              key={photo.id}
-              type="button"
-              onClick={() => setActiveIndex(index)}
-              className="shrink-0 overflow-hidden rounded-lg border border-white/10 bg-[#141418] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-burgundy"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element -- full natural aspect for fleet previews */}
-              <img src={photo.src} alt={alt} className="h-28 w-auto max-w-[11rem] object-contain sm:h-32" />
-            </button>
-          );
-        })}
-      </div>
-
-      {active ? (
-        <div
-          className="popup-enter-overlay fixed inset-0 z-50 flex items-center justify-center bg-night/92 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label={pickLocalized(active.alt, locale)}
-          onClick={() => setActiveIndex(null)}
+      {featuredSrc ? (
+        <button
+          type="button"
+          onClick={() => setActiveIndex(0)}
+          className="block w-full overflow-hidden rounded-xl border border-white/10 bg-[#141418] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-burgundy"
         >
-          <button
-            type="button"
-            className="absolute top-4 right-4 rounded-full border border-white/20 px-3 py-1.5 text-xs text-ivory hover:border-white/50"
-            onClick={() => setActiveIndex(null)}
-          >
-            {closeLabel}
-          </button>
-          {photos.length > 1 ? (
-            <>
-              <button
-                type="button"
-                className="absolute left-3 rounded-full border border-white/20 px-3 py-2 text-sm text-ivory hover:border-white/50 sm:left-6"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setActiveIndex((index) =>
-                    index === null ? index : (index - 1 + photos.length) % photos.length,
-                  );
-                }}
-              >
-                {prevLabel}
-              </button>
-              <button
-                type="button"
-                className="absolute right-3 rounded-full border border-white/20 px-3 py-2 text-sm text-ivory hover:border-white/50 sm:right-6"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setActiveIndex((index) => (index === null ? index : (index + 1) % photos.length));
-                }}
-              >
-                {nextLabel}
-              </button>
-            </>
-          ) : null}
-          {/* eslint-disable-next-line @next/next/no-img-element -- lightbox shows full uncropped photo */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- full natural aspect for fleet previews */}
           <img
-            src={active.src}
-            alt={pickLocalized(active.alt, locale)}
-            className="popup-enter-panel max-h-[88vh] max-w-[min(96vw,1100px)] object-contain"
-            onClick={(event) => event.stopPropagation()}
+            src={featuredSrc}
+            alt={featuredAlt ?? ""}
+            className="h-auto w-full object-contain"
           />
+        </button>
+      ) : null}
+
+      {gallery.length > 0 ? (
+        <div className={`flex gap-3 overflow-x-auto pb-1 ${featuredSrc ? "mt-4" : "mt-6"}`}>
+          {gallery.map((photo, index) => {
+            const alt = pickLocalized(photo.alt, locale);
+            return (
+              <button
+                key={photo.id}
+                type="button"
+                onClick={() => setActiveIndex(index)}
+                className="shrink-0 overflow-hidden rounded-lg border border-white/10 bg-[#141418] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-burgundy"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- full natural aspect for fleet previews */}
+                <img
+                  src={photo.src}
+                  alt={alt}
+                  className="h-28 w-auto max-w-[11rem] object-contain sm:h-32"
+                />
+              </button>
+            );
+          })}
         </div>
       ) : null}
+
+      {lightbox}
     </>
+  );
+}
+
+function ChevronLeft() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-5 w-5" aria-hidden="true">
+      <path
+        d="M12.5 4.5 7 10l5.5 5.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ChevronRight() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-5 w-5" aria-hidden="true">
+      <path
+        d="M7.5 4.5 13 10l-5.5 5.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

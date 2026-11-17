@@ -1,9 +1,14 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { EXCURSION_PHOTO_MAX_BYTES } from "@/lib/excursions/photo-limits";
+import {
+  FLEET_PHOTOS_BUCKET,
+  sanitizeFleetStorageSegment,
+} from "@/lib/fleet/photo-folder";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 
-export const FLEET_PHOTOS_BUCKET = "fleet-photos";
+export { FLEET_PHOTOS_BUCKET } from "@/lib/fleet/photo-folder";
+
 /** Match excursion/Vercel single-request limit. */
 export const FLEET_PHOTO_UPLOAD_MAX_BYTES = EXCURSION_PHOTO_MAX_BYTES;
 
@@ -54,9 +59,9 @@ async function ensureFleetPhotosBucket(
   return { ok: true as const };
 }
 
-async function saveLocalFallback(file: File): Promise<string> {
-  const publicFolder = "transport/uploads";
-  const dir = path.join(process.cwd(), "public", publicFolder);
+async function saveLocalFallback(file: File, folder: string): Promise<string> {
+  const publicFolder = path.posix.join("transport/uploads", folder);
+  const dir = path.join(process.cwd(), "public", ...publicFolder.split("/"));
   await mkdir(dir, { recursive: true });
   const ext = EXT_BY_TYPE[file.type] ?? "jpg";
   const filename = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
@@ -68,8 +73,16 @@ async function saveLocalFallback(file: File): Promise<string> {
   return `/${publicFolder}/${filename}`;
 }
 
-/** Upload one fleet photo; prefers Supabase public storage, falls back to /public locally. */
-export async function uploadFleetPhoto(file: File): Promise<string> {
+export type UploadFleetPhotoOptions = {
+  /** Storage folder for this vehicle (created automatically on upload). */
+  folder: string;
+};
+
+/** Upload one fleet photo into the vehicle folder; prefers Supabase, falls back to /public locally. */
+export async function uploadFleetPhoto(
+  file: File,
+  options: UploadFleetPhotoOptions,
+): Promise<string> {
   if (!ALLOWED_TYPES.has(file.type)) {
     throw new FleetPhotoUploadException("type");
   }
@@ -80,9 +93,15 @@ export async function uploadFleetPhoto(file: File): Promise<string> {
     throw new FleetPhotoUploadException("empty");
   }
 
+  const rawFolder = options.folder.replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+  if (!rawFolder || rawFolder.includes("..") || rawFolder.includes("/")) {
+    throw new Error("Invalid photo folder.");
+  }
+  const folder = sanitizeFleetStorageSegment(rawFolder, "vehicle");
+
   const supabase = createServiceSupabaseClient();
   if (!supabase) {
-    return saveLocalFallback(file);
+    return saveLocalFallback(file, folder);
   }
 
   const bucket = await ensureFleetPhotosBucket(supabase);
@@ -91,7 +110,7 @@ export async function uploadFleetPhoto(file: File): Promise<string> {
   }
 
   const ext = EXT_BY_TYPE[file.type] ?? "jpg";
-  const objectPath = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+  const objectPath = `${folder}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
   if (buffer.byteLength === 0) {
     throw new FleetPhotoUploadException("empty");

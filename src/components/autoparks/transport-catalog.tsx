@@ -298,17 +298,11 @@ function TransportSummaryDialog({
 
         <div className="space-y-6 px-5 py-5">
           <div>
-            {primarySrc ? (
-              // eslint-disable-next-line @next/next/no-img-element -- full natural aspect for fleet previews
-              <img
-                src={primarySrc}
-                alt={name}
-                className="h-auto w-full rounded-xl border border-white/10 bg-[#141418]"
-              />
-            ) : null}
             <TransportPhotoStrip
               photos={photos}
               locale={locale}
+              featuredSrc={primarySrc || undefined}
+              featuredAlt={name}
               closeLabel={labels.galleryClose}
               prevLabel={labels.galleryPrev}
               nextLabel={labels.galleryNext}
@@ -412,13 +406,13 @@ function TransportSummaryDialog({
 }
 
 function toVehiclePhotos(vehicle: FleetVehicle): TransportPhoto[] {
-  const ordered =
-    vehicle.galleryImages.length > 0
-      ? vehicle.galleryImages
-      : vehicle.image
-        ? [vehicle.image]
-        : [];
-  const srcs = [...new Set(ordered.filter(Boolean))];
+  const gallery = vehicle.galleryImages.filter(Boolean);
+  const main = vehicle.image?.trim() || "";
+  // Main photo first so lightbox opens there, then remaining gallery images.
+  const ordered = main
+    ? [main, ...gallery.filter((src) => src !== main)]
+    : gallery;
+  const srcs = [...new Set(ordered)];
 
   return srcs.map((src, index) => ({
     id: `${vehicle.id}-photo-${index}`,

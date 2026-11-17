@@ -97,21 +97,25 @@ export function ExcursionsBoardClient({
                     {excursion.price != null ? `€${excursion.price}` : "—"}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <div className="inline-flex items-center gap-2">
+                    <div className="inline-flex items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => setDialog({ mode: "edit", excursion })}
-                        className="rounded-full border border-white/15 px-3 py-1.5 text-xs text-ivory/85 hover:border-white/40"
+                        aria-label={labels.edit}
+                        title={labels.edit}
+                        className="grid size-8 place-items-center rounded-md bg-emerald-400 text-black hover:bg-emerald-300"
                       >
-                        {labels.edit}
+                        <EditIcon />
                       </button>
                       <form action={deleteManagedExcursionAction}>
                         <input type="hidden" name="id" value={excursion.id} />
                         <button
                           type="submit"
-                          className="rounded-full border border-rose-400/30 px-3 py-1.5 text-xs text-rose-200 hover:border-rose-300/50"
+                          aria-label={labels.delete}
+                          title={labels.delete}
+                          className="grid size-8 place-items-center rounded-md bg-rose-400 text-black hover:bg-rose-300"
                         >
-                          {labels.delete}
+                          <DeleteIcon />
                         </button>
                       </form>
                     </div>
@@ -132,5 +136,38 @@ export function ExcursionsBoardClient({
         />
       ) : null}
     </div>
+  );
+}
+
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" aria-hidden="true" fill="none">
+      <path
+        d="M3.5 14.5v2h2l8.2-8.2-2-2L3.5 14.5Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+      <path
+        d="m11.2 5.8 2 2 1.4-1.4a1.2 1.2 0 0 0 0-1.7l-.3-.3a1.2 1.2 0 0 0-1.7 0L11.2 5.8Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function DeleteIcon() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" aria-hidden="true" fill="none">
+      <path
+        d="M5 6.5h10M8 6.5V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M7 6.5v8a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-8"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

@@ -125,21 +125,25 @@ export function FleetBoardClient({
                         : "—"}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-1.5">
                         <button
                           type="button"
                           onClick={() => setDialog({ mode: "edit", vehicle })}
-                          className="rounded-md border border-white/15 px-2.5 py-1 text-xs text-ivory/85 hover:border-white/40"
+                          aria-label={labels.editTransport}
+                          title={labels.editTransport}
+                          className="grid size-8 place-items-center rounded-md bg-emerald-400 text-black hover:bg-emerald-300"
                         >
-                          {labels.editTransport}
+                          <EditIcon />
                         </button>
                         <form action={deleteFleetTransport}>
                           <input type="hidden" name="id" value={vehicle.id} />
                           <button
                             type="submit"
-                            className="rounded-md border border-white/15 px-2.5 py-1 text-xs text-mist hover:border-rose-300/50 hover:text-rose-200"
+                            aria-label={labels.deleteTransport}
+                            title={labels.deleteTransport}
+                            className="grid size-8 place-items-center rounded-md bg-rose-400 text-black hover:bg-rose-300"
                           >
-                            {labels.deleteTransport}
+                            <DeleteIcon />
                           </button>
                         </form>
                       </div>
@@ -196,4 +200,37 @@ function ExpiryDate({
   }
 
   return <span className="text-ivory/85">{label}</span>;
+}
+
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" aria-hidden="true" fill="none">
+      <path
+        d="M3.5 14.5v2h2l8.2-8.2-2-2L3.5 14.5Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+      <path
+        d="m11.2 5.8 2 2 1.4-1.4a1.2 1.2 0 0 0 0-1.7l-.3-.3a1.2 1.2 0 0 0-1.7 0L11.2 5.8Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function DeleteIcon() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" aria-hidden="true" fill="none">
+      <path
+        d="M5 6.5h10M8 6.5V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M7 6.5v8a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-8"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }

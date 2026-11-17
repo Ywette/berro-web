@@ -160,15 +160,17 @@ export async function saveFleetTransport(
   await requireUser();
   const dictionary = await getDictionary();
   const labels = dictionary.staffDashboard;
-  const existingId = String(formData.get("id") ?? "").trim();
+  const vehicleId = String(formData.get("id") ?? "").trim() || `fleet-${crypto.randomUUID()}`;
+  const formMode = String(formData.get("formMode") ?? "").trim();
+  const isEdit = formMode === "edit";
 
   const parsed = await parseVehicleForm(formData, labels);
   if ("error" in parsed) return { error: parsed.error };
 
-  if (existingId) {
+  if (isEdit) {
     const updated = await updateVehicle({
       ...parsed.vehicle,
-      id: existingId,
+      id: vehicleId,
       readinessNote: null,
       isActive: true,
     });
@@ -178,9 +180,10 @@ export async function saveFleetTransport(
     return { success: labels.fleetFormUpdated };
   }
 
+  // New vehicle: reuse client id so Storage folder and DB row stay linked.
   await createVehicle({
     ...parsed.vehicle,
-    id: `fleet-${crypto.randomUUID()}`,
+    id: vehicleId,
     readinessNote: null,
     isActive: true,
   });
