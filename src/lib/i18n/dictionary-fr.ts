@@ -567,6 +567,7 @@ export const fr: Dictionary = {
     orderEdit: { save: "Enregistrer", remove: "Supprimer la commande", confirm: "Cette action supprimera définitivement la commande", signedOut: "Connectez-vous pour gérer les commandes.", access: "Votre compte doit avoir le rôle de membre du personnel ou d’administrateur pour gérer les commandes.", changed: "Commande modifiée ou supprimée. Actualisez la page.", failed: "Échec de la modification. Réessayez.", invalid: "Vérifiez le trajet, les dates et le nombre de passagers." },
     orderPrice: "Prix",
     calculatePrice: "Calculer",
+    orderPage: { edit: "Modifier", calculate: "Calculer", send: "Envoyer au client", sendConfirm: "Envoyer l’offre par e-mail à", confirmSend: "Envoyer", cancel: "Annuler", sending: "Envoi…", sent: "Offre envoyée à", noPrice: "Ajoutez un prix (Modifier) avant d’envoyer l’offre.", noEmail: "Cette commande n’a pas d’e-mail client valide.", notConfigured: "L’e-mail n’est pas configuré. Ajoutez RESEND_API_KEY et CONTACT_FROM_EMAIL.", emailFailed: "L’e-mail n’a pas pu être envoyé. Réessayez.", demo: "Les commandes de démonstration ne peuvent pas être envoyées.", allOrders: "Toutes les commandes", noPriceYet: "Non calculé", notFound: "Commande introuvable." },
     title: "Personnel",
     body: "Commandes, disponibilité de la flotte et planning des chauffeurs.",
     calendar: "Calendrier",

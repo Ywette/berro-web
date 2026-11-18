@@ -36,7 +36,7 @@ export async function sendNewOrderEmail(order: StaffOrder, input?: QuoteOrderInp
     };
   }
 
-  const staffOrdersUrl = `${appUrl()}/staff/orders?order=${encodeURIComponent(order.id)}`;
+  const staffOrdersUrl = `${appUrl()}/staff/orders/${encodeURIComponent(order.id)}`;
   const travelType =
     order.travelTypeDetail?.trim()
       ? `${order.travelType ?? "other"}: ${order.travelTypeDetail.trim()}`

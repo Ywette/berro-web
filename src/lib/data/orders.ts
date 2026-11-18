@@ -21,3 +21,17 @@ export async function listOrders(): Promise<StaffOrder[]> {
   const rows = (data ?? []) as OrderRow[];
   return rows.map(staffOrderFromRow);
 }
+
+export async function getOrder(id: string): Promise<StaffOrder | null> {
+  const supabase = createServiceSupabaseClient();
+  if (!supabase) return demoOrders.find((order) => order.id === id) ?? null;
+  if (!id || id.length > 200) return null;
+
+  const { data, error } = await supabase.from(ORDERS_TABLE).select("*").eq("id", id).maybeSingle();
+  if (error) {
+    console.error("[orders] supabase read failed", error.message);
+    throw new Error("Could not load the order.");
+  }
+
+  return data ? staffOrderFromRow(data as OrderRow) : null;
+}

@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { OrderDetailsDialog } from "./order-details-dialog";
 import { OrderManagementDialog } from "./order-management-dialog";
 import { useDictionary } from "@/components/i18n/locale-provider";
 import { intlLocales } from "@/lib/i18n/locale";
@@ -45,18 +43,9 @@ export function OrdersTableClient({
   const dictionary = useDictionary();
   const [orders, setOrders] = useState(initialOrders);
   const [management, setManagement] = useState<{ order: StaffOrder; mode: "edit" | "delete" } | null>(null);
-  const selectedId = useSearchParams().get("order");
-  const selectedOrder = orders.find((order) => order.id === selectedId);
   const locale = intlLocales[dictionary.locale];
   const dateFormat = new Intl.DateTimeFormat(locale, { timeZone: "Europe/Riga" });
   const priceFormat = new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" });
-
-  function selectOrder(id: string | null) {
-    const url = new URL(window.location.href);
-    if (id) url.searchParams.set("order", id);
-    else url.searchParams.delete("order");
-    window.history.replaceState(null, "", url);
-  }
 
   useEffect(() => {
     setOrders(applyAssignmentPatches(mergeOrdersWithSession(initialOrders)));
@@ -69,7 +58,6 @@ export function OrdersTableClient({
     if (next && !management.order.updatedAt) session.unshift(next);
     writeSessionOrders(session);
     if (!next && id.startsWith("demo-order-")) window.sessionStorage.setItem(`hidden-${id}`, "1");
-    if (!next && selectedId === id) selectOrder(null);
     setOrders((current) => applyAssignmentPatches(next
       ? current.map((item) => item.id === id ? next : item)
       : current.filter((item) => item.id !== id)));
@@ -124,10 +112,10 @@ export function OrdersTableClient({
                 return (
                   <tr key={order.id} className="border-t border-line align-top">
                     <td className="px-4 py-3 font-medium text-ivory">
-                      <button type="button" aria-haspopup="dialog" onClick={() => selectOrder(order.id)}
-                        className="cursor-pointer underline decoration-ivory/50 underline-offset-4 hover:decoration-ivory">
+                      <a href={`/staff/orders/${encodeURIComponent(order.id)}`} target="_blank" rel="noopener"
+                        className="underline decoration-ivory/50 underline-offset-4 hover:decoration-ivory">
                         {order.reference}
-                      </button>
+                      </a>
                     </td>
                     <td className="whitespace-nowrap px-4 py-3">{order.createdAt ? dateFormat.format(new Date(order.createdAt)) : "—"}</td>
                     <td className="whitespace-nowrap px-4 py-3">{order.departureOn ? dateFormat.format(new Date(order.departureOn)) : "—"}</td>
@@ -245,11 +233,6 @@ export function OrdersTableClient({
       )}
       {management && <OrderManagementDialog key={management.order.id} {...management}
         onClose={() => setManagement(null)} onSaved={finishManagement} />}
-      {selectedOrder && !management && (
-        <OrderDetailsDialog order={selectedOrder} onClose={() => selectOrder(null)}
-          onManage={(mode) => setManagement({ order: selectedOrder, mode })}
-          vehicle={vehicles.find((item) => item.id === selectedOrder.assignedVehicleId)} />
-      )}
     </div>
   );
 }

@@ -34,7 +34,7 @@ export async function manageOrder(id: string, version: string, form: FormData | 
     destination: edit.destination, requestor_name: edit.requestorName,
     requestor_company: edit.requestorCompany, requestor_email: edit.requestorEmail,
     requestor_phone: edit.requestorPhone, travel_type: edit.travelType,
-    travel_type_detail: edit.travelTypeDetail, updated_at: new Date().toISOString(),
+    travel_type_detail: edit.travelTypeDetail, price: edit.price, updated_at: new Date().toISOString(),
     ...(original.departure_on !== edit.departureOn ? { departure_on: edit.departureOn, departure_at: shiftDate(original.departure_at, edit.departureOn) } : {}),
     ...(original.return_on !== edit.returnOn ? { return_on: edit.returnOn, return_at: shiftDate(original.return_at, edit.returnOn) } : {}),
     ...(changedRoute ? { route_estimate: null } : {}),
