@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { redirect } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
 
 export type SessionUser = {
@@ -23,5 +24,6 @@ export const getOptionalUser = cache(async (): Promise<SessionUser | null> => {
 
 export async function requireUser() {
   const user = await getOptionalUser();
-  return user ?? { id: "guest", email: null };
+  if (!user) redirect("/sign-in");
+  return user;
 }

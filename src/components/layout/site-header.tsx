@@ -1,5 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
+import { Show, UserButton } from "@clerk/nextjs";
 import { HeaderNav, MobileMenu, StaffUserSwitch } from "@/components/layout/header-nav";
 import { LanguageSwitch } from "@/components/layout/language-switch";
 import { getDictionary, getLocale } from "@/lib/i18n/get-dictionary";
@@ -49,6 +51,9 @@ export async function SiteHeader() {
             </Link>
             <LanguageSwitch locale={locale} label={dictionary.nav.language} />
             <StaffUserSwitch label={dictionary.nav.staff} />
+            <Suspense fallback={null}>
+              <Show when="signed-in"><UserButton /></Show>
+            </Suspense>
             <MobileMenu
               publicLinks={publicLinks}
               staffLinks={staffLinks}

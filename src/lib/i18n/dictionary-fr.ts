@@ -563,6 +563,10 @@ export const fr: Dictionary = {
     unavailable: "Indisponible",
   },
   staffDashboard: {
+    orderedOn: "Date de commande",
+    orderEdit: { save: "Enregistrer", remove: "Supprimer la commande", confirm: "Cette action supprimera définitivement la commande", signedOut: "Connectez-vous pour gérer les commandes.", access: "Votre compte doit avoir le rôle de membre du personnel ou d’administrateur pour gérer les commandes.", changed: "Commande modifiée ou supprimée. Actualisez la page.", failed: "Échec de la modification. Réessayez.", invalid: "Vérifiez le trajet, les dates et le nombre de passagers." },
+    orderPrice: "Prix",
+    calculatePrice: "Calculer",
     title: "Personnel",
     body: "Commandes, disponibilité de la flotte et planning des chauffeurs.",
     calendar: "Calendrier",

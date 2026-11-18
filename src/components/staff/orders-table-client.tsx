@@ -1,11 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { OrderDetailsDialog } from "./order-details-dialog";
+import { OrderManagementDialog } from "./order-management-dialog";
 import { useDictionary } from "@/components/i18n/locale-provider";
+import { intlLocales } from "@/lib/i18n/locale";
 import type { FleetVehicle } from "@/lib/content/fleet";
 import {
   mergeOrdersWithSession,
-  removeSessionOrderByReference,
+  readSessionOrders,
+  writeSessionOrders,
 } from "@/lib/orders/session-orders";
 import { formatHeardAboutLabel } from "@/lib/quote-heard-about";
 import { formatTravelTypeLabel } from "@/lib/quote-travel-types";
@@ -25,10 +31,6 @@ const statusTone: Record<OrderStatus, string> = {
 const selectClass =
   "w-full min-w-40 rounded-lg border border-white/15 bg-night px-2 py-1.5 text-sm text-ivory [color-scheme:dark]";
 
-function isSessionOrder(order: StaffOrder) {
-  return order.id.startsWith("session-order-");
-}
-
 export function OrdersTableClient({
   initialOrders,
   employees,
@@ -42,15 +44,36 @@ export function OrdersTableClient({
 }) {
   const dictionary = useDictionary();
   const [orders, setOrders] = useState(initialOrders);
+  const [management, setManagement] = useState<{ order: StaffOrder; mode: "edit" | "delete" } | null>(null);
+  const selectedId = useSearchParams().get("order");
+  const selectedOrder = orders.find((order) => order.id === selectedId);
+  const locale = intlLocales[dictionary.locale];
+  const dateFormat = new Intl.DateTimeFormat(locale, { timeZone: "Europe/Riga" });
+  const priceFormat = new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" });
+
+  function selectOrder(id: string | null) {
+    const url = new URL(window.location.href);
+    if (id) url.searchParams.set("order", id);
+    else url.searchParams.delete("order");
+    window.history.replaceState(null, "", url);
+  }
 
   useEffect(() => {
-    removeSessionOrderByReference("ORD-0417");
     setOrders(applyAssignmentPatches(mergeOrdersWithSession(initialOrders)));
   }, [initialOrders]);
 
-  function onDelete(reference: string) {
-    removeSessionOrderByReference(reference);
-    setOrders(applyAssignmentPatches(mergeOrdersWithSession(initialOrders)));
+  function finishManagement(next: StaffOrder | null) {
+    if (!management) return;
+    const id = management.order.id;
+    const session = readSessionOrders().filter((item) => item.id !== id);
+    if (next && !management.order.updatedAt) session.unshift(next);
+    writeSessionOrders(session);
+    if (!next && id.startsWith("demo-order-")) window.sessionStorage.setItem(`hidden-${id}`, "1");
+    if (!next && selectedId === id) selectOrder(null);
+    setOrders((current) => applyAssignmentPatches(next
+      ? current.map((item) => item.id === id ? next : item)
+      : current.filter((item) => item.id !== id)));
+    setManagement(null);
   }
 
   function onAssignDriver(orderId: string, employeeId: string) {
@@ -78,8 +101,12 @@ export function OrdersTableClient({
             <thead className="bg-white/5 text-mist">
               <tr>
                 <th className="px-4 py-3 font-medium">{dictionary.staffDashboard.orderId}</th>
-                <th className="px-4 py-3 font-medium">{dictionary.staffDashboard.route}</th>
+                <th className="px-4 py-3 font-medium">{dictionary.staffDashboard.orderedOn}</th>
+                <th className="px-4 py-3 font-medium">{dictionary.hero.departureDate}</th>
+                <th className="px-4 py-3 font-medium">{dictionary.quote.travelTypeLabel}</th>
                 <th className="px-4 py-3 font-medium">{dictionary.staffDashboard.passengers}</th>
+                <th className="px-4 py-3 font-medium">{dictionary.staffDashboard.orderPrice}</th>
+                <th className="px-4 py-3 font-medium">{dictionary.staffDashboard.route}</th>
                 <th className="px-4 py-3 font-medium">{dictionary.staffDashboard.requestor}</th>
                 <th className="px-4 py-3 font-medium">{dictionary.staffDashboard.state}</th>
                 <th className="px-4 py-3 font-medium">{dictionary.staffDashboard.assignedDriver}</th>
@@ -96,7 +123,24 @@ export function OrdersTableClient({
 
                 return (
                   <tr key={order.id} className="border-t border-line align-top">
-                    <td className="px-4 py-3 font-medium text-ivory">{order.reference}</td>
+                    <td className="px-4 py-3 font-medium text-ivory">
+                      <button type="button" aria-haspopup="dialog" onClick={() => selectOrder(order.id)}
+                        className="cursor-pointer underline decoration-ivory/50 underline-offset-4 hover:decoration-ivory">
+                        {order.reference}
+                      </button>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3">{order.createdAt ? dateFormat.format(new Date(order.createdAt)) : "—"}</td>
+                    <td className="whitespace-nowrap px-4 py-3">{order.departureOn ? dateFormat.format(new Date(order.departureOn)) : "—"}</td>
+                    <td className="px-4 py-3">{order.travelType ? formatTravelTypeLabel(order.travelType, order.travelTypeDetail, dictionary.quote.travelTypeOptions) : "—"}</td>
+                    <td className="px-4 py-3">{order.passengerCount}</td>
+                    <td className="whitespace-nowrap px-4 py-3">
+                      {order.price != null ? priceFormat.format(order.price) : (
+                        <Link href={`/staff/calculation?order=${encodeURIComponent(order.id)}`}
+                          className="rounded-lg border border-line px-3 py-1.5 text-sm hover:bg-white/10">
+                          {dictionary.staffDashboard.calculatePrice}
+                        </Link>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-ivory/90">
                       <p>
                         {[order.origin, ...(order.stops ?? []).map((stop) => stop.name), order.destination].join(" \u2192 ")}
@@ -123,7 +167,6 @@ export function OrdersTableClient({
                         ) : null}
                       </p>
                     </td>
-                    <td className="px-4 py-3">{order.passengerCount}</td>
                     <td className="px-4 py-3">
                       <p className="text-ivory">{order.requestorName ?? "—"}</p>
                       {order.requestorCompany ? (
@@ -131,16 +174,6 @@ export function OrdersTableClient({
                       ) : null}
                       <p className="mt-1 text-xs text-mist">{order.requestorEmail ?? "—"}</p>
                       <p className="text-xs text-mist">{order.requestorPhone ?? "—"}</p>
-                      {order.travelType ? (
-                        <p className="mt-1 text-xs text-mist">
-                          {dictionary.quote.travelTypeLabel}:{" "}
-                          {formatTravelTypeLabel(
-                            order.travelType,
-                            order.travelTypeDetail,
-                            dictionary.quote.travelTypeOptions,
-                          )}
-                        </p>
-                      ) : null}
                       {order.planDocument ? (
                         <p className="mt-1 text-xs text-mist">
                           {dictionary.pricing.planDocument}: {order.planDocument}
@@ -196,15 +229,12 @@ export function OrdersTableClient({
                       />
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {isSessionOrder(order) ? (
-                        <button
-                          type="button"
-                          onClick={() => onDelete(order.reference)}
-                          className="text-xs text-mist hover:text-rose-200"
-                        >
-                          {dictionary.staffDashboard.deleteOrder}
-                        </button>
-                      ) : null}
+                      <div className="flex gap-3">
+                        <button type="button" aria-haspopup="dialog" onClick={() => setManagement({ order, mode: "edit" })}
+                          className="text-sm underline">{dictionary.staffDashboard.editTransport}</button>
+                        <button type="button" aria-haspopup="dialog" onClick={() => setManagement({ order, mode: "delete" })}
+                          className="text-sm text-rose-200 underline">{dictionary.staffDashboard.deleteOrder}</button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -212,6 +242,13 @@ export function OrdersTableClient({
             </tbody>
           </table>
         </div>
+      )}
+      {management && <OrderManagementDialog key={management.order.id} {...management}
+        onClose={() => setManagement(null)} onSaved={finishManagement} />}
+      {selectedOrder && !management && (
+        <OrderDetailsDialog order={selectedOrder} onClose={() => selectOrder(null)}
+          onManage={(mode) => setManagement({ order: selectedOrder, mode })}
+          vehicle={vehicles.find((item) => item.id === selectedOrder.assignedVehicleId)} />
       )}
     </div>
   );

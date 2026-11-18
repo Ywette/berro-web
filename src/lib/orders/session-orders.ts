@@ -132,9 +132,11 @@ export function removeSessionOrderByReference(reference: string) {
 
 export function mergeOrdersWithSession(base: StaffOrder[]): StaffOrder[] {
   const session = readSessionOrders();
-  if (session.length === 0) return base;
-  const ids = new Set(session.map((order) => order.id));
-  return [...session, ...base.filter((order) => !ids.has(order.id))];
+  const visible = base.filter((order) => !(order.id.startsWith("demo-order-") &&
+    typeof window !== "undefined" && window.sessionStorage.getItem(`hidden-${order.id}`)));
+  const savedIds = new Set(visible.map((order) => order.id));
+  return [...session.filter((order) => !savedIds.has(order.id)), ...visible.map((order) =>
+    order.id.startsWith("demo-order-") ? session.find((item) => item.id === order.id) ?? order : order)];
 }
 
 export function orderFromQuoteInput(input: QuoteOrderInput): StaffOrder {
@@ -154,6 +156,7 @@ export function orderFromQuoteInput(input: QuoteOrderInput): StaffOrder {
   return {
     id,
     reference,
+    createdAt: new Date(stamp).toISOString(),
     origin: (input.pickup || "—").trim() || "—",
     destination: destination || "—",
     returnTo,

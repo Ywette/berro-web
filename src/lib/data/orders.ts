@@ -15,10 +15,9 @@ export async function listOrders(): Promise<StaffOrder[]> {
 
   if (error) {
     console.error("[orders] supabase read failed", error.message);
-    return demoOrders;
+    throw new Error("Could not load orders.");
   }
 
   const rows = (data ?? []) as OrderRow[];
-  if (rows.length === 0) return demoOrders;
   return rows.map(staffOrderFromRow);
 }

@@ -44,7 +44,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-night text-ivory">
-        <ClerkProvider>
+        <ClerkProvider signInUrl="/sign-in" signUpUrl="/sign-up"
+          signInFallbackRedirectUrl="/staff" signUpFallbackRedirectUrl="/staff">
           <Suspense fallback={<div className="min-h-full flex-1" />}>
             <LocalizedApp>{children}</LocalizedApp>
           </Suspense>

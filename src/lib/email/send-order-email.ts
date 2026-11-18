@@ -3,7 +3,13 @@ import type { QuoteOrderInput } from "@/lib/orders/session-orders";
 import type { StaffOrder } from "@/types/dashboard";
 
 function appUrl() {
-  const raw = process.env.APP_URL?.trim() || "http://localhost:3000";
+  const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  const configured = process.env.APP_URL?.trim();
+  const useProductionHost = process.env.VERCEL_ENV === "production" && productionHost &&
+    (!configured || /^https?:\/\/localhost(?=[:/]|$)/i.test(configured));
+  const raw = useProductionHost
+    ? `https://${productionHost}`
+    : configured || "http://localhost:3000";
   return raw.replace(/\/$/, "");
 }
 
@@ -30,7 +36,7 @@ export async function sendNewOrderEmail(order: StaffOrder, input?: QuoteOrderInp
     };
   }
 
-  const staffOrdersUrl = `${appUrl()}/staff/orders`;
+  const staffOrdersUrl = `${appUrl()}/staff/orders?order=${encodeURIComponent(order.id)}`;
   const travelType =
     order.travelTypeDetail?.trim()
       ? `${order.travelType ?? "other"}: ${order.travelTypeDetail.trim()}`
@@ -58,7 +64,7 @@ export async function sendNewOrderEmail(order: StaffOrder, input?: QuoteOrderInp
     `Phone: ${order.requestorPhone || "—"}`,
     order.planDocument ? `Plan document: ${order.planDocument}` : null,
     "",
-    `Open orders: ${staffOrdersUrl}`,
+    `Open order: ${staffOrdersUrl}`,
   ].filter((line) => line !== null);
 
   const resend = new Resend(apiKey);

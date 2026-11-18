@@ -11,6 +11,9 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export type StaffOrder = {
   id: string;
   reference: string;
+  createdAt?: string | null;
+  updatedAt?: string;
+  price?: number | null;
   routeEstimate?: { distanceKm: number; durationMinutes: number | null; mapsUrl: string } | null;
   origin: string;
   destination: string;

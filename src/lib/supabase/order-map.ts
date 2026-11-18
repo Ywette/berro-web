@@ -3,6 +3,9 @@ import { isOrderStatus, type StaffOrder } from "@/types/dashboard";
 export type OrderRow = {
   id: string;
   reference: string;
+  created_at: string;
+  updated_at: string;
+  price?: number | null;
   route_estimate?: StaffOrder["routeEstimate"];
   origin: string;
   destination: string;
@@ -41,6 +44,9 @@ export function staffOrderFromRow(row: OrderRow): StaffOrder {
   return {
     id: row.id,
     reference: row.reference,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    price: row.price ?? null,
     routeEstimate: row.route_estimate,
     origin: row.origin,
     destination: row.destination,
