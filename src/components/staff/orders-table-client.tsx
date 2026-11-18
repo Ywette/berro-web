@@ -1,17 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRef } from "react";
 import Link from "next/link";
-import { OrderDetailsDialog } from "./order-details-dialog";
-import { OrderManagementDialog } from "./order-management-dialog";
 import { useDictionary } from "@/components/i18n/locale-provider";
 import { intlLocales } from "@/lib/i18n/locale";
 import type { FleetVehicle } from "@/lib/content/fleet";
 import {
   mergeOrdersWithSession,
-  readSessionOrders,
-  writeSessionOrders,
 } from "@/lib/orders/session-orders";
 import { formatHeardAboutLabel } from "@/lib/quote-heard-about";
 import { formatTravelTypeLabel } from "@/lib/quote-travel-types";
@@ -44,37 +40,30 @@ export function OrdersTableClient({
 }) {
   const dictionary = useDictionary();
   const [orders, setOrders] = useState(initialOrders);
-  const [management, setManagement] = useState<{ order: StaffOrder; mode: "edit" | "delete" } | null>(null);
-  const selectedId = useSearchParams().get("order");
-  const selectedOrder = orders.find((order) => order.id === selectedId);
+  const table = useRef<HTMLDivElement>(null);
   const locale = intlLocales[dictionary.locale];
   const dateFormat = new Intl.DateTimeFormat(locale, { timeZone: "Europe/Riga" });
   const priceFormat = new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" });
 
-  function selectOrder(id: string | null) {
-    const url = new URL(window.location.href);
-    if (id) url.searchParams.set("order", id);
-    else url.searchParams.delete("order");
-    window.history.replaceState(null, "", url);
+  function rememberPosition() {
+    sessionStorage.setItem("staff-orders-position", JSON.stringify([window.scrollY, table.current?.scrollLeft ?? 0]));
   }
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem("staff-orders-position");
+    if (!stored) return;
+    const frame = requestAnimationFrame(() => {
+      const [top, left] = JSON.parse(stored);
+      window.scrollTo(0, top);
+      if (table.current) table.current.scrollLeft = left;
+      sessionStorage.removeItem("staff-orders-position");
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   useEffect(() => {
     setOrders(applyAssignmentPatches(mergeOrdersWithSession(initialOrders)));
   }, [initialOrders]);
-
-  function finishManagement(next: StaffOrder | null) {
-    if (!management) return;
-    const id = management.order.id;
-    const session = readSessionOrders().filter((item) => item.id !== id);
-    if (next && !management.order.updatedAt) session.unshift(next);
-    writeSessionOrders(session);
-    if (!next && id.startsWith("demo-order-")) window.sessionStorage.setItem(`hidden-${id}`, "1");
-    if (!next && selectedId === id) selectOrder(null);
-    setOrders((current) => applyAssignmentPatches(next
-      ? current.map((item) => item.id === id ? next : item)
-      : current.filter((item) => item.id !== id)));
-    setManagement(null);
-  }
 
   function onAssignDriver(orderId: string, employeeId: string) {
     const employee = employees.find((item) => item.id === employeeId) ?? null;
@@ -96,7 +85,7 @@ export function OrdersTableClient({
           {dictionary.staffDashboard.ordersEmpty}
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-line bg-card">
+        <div ref={table} className="overflow-x-auto rounded-2xl border border-line bg-card">
           <table className="w-full min-w-[960px] text-left text-sm">
             <thead className="bg-white/5 text-mist">
               <tr>
@@ -118,16 +107,17 @@ export function OrdersTableClient({
             </thead>
             <tbody>
               {orders.map((order) => {
+                const orderUrl = `/staff/orders/${encodeURIComponent(order.id)}`;
                 const drivers = employeeChoices("driver", order, employees, orders);
                 const transport = vehicleChoices(order, vehicles, orders);
 
                 return (
                   <tr key={order.id} className="border-t border-line align-top">
                     <td className="px-4 py-3 font-medium text-ivory">
-                      <button type="button" aria-haspopup="dialog" onClick={() => selectOrder(order.id)}
+                      <Link href={orderUrl} onNavigate={rememberPosition}
                         className="cursor-pointer underline decoration-ivory/50 underline-offset-4 hover:decoration-ivory">
                         {order.reference}
-                      </button>
+                      </Link>
                     </td>
                     <td className="whitespace-nowrap px-4 py-3">{order.createdAt ? dateFormat.format(new Date(order.createdAt)) : "—"}</td>
                     <td className="whitespace-nowrap px-4 py-3">{order.departureOn ? dateFormat.format(new Date(order.departureOn)) : "—"}</td>
@@ -230,10 +220,10 @@ export function OrdersTableClient({
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex gap-3">
-                        <button type="button" aria-haspopup="dialog" onClick={() => setManagement({ order, mode: "edit" })}
-                          className="text-sm underline">{dictionary.staffDashboard.editTransport}</button>
-                        <button type="button" aria-haspopup="dialog" onClick={() => setManagement({ order, mode: "delete" })}
-                          className="text-sm text-rose-200 underline">{dictionary.staffDashboard.deleteOrder}</button>
+                        <Link href={orderUrl + "#edit"} onNavigate={rememberPosition}
+                          className="text-sm underline">{dictionary.staffDashboard.editTransport}</Link>
+                        <Link href={orderUrl + "?delete=1"} onNavigate={rememberPosition}
+                          className="text-sm text-rose-200 underline">{dictionary.staffDashboard.deleteOrder}</Link>
                       </div>
                     </td>
                   </tr>
@@ -242,13 +232,6 @@ export function OrdersTableClient({
             </tbody>
           </table>
         </div>
-      )}
-      {management && <OrderManagementDialog key={management.order.id} {...management}
-        onClose={() => setManagement(null)} onSaved={finishManagement} />}
-      {selectedOrder && !management && (
-        <OrderDetailsDialog order={selectedOrder} onClose={() => selectOrder(null)}
-          onManage={(mode) => setManagement({ order: selectedOrder, mode })}
-          vehicle={vehicles.find((item) => item.id === selectedOrder.assignedVehicleId)} />
       )}
     </div>
   );

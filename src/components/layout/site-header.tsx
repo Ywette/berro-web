@@ -1,13 +1,23 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
-import { Show, UserButton } from "@clerk/nextjs";
-import { HeaderNav, MobileMenu, StaffUserSwitch } from "@/components/layout/header-nav";
+import { Show } from "@clerk/nextjs";
+import { AccountMenu, HeaderNav, MobileMenu } from "@/components/layout/header-nav";
 import { LanguageSwitch } from "@/components/layout/language-switch";
 import { getDictionary, getLocale } from "@/lib/i18n/get-dictionary";
 
 export async function SiteHeader() {
   const [dictionary, locale] = await Promise.all([getDictionary(), getLocale()]);
+  const signInLink = (
+    <Link href="/sign-in" aria-label={dictionary.login.signIn} title={dictionary.login.signIn}
+      className="grid h-9 w-9 place-items-center rounded-full border border-white/20 text-ivory hover:border-white/50 focus-visible:outline-2 focus-visible:outline-offset-2">
+      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="8" cy="8" r="4.5" />
+        <path d="m11.2 11.2 9 9m-3-3 2.5-2.5m-5 0 2-2" />
+      </svg>
+    </Link>
+  );
   const publicLinks = [
     { href: "/excursions", label: dictionary.nav.excursions },
     { href: "/autoparks", label: dictionary.nav.fleet },
@@ -50,9 +60,8 @@ export async function SiteHeader() {
               {dictionary.nav.getOffer}
             </Link>
             <LanguageSwitch locale={locale} label={dictionary.nav.language} />
-            <StaffUserSwitch label={dictionary.nav.staff} />
-            <Suspense fallback={null}>
-              <Show when="signed-in"><UserButton /></Show>
+            <Suspense fallback={signInLink}>
+              <Show when="signed-in" fallback={signInLink}><AccountMenu staffLabel={dictionary.nav.staff} /></Show>
             </Suspense>
             <MobileMenu
               publicLinks={publicLinks}
