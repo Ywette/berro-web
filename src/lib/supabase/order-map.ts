@@ -75,7 +75,7 @@ export function staffOrderFromRow(row: OrderRow): StaffOrder {
     completedStatuses: Array.from(new Set([
       "new" as const,
       ...(Array.isArray(row.completed_statuses) ? row.completed_statuses.filter(isOrderStatus) : []),
-      ...(isOrderStatus(row.status) ? [row.status] : []),
+      ...(isOrderStatus(row.status) && row.status !== "cancelled" ? [row.status] : []),
     ])),
     departureOn: row.departure_on,
     departureAt: row.departure_at ?? null,

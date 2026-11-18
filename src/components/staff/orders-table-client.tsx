@@ -20,6 +20,7 @@ function StageIcon({ status }: { status: OrderStatus }) {
     sent: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m4 7 8 6 8-6" /></>,
     approved: <path d="m4 12 5 5L20 6" />,
     paid: <><rect x="2.5" y="6" width="19" height="12" rx="2" /><circle cx="12" cy="12" r="2.5" /><path d="M5 9h1m12 6h1" /></>,
+    cancelled: <path d="M6 6l12 12M18 6 6 18" />,
   };
   return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">{paths[status]}</svg>;
 }
@@ -86,6 +87,7 @@ export function OrdersTableClient({ initialOrders, demoNote }: {
   function badge(order: StaffOrder) {
     const completed = new Set(["new", order.status, ...(order.completedStatuses ?? [])]);
     return <div className="flex flex-wrap gap-1" aria-label={staff.state}>
+      {order.status === "cancelled" && <span className="rounded-lg border border-rose-300/40 bg-rose-400/10 px-2 py-1 text-xs text-rose-200">{staff.orderStates.cancelled}</span>}
       {stageOrder.map((stage) => {
         const active = completed.has(stage);
         const stageName = stage === "sent" ? staff.stageSent : staff.orderStates[stage];

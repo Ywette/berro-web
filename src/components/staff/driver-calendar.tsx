@@ -52,6 +52,7 @@ export function DriverCalendar({ drivers, orders, locale, labels }: DriverCalend
     const map = new Map<string, { driverId: string; driverName: string; reference: string }[]>();
 
     for (const order of orders) {
+      if (order.status === "cancelled") continue;
       if (!order.assignedDriverId || !order.departureOn) {
         continue;
       }

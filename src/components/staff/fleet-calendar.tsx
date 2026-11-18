@@ -67,6 +67,7 @@ export function FleetCalendar({ vehicles, orders, locale, labels }: FleetCalenda
     const visibleIds = new Set(visibleVehicles.map((vehicle) => vehicle.id));
 
     for (const order of orders) {
+      if (order.status === "cancelled") continue;
       if (!order.assignedVehicleId || !order.departureOn) continue;
       if (!visibleIds.has(order.assignedVehicleId)) continue;
 

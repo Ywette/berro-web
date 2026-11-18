@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { useDictionary } from "@/components/i18n/locale-provider";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { manageOrder, updateOrderStatus } from "@/actions/manage-orders";
+import { manageOrder, setOrderCancelled, updateOrderAssignments, updateOrderStatus } from "@/actions/manage-orders";
 import { OrderEditor } from "./order-editor";
 import { OrderCalculationForm } from "./order-calculation";
 import { mergeOrdersWithSession, readSessionOrders, writeSessionOrders } from "@/lib/orders/session-orders";
-import { applyAssignmentPatches, assignEmployee, assignTransport } from "@/lib/staff/assignments";
+import { applyAssignmentPatches, assignEmployee, assignTransport, clearAssignmentPatch } from "@/lib/staff/assignments";
 import { applyLocalCalculations, removeLocalCalculation } from "@/lib/orders/local-calculations";
 import type { FleetVehicle } from "@/lib/content/fleet";
 import type { Employee } from "@/types/staff";
@@ -20,6 +20,12 @@ import { formatTripDuration, tripDurationDays } from "@/lib/orders/trip-duration
 import { formatDate, formatRigaTimestamp } from "@/lib/content/format-date";
 import { formatDuration } from "@/lib/quote";
 import { formatRouteAddress } from "@/lib/orders/format-address";
+import { toggleOrderStatus } from "@/lib/orders/statuses";
+
+type Assignment = { driverId: string | null; driverName: string | null; vehicleId: string | null };
+function assignmentOf(order: StaffOrder): Assignment {
+  return { driverId: order.assignedDriverId, driverName: order.assignedDriverName, vehicleId: order.assignedVehicleId };
+}
 
 export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, orders, confirmDelete, backUrl }: {
   id: string;
@@ -42,15 +48,24 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
   const [calculating, setCalculating] = useState(false);
   const [calculationOpened, setCalculationOpened] = useState(false);
   const [calculationLocked, setCalculationLocked] = useState(Boolean(initialOrder?.calculation));
+  const [calculationDirty, setCalculationDirty] = useState(false);
   const [error, setError] = useState("");
   const [statusBusy, setStatusBusy] = useState(false);
   const [statusError, setStatusError] = useState("");
+  const [assignment, setAssignment] = useState<Assignment | null>(null);
+  const [savedAssignment, setSavedAssignment] = useState<Assignment | null>(null);
+  const [assignmentBusy, setAssignmentBusy] = useState(false);
+  const [assignmentError, setAssignmentError] = useState("");
+  const assignmentChanged = Boolean(assignment && savedAssignment &&
+    (assignment.driverId !== savedAssignment.driverId || assignment.vehicleId !== savedAssignment.vehicleId));
   const draftKey = `berro:order-draft:${userId}:${id}`;
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       const merged = mergeOrdersWithSession(initialOrder ? [initialOrder] : []);
       const current = applyLocalCalculations(applyAssignmentPatches(merged)).find((item) => item.id === id) ?? null;
       setOrder(current);
+      setAssignment(current ? assignmentOf(current) : null);
+      setSavedAssignment(current ? assignmentOf(current) : null);
       setCalculationLocked(Boolean(current?.calculation));
       setLoaded(true);
     });
@@ -79,6 +94,27 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
       router.replace(url.pathname + url.search, { scroll: false });
     }
   }
+  async function saveAssignment(next: StaffOrder) {
+    if (!assignment || !assignmentChanged || assignmentBusy) return;
+    setAssignmentBusy(true);
+    setAssignmentError("");
+    try {
+      let updated: StaffOrder;
+      if (next.updatedAt) {
+        const result = await updateOrderAssignments(next.id, next.updatedAt, assignment.driverId, assignment.driverName, assignment.vehicleId);
+        if (result.error) { setAssignmentError(staff.orderEdit[result.error]); return; }
+        updated = result.order;
+        try { clearAssignmentPatch(next.id); } catch { /* The database update has already succeeded. */ }
+      } else {
+        const employee = employees.find((item) => item.id === assignment.driverId) ?? null;
+        updated = assignTransport(assignEmployee([next], next.id, "driver", employee), next.id, assignment.vehicleId)[0];
+        writeSessionOrders([updated, ...readSessionOrders().filter((item) => item.id !== next.id)]);
+      }
+      setSavedAssignment(assignment);
+      setOrder(applyLocalCalculations([updated])[0]);
+    } catch { setAssignmentError(staff.orderEdit.failed); }
+    finally { setAssignmentBusy(false); }
+  }
   function saved(next: StaffOrder) {
     const session = readSessionOrders().filter((item) => item.id !== id);
     if (!next.updatedAt) session.unshift(next);
@@ -86,9 +122,10 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
     setOrder(applyLocalCalculations(applyAssignmentPatches([next]))[0]);
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
     setEditing(false);
+    void saveAssignment(next);
   }
   async function changeStatus(status: OrderStatus) {
-    if (!order || statusBusy || status === order.status) return;
+    if (!order || statusBusy) return;
     setStatusBusy(true);
     setStatusError("");
     try {
@@ -111,9 +148,7 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
           // An existing draft keeps its original version if browser storage is unavailable.
         }
       } else {
-        next = { ...order, status, completedStatuses: Array.from(new Set([
-          "new", ...(order.completedStatuses ?? []), order.status, status,
-        ])) };
+        next = { ...order, ...toggleOrderStatus(order.status, order.completedStatuses ?? [], status) };
         writeSessionOrders([next, ...readSessionOrders().filter((item) => item.id !== order.id)]);
       }
       setOrder(applyLocalCalculations(applyAssignmentPatches([next]))[0]);
@@ -122,6 +157,42 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
     } finally {
       setStatusBusy(false);
     }
+  }
+  async function changeCancellation() {
+    if (!order || statusBusy || assignmentBusy) return;
+    setStatusBusy(true);
+    setStatusError("");
+    try {
+      const cancel = order.status !== "cancelled";
+      let next: StaffOrder;
+      if (order.updatedAt) {
+        const result = await setOrderCancelled(order.id, order.updatedAt, cancel);
+        if (result.error) { setStatusError(staff.orderEdit[result.error]); return; }
+        next = result.order;
+        try {
+          const raw = sessionStorage.getItem(draftKey);
+          if (raw) {
+            const draft = JSON.parse(raw);
+            if (draft.version === order.updatedAt) {
+              draft.version = next.updatedAt;
+              if (draft.fields) delete draft.fields.status;
+              sessionStorage.setItem(draftKey, JSON.stringify(draft));
+            }
+          }
+        } catch { /* Keep the original draft if storage is unavailable. */ }
+      } else {
+        const stages = (order.completedStatuses ?? []).filter((stage) => stage !== "cancelled");
+        if (cancel && order.status !== "cancelled") {
+          const index = stages.indexOf(order.status);
+          if (index >= 0) stages.splice(index, 1);
+          stages.push(order.status);
+        }
+        next = { ...order, completedStatuses: stages, status: cancel ? "cancelled" : stages.at(-1) ?? "new" };
+        writeSessionOrders([next, ...readSessionOrders().filter((item) => item.id !== order.id)]);
+      }
+      setOrder(applyLocalCalculations(applyAssignmentPatches([next]))[0]);
+    } catch { setStatusError(staff.orderEdit.failed); }
+    finally { setStatusBusy(false); }
   }
   async function remove() {
     if (!order || busy) return;
@@ -141,12 +212,13 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
   }
   const back = <Link href={backUrl} className="text-sm underline">← {staff.ordersTitle}</Link>;
   if (!order) return <section>{back}<p className="mt-4">{loaded ? staff.orderMissing : dictionary.employees.loading}</p></section>;
-  const vehicle = vehicles.find((item) => item.id === order.assignedVehicleId);
+  const displayOrder = assignment ? { ...order, assignedDriverId: assignment.driverId, assignedDriverName: assignment.driverName, assignedVehicleId: assignment.vehicleId } : order;
+  const vehicle = vehicles.find((item) => item.id === displayOrder.assignedVehicleId);
   const estimate = order.routeEstimate;
   const duration = order.tripDurationDays ?? tripDurationDays(order.departureOn, order.returnOn);
   const assignedOrders = loaded ? applyAssignmentPatches(mergeOrdersWithSession(orders)) : orders;
-  const drivers = employeeChoices("driver", order, employees, assignedOrders);
-  const availableVehicles = vehicleChoices(order, vehicles, assignedOrders);
+  const drivers = employeeChoices("driver", displayOrder, employees, assignedOrders);
+  const availableVehicles = vehicleChoices(displayOrder, vehicles, assignedOrders);
   const contactDetails = [
     [staff.requestor, order.requestorName],
     [dictionary.hero.companyName, order.requestorCompany],
@@ -204,15 +276,16 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
                   <div>
                     <dt><label htmlFor="order-driver" className="text-sm text-mist">{staff.orderDriver}</label></dt>
                     <dd>
-                    <select id="order-driver" value={order.assignedDriverId ?? ""} disabled={!loaded}
+                    <select id="order-driver" value={assignment?.driverId ?? ""} disabled={!loaded || assignmentBusy || statusBusy}
                       onChange={(event) => {
                         const employee = employees.find((item) => item.id === event.target.value) ?? null;
-                        setOrder(assignEmployee([order], order.id, "driver", employee)[0]);
+                        setAssignment((current) => current && { ...current, driverId: employee?.id ?? null, driverName: employee?.fullName ?? null });
+                        setAssignmentError("");
                       }}
                       className="mt-1 block w-full rounded-lg border border-white/15 bg-night px-3 py-2 text-sm text-ivory [color-scheme:dark]">
                       <option value="">{staff.unassigned}</option>
-                      {order.assignedDriverId && !drivers.some((item) => item.id === order.assignedDriverId) && (
-                        <option value={order.assignedDriverId}>{order.assignedDriverName || order.assignedDriverId}</option>
+                      {assignment?.driverId && !drivers.some((item) => item.id === assignment.driverId) && (
+                        <option value={assignment.driverId}>{assignment.driverName || assignment.driverId}</option>
                       )}
                       {drivers.map((item) => <option key={item.id} value={item.id}>{item.fullName}</option>)}
                     </select>
@@ -221,12 +294,12 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
                   <div>
                     <dt><label htmlFor="order-vehicle" className="text-sm text-mist">{staff.orderTransport}</label></dt>
                     <dd>
-                    <select id="order-vehicle" value={order.assignedVehicleId ?? ""} disabled={!loaded}
-                      onChange={(event) => setOrder(assignTransport([order], order.id, event.target.value || null)[0])}
+                    <select id="order-vehicle" value={assignment?.vehicleId ?? ""} disabled={!loaded || assignmentBusy || statusBusy}
+                      onChange={(event) => { const value = event.target.value || null; setAssignment((current) => current && { ...current, vehicleId: value }); setAssignmentError(""); }}
                       className="mt-1 block w-full rounded-lg border border-white/15 bg-night px-3 py-2 text-sm text-ivory [color-scheme:dark]">
                       <option value="">{staff.unassigned}</option>
-                      {order.assignedVehicleId && !availableVehicles.some((item) => item.id === order.assignedVehicleId) && (
-                        <option value={order.assignedVehicleId}>{vehicle ? vehicleLabel(vehicle) : order.assignedVehicleId}</option>
+                      {assignment?.vehicleId && !availableVehicles.some((item) => item.id === assignment.vehicleId) && (
+                        <option value={assignment.vehicleId}>{vehicle ? vehicleLabel(vehicle) : assignment.vehicleId}</option>
                       )}
                       {availableVehicles.map((item) => <option key={item.id} value={item.id}>{vehicleLabel(item)} · {item.passengers}</option>)}
                     </select>
@@ -264,14 +337,14 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
             </button>
           </h2>
           <div id="order-calculation" hidden={!calculating} className={calculating ? undefined : "!hidden"}>
-            {calculationOpened && <OrderCalculationForm key={order.id} order={order} onSaved={saved} onLockChange={setCalculationLocked} />}
+            {calculationOpened && <OrderCalculationForm key={order.id} order={order} onSaved={saved} onLockChange={setCalculationLocked} onDirtyChange={setCalculationDirty} />}
           </div>
         </section>
         <div className="flex flex-wrap gap-2" role="group" aria-label={staff.state}>
           {(["transport", "calculated", "sent", "approved", "paid"] as const).map((status) => {
             const completed = order.status === status || (order.completedStatuses ?? []).includes(status);
             return (
-            <button key={status} type="button" disabled={statusBusy} onClick={() => changeStatus(status)}
+            <button key={status} type="button" disabled={statusBusy || assignmentBusy || order.status === "cancelled"} onClick={() => changeStatus(status)}
               aria-pressed={completed}
               className={`min-h-10 rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50 ${completed
                 ? "border-emerald-400/30 bg-emerald-400/15 text-emerald-300" : "border-white/10 bg-white/5 text-gray-400 hover:bg-white/10"}`}>
@@ -282,8 +355,12 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
         </div>
         {statusError && <p role="alert" className="text-sm text-rose-200">{statusError}</p>}
         <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
-          <button type="button" className="mr-auto rounded-lg border border-rose-300/40 px-4 py-2 text-sm font-medium text-rose-200 hover:bg-rose-300/10" onClick={() => ref.current?.showModal()}>
+          <button type="button" className="rounded-lg border border-rose-300/40 px-4 py-2 text-sm font-medium text-rose-200 hover:bg-rose-300/10" onClick={() => ref.current?.showModal()}>
             {staff.orderEdit.remove}
+          </button>
+          <button type="button" disabled={statusBusy || assignmentBusy} onClick={() => void changeCancellation()}
+            className="mr-auto rounded-lg border border-rose-300/40 px-4 py-2 text-sm font-medium text-rose-200 hover:bg-rose-300/10 disabled:opacity-50">
+            {order.status === "cancelled" ? staff.restoreOrder : staff.cancelOrder}
           </button>
           <button type="button" onClick={() => {
             const next = !editing;
@@ -293,12 +370,14 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
           }} className="rounded-lg border border-white/25 px-4 py-2 text-sm font-medium text-ivory hover:bg-white/10" aria-expanded={editing} aria-controls="order-edit">
             {editing ? staff.fleetFormClose : staff.editTransport}
           </button>
-          <button type="submit" form={editing ? "edit" : "order-calculation-form"}
-            disabled={!editing && (!calculating || calculationLocked)}
+          <button type={editing || (calculating && !calculationLocked && (!assignmentChanged || calculationDirty)) ? "submit" : "button"} form={editing ? "edit" : "order-calculation-form"}
+            onClick={() => { if (!editing && (!calculating || calculationLocked || (assignmentChanged && !calculationDirty))) void saveAssignment(order); }}
+            disabled={assignmentBusy || statusBusy || (!assignmentChanged && !editing && (!calculating || calculationLocked))}
             className="rounded-lg bg-burgundy px-4 py-2 text-sm font-medium text-white hover:bg-burgundy/80 disabled:opacity-50">
             {staff.saveOrderChanges}
           </button>
         </div>
+        {assignmentError && <p role="alert" className="text-sm text-rose-200">{assignmentError}</p>}
         <dialog ref={ref} aria-labelledby="delete-order-title" onCancel={(event) => { event.preventDefault(); if (!busy) closeDelete(); }}
           className="m-auto w-[min(32rem,94vw)] space-y-5 rounded-xl border border-line bg-card p-6 text-ivory backdrop:bg-black/70">
           <h2 id="delete-order-title" className="text-lg font-semibold">{staff.orderEdit.remove}</h2>

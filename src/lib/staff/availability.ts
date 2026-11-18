@@ -34,6 +34,7 @@ function orderTimes(order: StaffOrder): DateSpan | null {
 }
 
 function rangeOverlapsOrder(span: DateSpan, order: StaffOrder): boolean {
+  if (order.status === "cancelled") return false;
   const days = orderSpan(order);
   if (!days || !rangesOverlap(days, span)) return false;
   const trip = orderTimes(order);
@@ -45,6 +46,7 @@ function rangeOverlapsOrder(span: DateSpan, order: StaffOrder): boolean {
 }
 
 function ordersOverlap(left: StaffOrder, right: StaffOrder): boolean {
+  if (left.status === "cancelled" || right.status === "cancelled") return false;
   const leftDays = orderSpan(left);
   const rightDays = orderSpan(right);
   if (!leftDays || !rightDays || !rangesOverlap(leftDays, rightDays)) return false;

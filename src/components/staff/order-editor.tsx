@@ -6,6 +6,7 @@ import { useDictionary } from "@/components/i18n/locale-provider";
 import { readOrderEdit } from "@/lib/orders/edit";
 import { isQuoteTravelType, quoteTravelTypes } from "@/lib/quote-travel-types";
 import { ORDER_STATUSES, type StaffOrder } from "@/types/dashboard";
+import { setOrderStatus } from "@/lib/orders/statuses";
 
 export function OrderEditor({ order, draftKey, onSaved }: {
   order: StaffOrder;
@@ -87,9 +88,7 @@ export function OrderEditor({ order, draftKey, onSaved }: {
       } else {
         const edit = readOrderEdit(form);
         if (!edit) setError(labels.invalid);
-        else { discard(); onSaved({ ...order, ...edit, completedStatuses: Array.from(new Set([
-          "new", ...(order.completedStatuses ?? []), order.status, edit.status,
-        ])), routeEstimate: edit.origin === order.origin &&
+        else { discard(); onSaved({ ...order, ...edit, ...setOrderStatus(order.status, order.completedStatuses ?? [], edit.status), routeEstimate: edit.origin === order.origin &&
           edit.destination === order.destination ? order.routeEstimate : null }); }
       }
     } catch {
@@ -120,7 +119,7 @@ export function OrderEditor({ order, draftKey, onSaved }: {
                 required={type === "number"} min={type === "number" ? 1 : undefined} /></label>
             ))}
             <label>{staff.state}<select name="status" className={inputClass} value={draft.status ?? order.status} onChange={(e) => change("status", e.target.value)}>
-              {ORDER_STATUSES.map((status) => <option key={status} value={status}>{staff.orderStates[status]}</option>)}
+              {ORDER_STATUSES.filter((status) => order.status === "cancelled" ? status === "cancelled" : status !== "cancelled").map((status) => <option key={status} value={status}>{staff.orderStates[status]}</option>)}
             </select></label>
             <label>{dictionary.quote.travelTypeLabel}<select className={inputClass} name="travelType" value={purpose} onChange={(e) => change("travelType", e.target.value)}>
               <option value="">—</option>

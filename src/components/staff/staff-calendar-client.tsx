@@ -194,6 +194,7 @@ export function StaffCalendarClient({
     const map = new Map<string, CalendarAssignment[]>();
 
     for (const order of assignedOrders) {
+      if (order.status === "cancelled") continue;
       if (!order.departureOn) continue;
       const end = order.returnOn ?? order.departureOn;
 

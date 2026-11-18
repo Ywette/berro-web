@@ -6,10 +6,11 @@ import { calculationTotal } from "@/lib/orders/calculation";
 import { saveLocalCalculation } from "@/lib/orders/local-calculations";
 import type { OrderCalculation, StaffOrder } from "@/types/dashboard";
 
-export function OrderCalculationForm({ order, onSaved, onLockChange }: {
+export function OrderCalculationForm({ order, onSaved, onLockChange, onDirtyChange }: {
   order: StaffOrder;
   onSaved: (order: StaffOrder) => void;
   onLockChange: (locked: boolean) => void;
+  onDirtyChange: (dirty: boolean) => void;
 }) {
   const dictionary = useDictionary();
   const labels = dictionary.staffDashboard.orderCalculation;
@@ -45,6 +46,7 @@ export function OrderCalculationForm({ order, onSaved, onLockChange }: {
       onSaved(updated);
       setLocked(true);
       onLockChange(true);
+      onDirtyChange(false);
     } catch {
       setError(dictionary.staffDashboard.orderEdit.failed);
     } finally {
@@ -57,7 +59,7 @@ export function OrderCalculationForm({ order, onSaved, onLockChange }: {
         {fields.map(([name, label]) => (
           <label key={name} className="text-sm">{label}
             <input type="number" min="0" max="1000000" step="any" required value={values[name]}
-              onChange={(event) => setValues((current) => ({ ...current, [name]: event.target.value }))}
+              onChange={(event) => { setValues((current) => ({ ...current, [name]: event.target.value })); onDirtyChange(true); }}
               className="mt-1 block w-full rounded-lg border border-line bg-night p-2 text-ivory disabled:opacity-70" />
           </label>
         ))}

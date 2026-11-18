@@ -79,6 +79,12 @@ function remember(order: StaffOrder) {
   writePatches(patches);
 }
 
+export function clearAssignmentPatch(orderId: string) {
+  const patches = readPatches();
+  delete patches[orderId];
+  writePatches(patches);
+}
+
 function readPatches(): Record<string, AssignmentPatch> {
   if (typeof window === "undefined") return {};
   try {
