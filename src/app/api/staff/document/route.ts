@@ -1,9 +1,10 @@
-import { requireUser } from "@/lib/auth/session";
+import { staffApiGuard } from "@/lib/auth/session";
 import { getCompanyDocumentById } from "@/lib/documents/store";
 import { createCompanyDocumentSignedUrl } from "@/lib/documents/upload";
 
 export async function GET(request: Request) {
-  await requireUser();
+  const denied = await staffApiGuard();
+  if (denied) return denied;
 
   const id = new URL(request.url).searchParams.get("id")?.trim() ?? "";
   if (!id) {

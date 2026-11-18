@@ -1,11 +1,12 @@
-import { requireUser } from "@/lib/auth/session";
+import { staffApiGuard } from "@/lib/auth/session";
 import {
   ExcursionPhotoUploadException,
   uploadExcursionPhoto,
 } from "@/lib/excursions/upload-photo";
 
 export async function POST(request: Request) {
-  await requireUser();
+  const denied = await staffApiGuard();
+  if (denied) return denied;
 
   try {
     const formData = await request.formData();

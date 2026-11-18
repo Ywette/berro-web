@@ -515,6 +515,8 @@ export const en = {
     linkExpired: "That sign-in link is no longer valid. Enter your email and password.",
     missing: "Email and password are required.",
     notConfigured: "Clerk is not configured yet. Add the publishable and secret keys to .env.local.",
+    noAccessTitle: "No staff access",
+    noAccessBody: "You are signed in, but this account is not on the staff list. Ask an administrator to add it, or sign out and use your staff account.",
   },
   employees: {
     title: "Employees",
@@ -1406,6 +1408,8 @@ export const lv: Dictionary = {
     linkExpired: "Šī pieteikšanās saite vairs neder. Ievadiet e-pastu un paroli.",
     missing: "Jāievada e-pasts un parole.",
     notConfigured: "Clerk vēl nav konfigurēts. Pievienojiet atslēgas failā .env.local.",
+    noAccessTitle: "Nav piekļuves personāla panelim",
+    noAccessBody: "Jūs esat pieslēdzies, bet šis konts nav personāla sarakstā. Lūdziet administratoram to pievienot vai izejiet un pieslēdzieties ar personāla kontu.",
   },
   employees: {
     title: "Darbinieki",

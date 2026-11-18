@@ -505,6 +505,8 @@ export const fr: Dictionary = {
     linkExpired: "Ce lien de connexion n'est plus valide. Saisissez e-mail et mot de passe.",
     missing: "L'e-mail et le mot de passe sont requis.",
     notConfigured: "Clerk n'est pas encore configuré. Ajoutez les clés dans .env.local.",
+    noAccessTitle: "Accès personnel refusé",
+    noAccessBody: "Vous êtes connecté, mais ce compte ne figure pas dans la liste du personnel. Demandez à un administrateur de l'ajouter, ou déconnectez-vous et utilisez votre compte personnel.",
   },
   employees: {
     title: "Employés",

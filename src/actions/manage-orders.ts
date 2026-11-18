@@ -1,16 +1,15 @@
 "use server";
 
-import { currentUser } from "@clerk/nextjs/server";
+import { getOptionalUser } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
 import { readOrderEdit } from "@/lib/orders/edit";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 import { staffOrderFromRow, type OrderRow } from "@/lib/supabase/order-map";
 
 export async function manageOrder(id: string, version: string, form: FormData | null) {
-  const user = await currentUser();
+  const user = await getOptionalUser();
   if (!user) return { error: "signedOut" } as const;
-  const role = user.publicMetadata.role;
-  if (role !== "staff" && role !== "admin") return { error: "access" } as const;
+  if (!user.isStaff) return { error: "access" } as const;
   const db = createServiceSupabaseClient();
   if (!db || !id || !version) return { error: "failed" } as const;
   if (form === null) {

@@ -31,6 +31,8 @@ src/
 
 Public pages are `/`, `/contact`, `/blog`, and `/excursions`. `/staff`, `/employees`, and `/drivers` require a signed-in Clerk user. The contact form does not.
 
+Signing in is not enough to open staff pages. The account also needs Clerk `publicMetadata.role` set to `staff` or `admin` (Clerk Dashboard → Users → user → Metadata), or a verified email listed in `STAFF_EMAILS`. Everyone else is sent to `/no-access`, and staff API routes answer 403.
+
 ## Local setup
 
 1. Copy environment variables.
