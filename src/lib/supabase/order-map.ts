@@ -3,6 +3,7 @@ import { isOrderStatus, type StaffOrder } from "@/types/dashboard";
 export type OrderRow = {
   id: string;
   reference: string;
+  route_estimate?: StaffOrder["routeEstimate"];
   origin: string;
   destination: string;
   return_to: string | null;
@@ -40,6 +41,7 @@ export function staffOrderFromRow(row: OrderRow): StaffOrder {
   return {
     id: row.id,
     reference: row.reference,
+    routeEstimate: row.route_estimate,
     origin: row.origin,
     destination: row.destination,
     returnTo: row.return_to,

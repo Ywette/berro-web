@@ -12,7 +12,7 @@ function ordersInbox() {
 }
 
 function routeLine(order: StaffOrder) {
-  const parts = [order.origin, order.destination];
+  const parts = [order.origin, ...(order.stops ?? []).map((stop) => stop.name), order.destination];
   if (order.returnTo) parts.push(order.returnTo);
   return parts.join(" → ");
 }
@@ -47,6 +47,7 @@ export async function sendNewOrderEmail(order: StaffOrder, input?: QuoteOrderInp
     excursion ? `Excursion: ${excursion}` : null,
     `Travel type: ${travelType}`,
     `Route: ${routeLine(order)}`,
+    order.routeEstimate ? `Google Maps driving estimate: ${order.routeEstimate.distanceKm} km${order.routeEstimate.durationMinutes === null ? "" : `, ${order.routeEstimate.durationMinutes} min`}\n${order.routeEstimate.mapsUrl}` : "Route estimate needs review",
     `Departure: ${order.departureOn || input?.departure || "—"}`,
     `Return: ${order.returnOn || input?.returnAt || "—"}`,
     `Passengers: ${order.passengerCount || "—"}`,

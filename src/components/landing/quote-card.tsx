@@ -1,12 +1,12 @@
 "use client";
 
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDictionary } from "@/components/i18n/locale-provider";
 import { DateTimeInput } from "@/components/landing/datetime-field";
 import { PlaceField } from "@/components/landing/place-field";
 import { QuoteSummaryDialog } from "@/components/landing/quote-summary-dialog";
+import { sanitizeContactPhone } from "@/lib/contact/validation";
 import { parsePlanDocument } from "@/lib/plan-document/client";
 import type { ExtractedPlanFields } from "@/lib/plan-document/types";
 import {
@@ -304,12 +304,17 @@ export function QuoteCard({
         <input
           name="phone"
           type="tel"
+          inputMode="tel"
           autoComplete="tel"
           value={phone}
-          placeholder={dictionary.quote.phone}
+          placeholder={dictionary.contact.phonePlaceholder}
           aria-label={dictionary.quote.phone}
-          onChange={(event) => setPhone(event.target.value)}
-          className={controlClass(false)}
+          aria-invalid={invalid.has("phone") || undefined}
+          onChange={(event) => {
+            setPhone(sanitizeContactPhone(event.target.value));
+            clearInvalid("phone");
+          }}
+          className={controlClass(invalid.has("phone"))}
         />
       </div>
 
@@ -405,17 +410,13 @@ export function QuoteCard({
 
       {invalid.size > 0 ? (
         <p role="alert" className="mt-3 text-xs text-red-300">
-          {dictionary.quote.missingFields}
+          {invalid.has("phone")
+            ? dictionary.contact.phoneError
+            : dictionary.quote.missingFields}
         </p>
       ) : null}
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <Link
-          href="/plan"
-          className="inline-flex h-10 items-center justify-center rounded-md border border-white/30 px-3 text-sm font-medium text-ivory hover:border-white/60 hover:bg-white/5"
-        >
-          {dictionary.quote.planner}
-        </Link>
+      <div className="mt-4 grid">
         <button
           type="submit"
           disabled={reading}

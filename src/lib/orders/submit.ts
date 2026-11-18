@@ -1,3 +1,8 @@
+import {
+  isValidContactEmail,
+  isValidContactPhone,
+  sanitizeContactPhone,
+} from "@/lib/contact/validation";
 import { insertOrder } from "@/lib/orders/store";
 import type { QuoteOrderInput, QuoteTripMode } from "@/lib/orders/session-orders";
 import type { StaffOrder } from "@/types/dashboard";
@@ -15,6 +20,10 @@ export async function submitQuoteOrderFromFormData(
   formData: FormData,
 ): Promise<SubmitQuoteOrderState> {
   const tripMode = text(formData, "tripMode");
+  const rawPhone = text(formData, "phone");
+  const phone = sanitizeContactPhone(rawPhone ?? "").trim() || undefined;
+  const email = text(formData, "email")?.trim() || undefined;
+
   const input: QuoteOrderInput = {
     trip: text(formData, "trip"),
     tripMode:
@@ -23,12 +32,14 @@ export async function submitQuoteOrderFromFormData(
         : tripMode,
     name: text(formData, "name"),
     company: text(formData, "company"),
-    email: text(formData, "email"),
-    phone: text(formData, "phone"),
+    email,
+    phone,
     heardAbout: text(formData, "heardAbout"),
     heardAboutDetail: text(formData, "heardAboutDetail"),
     travelType: text(formData, "travelType"),
     travelTypeDetail: text(formData, "travelTypeDetail"),
+    pickupPlace: text(formData, "pickupPlace"),
+    dropoffPlace: text(formData, "dropoffPlace"),
     pickup: text(formData, "pickup"),
     dropoff: text(formData, "dropoff"),
     departure: text(formData, "departure"),
@@ -49,8 +60,17 @@ export async function submitQuoteOrderFromFormData(
   if (!Number.isFinite(passengers) || passengers < 1) {
     return { ok: false, error: "Passenger count is required." };
   }
-  if (!input.pickup?.trim() || !input.dropoff?.trim()) {
-    return { ok: false, error: "Pickup and destination are required." };
+  if (!input.pickup?.trim() && !input.dropoff?.trim()) {
+    return { ok: false, error: "Enter a pickup or destination." };
+  }
+  if (!email && !phone) {
+    return { ok: false, error: "Email or phone is required." };
+  }
+  if (email && !isValidContactEmail(email)) {
+    return { ok: false, error: "Enter a valid email address." };
+  }
+  if (rawPhone?.trim() && !isValidContactPhone(phone ?? "", { required: true })) {
+    return { ok: false, error: "Enter a phone number using digits only." };
   }
 
   return insertOrder(input, planFile);

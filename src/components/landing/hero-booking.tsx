@@ -42,16 +42,21 @@ import {
 import type { QuoteTripKind } from "@/lib/quote-trips";
 import type { QuoteTravelType } from "@/lib/quote-travel-types";
 
+import { PlaceField } from "@/components/landing/place-field";
+
 type ServiceId = "bus" | "minibus" | "transfer";
 
 type HeroStop = {
   id: string;
   place: string;
+  placeId?: string;
 };
 
 type HeroTripDraft = {
   passengers: PassengerCounts;
   pickup: string;
+  pickupPlace?: string;
+  dropoffPlace?: string;
   dropoff: string;
   tripMode: QuoteTripMode;
   departureAt: string;
@@ -288,7 +293,7 @@ export function HeroBooking({
       if (matched) setService(matched);
     }
 
-    setDraft((current) => ({ ...current, ...patch }));
+    setDraft((current) => ({ ...current, ...patch, pickupPlace: patch.pickup === undefined ? current.pickupPlace : "", dropoffPlace: patch.dropoff === undefined ? current.dropoffPlace : "" }));
   }
 
   async function readTravelPlan(file: File) {
@@ -364,14 +369,17 @@ export function HeroBooking({
     const resolvedDropoff =
       draft.dropoff.trim() ||
       prefill?.dropoff?.trim() ||
-      (isExcursionOrder ? catalogTitle || resolvedPickup : resolvedPickup);
+      (isExcursionOrder ? catalogTitle || resolvedPickup : "");
     const derivedEnd =
       isExcursionOrder && draft.departureAt
         ? returnAtFromDeparture(draft.departureAt, excursionDurationDays)
         : "";
     const stops = draft.stops
-      .map((stop) => createStop(stop.place))
+      .map((stop) => ({ ...createStop(stop.place), placeId: stop.placeId }))
       .filter((stop) => stop.name.length > 0);
+
+    const catalogReturn = isExcursionOrder && needsReturn && resolvedPickup !== resolvedDropoff;
+    if (catalogReturn) stops.unshift({ ...createStop(resolvedDropoff), placeId: undefined });
 
     return {
       trip: serviceTrip[service],
@@ -386,7 +394,9 @@ export function HeroBooking({
       travelTypeDetail:
         travelType === "other" ? travelTypeDetail.trim() || undefined : undefined,
       pickup: resolvedPickup,
-      dropoff: resolvedDropoff,
+      pickupPlace: draft.pickupPlace,
+      dropoffPlace: draft.dropoffPlace,
+      dropoff: catalogReturn ? resolvedPickup : resolvedDropoff,
       departure: draft.departureAt || undefined,
       returnAt: needsReturn
         ? draft.returnAt || derivedEnd || undefined
@@ -417,8 +427,10 @@ export function HeroBooking({
     // Excursion availability form hides route / end-time fields — those come from the
     // catalog trip (+ duration). Only travellers, trip type, and departure are required.
     if (!isExcursionOrder) {
-      if (!draft.pickup.trim()) errors.add("pickup");
-      if (!draft.dropoff.trim()) errors.add("dropoff");
+      if (!draft.pickup.trim() && !draft.dropoff.trim()) {
+        errors.add("pickup");
+        errors.add("dropoff");
+      }
       if (draft.tripMode === "oneWay" && !draft.arrivalAt) {
         errors.add("arrivalAt");
       }
@@ -467,7 +479,7 @@ export function HeroBooking({
   const displayedTripMode = pendingTripMode ?? draft.tripMode;
   const showReturnFields = displayedTripMode === "roundTrip";
   const showDestinationFields = displayedTripMode === "oneWay";
-  const stopsExpanded = showReturnFields && draft.stops.length > 0;
+  const stopsExpanded = draft.stops.length > 0;
   const formReady = collectErrors().size === 0;
 
   const fieldClass = (bad = false) =>
@@ -610,6 +622,7 @@ export function HeroBooking({
                               arrivalAt: "",
                               // Round trip returns to the departure place by default.
                               dropoff: draft.pickup.trim() || draft.dropoff,
+                              dropoffPlace: draft.pickup.trim() ? draft.pickupPlace : draft.dropoffPlace,
                               // Round trips always start with at least one stop (Pietura 1).
                               stops: draft.stops.length === 0 ? [newStop()] : draft.stops,
                             });
@@ -623,6 +636,7 @@ export function HeroBooking({
                             patchDraft({
                               tripMode: "oneWay",
                               dropoff: "",
+                              dropoffPlace: "",
                               arrivalAt: "",
                               returnAt: "",
                               stops: [],
@@ -803,28 +817,19 @@ export function HeroBooking({
 
               <div className="relative grid grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-2">
                 <RouteMarker kind="start" />
-                <label
-                  className={invalid.has("pickup") ? "relative z-40 overflow-visible" : ""}
-                >
-                  <span className="sr-only">{dictionary.hero.route}</span>
-                  <input
-                    value={draft.pickup}
+                <PlaceField
+                    name={"pickup"}
+                    label={dictionary.hero.route}
                     placeholder={dictionary.hero.route}
-                    aria-label={dictionary.hero.route}
-                    aria-invalid={invalid.has("pickup") || undefined}
-                    onChange={(event) => {
-                      const pickup = event.target.value;
-                      patchDraft({
-                        pickup,
-                        // Keep return place aligned with departure on round trips.
-                        dropoff: showReturnFields ? pickup : draft.dropoff,
-                      });
-                      clearFieldError(setInvalid, "pickup");
-                      if (showReturnFields) clearFieldError(setInvalid, "dropoff");
+                    defaultText={draft.pickup}
+                    defaultPlaceId={draft.pickupPlace}
+                    inlineSuggestions
+                    inputClassName={fieldClass(invalid.has("pickup"))}
+                    onPlaceChange={(value, placeId) => {
+                      patchDraft({ pickup: value, pickupPlace: placeId, ...(showReturnFields ? { dropoff: value, dropoffPlace: placeId } : {}) });
+                      clearFieldError(setInvalid, "pickup", "dropoff");
                     }}
-                    className={`${fieldClass(invalid.has("pickup"))} placeholder:normal-case placeholder:tracking-normal`}
                   />
-                </label>
                 <div className={invalid.has("departureAt") ? "relative z-40 overflow-visible" : ""}>
                   <DateTimeField
                     label={dictionary.hero.departureAt}
@@ -864,25 +869,22 @@ export function HeroBooking({
                           className="grid grid-cols-[1.75rem_minmax(0,1fr)_2.25rem] items-center gap-x-2.5"
                         >
                           <RouteMarker kind="stop" />
-                          <label>
-                            <span className="sr-only">
-                              {dictionary.hero.stopPlaceholder} {index + 1}
-                            </span>
-                            <input
-                              value={stop.place}
-                              placeholder={`${dictionary.hero.stopPlaceholder} ${index + 1}`}
-                              aria-label={`${dictionary.hero.stopPlaceholder} ${index + 1}`}
-                              onChange={(event) => {
-                                const place = event.target.value;
-                                patchDraft({
-                                  stops: draft.stops.map((item) =>
-                                    item.id === stop.id ? { ...item, place } : item,
-                                  ),
-                                });
-                              }}
-                              className={`${fieldClass()} placeholder:normal-case placeholder:tracking-normal`}
-                            />
-                          </label>
+                          <PlaceField
+                            name={`stop-${stop.id}`}
+                            label={`${dictionary.hero.stopPlaceholder} ${index + 1}`}
+                            placeholder={`${dictionary.hero.stopPlaceholder} ${index + 1}`}
+                            defaultText={stop.place}
+                            defaultPlaceId={stop.placeId}
+                            inlineSuggestions
+                            inputClassName={fieldClass()}
+                            onPlaceChange={(place, placeId) => {
+                              patchDraft({
+                                stops: draft.stops.map((item) =>
+                                  item.id === stop.id ? { ...item, place, placeId } : item,
+                                ),
+                              });
+                            }}
+                          />
                           <button
                             type="button"
                             aria-label={dictionary.hero.removeStop}
@@ -910,30 +912,19 @@ export function HeroBooking({
                 }`}
               >
                 <RouteMarker kind="end" />
-                <label
-                  className={invalid.has("dropoff") ? "relative z-40 overflow-visible" : ""}
-                >
-                  <span className="sr-only">
-                    {showReturnFields ? dictionary.hero.returnPlace : dictionary.hero.destination}
-                  </span>
-                  <input
-                    value={draft.dropoff}
-                    placeholder={
-                      showReturnFields ? dictionary.hero.returnPlace : dictionary.hero.destination
-                    }
-                    aria-label={
-                      showReturnFields ? dictionary.hero.returnPlace : dictionary.hero.destination
-                    }
-                    aria-invalid={invalid.has("dropoff") || undefined}
-                    onChange={(event) => {
-                      patchDraft({ dropoff: event.target.value });
-                      clearFieldError(setInvalid, "dropoff");
+                <PlaceField
+                    name={"dropoff"}
+                    label={showReturnFields ? dictionary.hero.returnPlace : dictionary.hero.destination}
+                    placeholder={showReturnFields ? dictionary.hero.returnPlace : dictionary.hero.destination}
+                    defaultText={draft.dropoff}
+                    defaultPlaceId={draft.dropoffPlace}
+                    inlineSuggestions
+                    inputClassName={fieldClass(invalid.has("dropoff"))}
+                    onPlaceChange={(value, placeId) => {
+                      patchDraft({ dropoff: value, dropoffPlace: placeId });
+                      clearFieldError(setInvalid, "pickup", "dropoff");
                     }}
-                    className={`${fieldClass(invalid.has("dropoff"))} placeholder:normal-case placeholder:tracking-normal transition-opacity duration-700 ${
-                      pendingTripMode === "oneWay" ? "opacity-55" : "opacity-100"
-                    }`}
                   />
-                </label>
                 {showDestinationFields ? (
                   <div className={invalid.has("arrivalAt") ? "relative z-40 overflow-visible" : ""}>
                     <DateTimeField
@@ -970,7 +961,7 @@ export function HeroBooking({
 
             <div
               className={`hero-route-reveal pl-[calc(1.75rem+0.625rem)]`}
-              data-open={showReturnFields ? "true" : "false"}
+              data-open="true"
             >
               <div className="hero-route-reveal-inner">
                 <button

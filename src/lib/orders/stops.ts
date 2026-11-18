@@ -2,11 +2,13 @@ export const DEFAULT_STOP_WAIT_MINUTES = 15;
 
 export type QuoteStop = {
   id: string;
+  placeId?: string;
   name: string;
   waitMinutes: number;
 };
 
 export type PlanStopInput = {
+  placeId?: string;
   name: string;
   waitMinutes?: number | null;
 };
@@ -71,7 +73,7 @@ export function encodeStops(stops: QuoteStop[]) {
   return JSON.stringify(
     stops
       .filter((stop) => normalizeStopName(stop.name))
-      .map((stop) => ({ name: stop.name.trim(), waitMinutes: sanitizeWaitMinutes(stop.waitMinutes) })),
+      .map((stop) => ({ name: stop.name.trim(), placeId: stop.placeId, waitMinutes: sanitizeWaitMinutes(stop.waitMinutes) })),
   );
 }
 
@@ -80,7 +82,9 @@ export function decodeStops(value: string | undefined): QuoteStop[] {
   try {
     const parsed = JSON.parse(value) as PlanStopInput[];
     if (!Array.isArray(parsed)) return [];
-    return mergeStops([], parsed);
+    return parsed.flatMap((stop) => typeof stop?.name === "string" && stop.name.trim()
+      ? [{ ...createStop(stop.name, stop.waitMinutes ?? DEFAULT_STOP_WAIT_MINUTES), placeId: typeof stop.placeId === "string" ? stop.placeId : undefined }]
+      : []);
   } catch {
     return [];
   }

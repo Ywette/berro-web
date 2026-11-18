@@ -3,7 +3,6 @@ import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PlanTripActions } from "@/components/blog/plan-trip-actions";
 import { blogPosts, findPost, type BlogBlock } from "@/lib/content/blog";
 import { formatPostDate } from "@/lib/content/format-date";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
@@ -64,7 +63,6 @@ async function BlogPost({ params }: { params: PageProps<"/blog/[slug]">["params"
           <PostBlock key={index} block={block} />
         ))}
       </div>
-      {post.planTripActions ? <PlanTripActions /> : null}
     </article>
   );
 }

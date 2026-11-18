@@ -1,3 +1,4 @@
+import { isValidContactPhone, sanitizeContactPhone } from "@/lib/contact/validation";
 import { decodeStops, totalWaitingMinutes } from "@/lib/orders/stops";
 import type { StaffOrder } from "@/types/dashboard";
 
@@ -16,6 +17,8 @@ export type QuoteOrderInput = {
   heardAboutDetail?: string;
   travelType?: string;
   travelTypeDetail?: string;
+  pickupPlace?: string;
+  dropoffPlace?: string;
   pickup?: string;
   dropoff?: string;
   departure?: string;
@@ -35,6 +38,7 @@ export type QuoteOrderInput = {
 export type QuoteRequiredField =
   | "name"
   | "email"
+  | "phone"
   | "pickup"
   | "dropoff"
   | "passengers"
@@ -56,6 +60,11 @@ export function quoteFieldErrors(
 
     const email = input.email?.trim() ?? "";
     if (!emailPattern.test(email)) errors.push("email");
+  }
+
+  const phone = sanitizeContactPhone(input.phone ?? "").trim();
+  if (input.phone?.trim() && !isValidContactPhone(phone, { required: true })) {
+    errors.push("phone");
   }
 
   if (!input.pickup?.trim()) errors.push("pickup");

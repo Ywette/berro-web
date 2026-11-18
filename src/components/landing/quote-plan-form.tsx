@@ -6,6 +6,7 @@ import { useDictionary } from "@/components/i18n/locale-provider";
 import { DateTimeInput } from "@/components/landing/datetime-field";
 import { PlaceField } from "@/components/landing/place-field";
 import { QuoteSummaryDialog } from "@/components/landing/quote-summary-dialog";
+import { sanitizeContactPhone } from "@/lib/contact/validation";
 import { parsePlanDocument } from "@/lib/plan-document/client";
 import type { ExtractedPlanFields } from "@/lib/plan-document/types";
 import { formatDistance, formatDuration } from "@/lib/quote";
@@ -460,12 +461,17 @@ export function QuotePlanForm({ formId = "plan-book", defaults }: QuotePlanFormP
           <input
             name="phone"
             type="tel"
+            inputMode="tel"
             autoComplete="tel"
             value={phone}
-            placeholder={dictionary.quote.phone}
+            placeholder={dictionary.contact.phonePlaceholder}
             aria-label={dictionary.quote.phone}
-            onChange={(event) => setPhone(event.target.value)}
-            className={controlClass(false)}
+            aria-invalid={invalid.has("phone") || undefined}
+            onChange={(event) => {
+              setPhone(sanitizeContactPhone(event.target.value));
+              clearInvalid("phone");
+            }}
+            className={controlClass(invalid.has("phone"))}
           />
         </div>
         <div className="mt-3 grid grid-cols-[minmax(0,1.6fr)_minmax(4.5rem,0.7fr)] gap-3">
@@ -809,7 +815,9 @@ export function QuotePlanForm({ formId = "plan-book", defaults }: QuotePlanFormP
       >
         {invalid.size > 0 ? (
           <p role="alert" className="mb-3 text-xs text-red-300">
-            {dictionary.quote.missingFields}
+            {invalid.has("phone")
+              ? dictionary.contact.phoneError
+              : dictionary.quote.missingFields}
           </p>
         ) : null}
 

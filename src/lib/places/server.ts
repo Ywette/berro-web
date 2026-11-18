@@ -33,10 +33,11 @@ export async function searchPlaces(query: string, locale: Locale): Promise<Place
   if (key && query.trim().length >= 2) {
     const response = await fetch("https://places.googleapis.com/v1/places:autocomplete", {
       method: "POST",
+      signal: AbortSignal.timeout(4500),
       headers: { "Content-Type": "application/json", "X-Goog-Api-Key": key },
       body: JSON.stringify({ input: query, languageCode: locale, locationBias: rigaBias }),
-    });
-    if (response.ok) {
+    }).catch(() => null);
+    if (response?.ok) {
       const data = (await response.json()) as GoogleAutocomplete;
       return (data.suggestions ?? []).flatMap(({ placePrediction: p }) =>
         p
@@ -85,7 +86,7 @@ function mapsQuery({ place, label }: Endpoint) {
   return { text, placeId: parsed?.source === "google" ? parsed.value : null };
 }
 
-function mapsLinks(from: Endpoint, to: Endpoint) {
+function mapsLinks(from: Endpoint, to: Endpoint, stops: Endpoint[]) {
   const origin = mapsQuery(from);
   const destination = mapsQuery(to);
 
@@ -98,6 +99,13 @@ function mapsLinks(from: Endpoint, to: Endpoint) {
   if (origin.placeId) link.set("origin_place_id", origin.placeId);
   if (destination.placeId) link.set("destination_place_id", destination.placeId);
 
+  const via = stops.map(mapsQuery);
+  if (via.length) {
+    link.set("waypoints", via.map((point) => point.text).join("|"));
+    if (via.every((point) => point.placeId)) {
+      link.set("waypoint_place_ids", via.map((point) => point.placeId).join("|"));
+    }
+  }
   const key = embedKey();
   const embed = key
     ? new URLSearchParams({
@@ -108,6 +116,7 @@ function mapsLinks(from: Endpoint, to: Endpoint) {
       })
     : null;
 
+  if (embed && via.length) embed.set("waypoints", via.map((p) => p.placeId ? `place_id:${p.placeId}` : p.text).join("|"));
   return {
     mapsUrl: `https://www.google.com/maps/dir/?${link.toString()}`,
     embedUrl: embed ? `https://www.google.com/maps/embed/v1/directions?${embed.toString()}` : null,
@@ -123,25 +132,28 @@ function straightLineKm(a: { lat: number; lng: number }, b: { lat: number; lng: 
   return 2 * 6371 * Math.asin(Math.sqrt(h));
 }
 
-export async function computeRoute(from: Endpoint, to: Endpoint, locale: Locale): Promise<TripRoute | null> {
+export async function computeRoute(from: Endpoint, to: Endpoint, locale: Locale, stops: Endpoint[] = []): Promise<TripRoute | null> {
   const origin = waypoint(from);
   const destination = waypoint(to);
   if (!origin || !destination) return null;
 
-  const links = mapsLinks(from, to);
+  const links = mapsLinks(from, to, stops);
+  const intermediates = stops.map(waypoint);
+  if (intermediates.length > 25 || intermediates.some((point) => !point)) return null;
   const key = googleKey();
 
   if (key) {
     const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
       method: "POST",
+      signal: AbortSignal.timeout(4500),
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": key,
         "X-Goog-FieldMask": "routes.distanceMeters,routes.duration",
       },
-      body: JSON.stringify({ origin, destination, travelMode: "DRIVE", languageCode: locale }),
-    });
-    if (response.ok) {
+      body: JSON.stringify({ origin, destination, intermediates, travelMode: "DRIVE", languageCode: locale }),
+    }).catch(() => null);
+    if (response?.ok) {
       const route = ((await response.json()) as GoogleRoutes).routes?.[0];
       if (route?.distanceMeters) {
         const seconds = Number.parseInt(route.duration ?? "", 10);
@@ -155,7 +167,7 @@ export async function computeRoute(from: Endpoint, to: Endpoint, locale: Locale)
     }
   }
 
-  if ("location" in origin && "location" in destination) {
+  if (!stops.length && "location" in origin && "location" in destination) {
     const a = origin.location.latLng;
     const b = destination.location.latLng;
     const km = straightLineKm({ lat: a.latitude, lng: a.longitude }, { lat: b.latitude, lng: b.longitude });

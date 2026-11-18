@@ -3,6 +3,13 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { useDictionary } from "@/components/i18n/locale-provider";
 import {
+  isValidContactEmail,
+  isValidContactName,
+  isValidContactPhone,
+  sanitizeContactName,
+  sanitizeContactPhone,
+} from "@/lib/contact/validation";
+import {
   isQuoteHeardAboutSource,
   quoteHeardAboutSources,
   type QuoteHeardAboutSource,
@@ -24,7 +31,13 @@ type OfferContactDialogProps = {
   onSubmit: (values: OfferContactValues) => void;
 };
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+type ContactFieldError =
+  | "name"
+  | "email"
+  | "phone"
+  | "contact"
+  | "heardAbout"
+  | "heardAboutOther";
 
 export function OfferContactDialog({
   open,
@@ -43,9 +56,7 @@ export function OfferContactDialog({
     initial.heardAbout ?? "",
   );
   const [heardAboutDetail, setHeardAboutDetail] = useState(initial.heardAboutDetail ?? "");
-  const [invalid, setInvalid] = useState<
-    Set<"email" | "phone" | "contact" | "heardAbout" | "heardAboutOther">
-  >(new Set());
+  const [invalid, setInvalid] = useState<Set<ContactFieldError>>(new Set());
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -56,23 +67,34 @@ export function OfferContactDialog({
 
   useEffect(() => {
     if (!open) return;
-    setName(initial.name);
+    setName(sanitizeContactName(initial.name));
     setEmail(initial.email);
-    setPhone(initial.phone);
+    setPhone(sanitizeContactPhone(initial.phone));
     setHeardAbout(initial.heardAbout ?? "");
     setHeardAboutDetail(initial.heardAboutDetail ?? "");
     setInvalid(new Set());
   }, [open, initial.name, initial.email, initial.phone, initial.heardAbout, initial.heardAboutDetail]);
 
+  function clearError(...keys: ContactFieldError[]) {
+    setInvalid((current) => {
+      if (keys.every((key) => !current.has(key))) return current;
+      const next = new Set(current);
+      for (const key of keys) next.delete(key);
+      return next;
+    });
+  }
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const nextName = name.trim();
+    const nextName = sanitizeContactName(name).trim();
     const nextEmail = email.trim();
-    const nextPhone = phone.trim();
+    const nextPhone = sanitizeContactPhone(phone).trim();
     const nextDetail = heardAboutDetail.trim();
-    const errors = new Set<"email" | "phone" | "contact" | "heardAbout" | "heardAboutOther">();
+    const errors = new Set<ContactFieldError>();
 
-    if (nextEmail && !emailPattern.test(nextEmail)) errors.add("email");
+    if (nextName && !isValidContactName(nextName)) errors.add("name");
+    if (nextEmail && !isValidContactEmail(nextEmail)) errors.add("email");
+    if (nextPhone && !isValidContactPhone(nextPhone, { required: true })) errors.add("phone");
     if (!nextEmail && !nextPhone) errors.add("contact");
     if (!isQuoteHeardAboutSource(heardAbout)) errors.add("heardAbout");
     if (heardAbout === "other" && nextDetail.length < 2) errors.add("heardAboutOther");
@@ -149,8 +171,12 @@ export function OfferContactDialog({
               <input
                 value={name}
                 autoComplete="name"
-                onChange={(event) => setName(event.target.value)}
-                className={inputClass(false)}
+                aria-invalid={invalid.has("name") || undefined}
+                onChange={(event) => {
+                  setName(sanitizeContactName(event.target.value));
+                  clearError("name");
+                }}
+                className={inputClass(invalid.has("name"))}
               />
             </label>
 
@@ -163,12 +189,7 @@ export function OfferContactDialog({
                 aria-invalid={invalid.has("email") || invalid.has("contact") || undefined}
                 onChange={(event) => {
                   setEmail(event.target.value);
-                  setInvalid((current) => {
-                    const next = new Set(current);
-                    next.delete("email");
-                    next.delete("contact");
-                    return next;
-                  });
+                  clearError("email", "contact");
                 }}
                 className={inputClass(invalid.has("email") || invalid.has("contact"))}
               />
@@ -178,18 +199,16 @@ export function OfferContactDialog({
               {dictionary.hero.phone}
               <input
                 type="tel"
+                inputMode="tel"
                 value={phone}
                 autoComplete="tel"
-                aria-invalid={invalid.has("contact") || undefined}
+                placeholder={dictionary.contact.phonePlaceholder}
+                aria-invalid={invalid.has("phone") || invalid.has("contact") || undefined}
                 onChange={(event) => {
-                  setPhone(event.target.value);
-                  setInvalid((current) => {
-                    const next = new Set(current);
-                    next.delete("contact");
-                    return next;
-                  });
+                  setPhone(sanitizeContactPhone(event.target.value));
+                  clearError("phone", "contact");
                 }}
-                className={inputClass(invalid.has("contact"))}
+                className={inputClass(invalid.has("phone") || invalid.has("contact"))}
               />
             </label>
 
@@ -249,9 +268,13 @@ export function OfferContactDialog({
                   ? dictionary.hero.heardAboutOtherError
                   : invalid.has("heardAbout")
                     ? dictionary.hero.heardAboutError
-                    : invalid.has("email")
-                      ? dictionary.hero.email
-                      : dictionary.hero.contactEmailOrPhone}
+                    : invalid.has("name")
+                      ? dictionary.contact.nameError
+                      : invalid.has("phone")
+                        ? dictionary.contact.phoneError
+                        : invalid.has("email")
+                          ? dictionary.contact.emailError
+                          : dictionary.hero.contactEmailOrPhone}
               </p>
             ) : null}
 

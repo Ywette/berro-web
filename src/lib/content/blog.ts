@@ -14,7 +14,6 @@ export type BlogPost = {
   title: Localized;
   excerpt: Localized;
   body: Localized<BlogBlock[]>;
-  planTripActions?: boolean;
 };
 
 export const blogPosts: BlogPost[] = [
@@ -22,7 +21,6 @@ export const blogPosts: BlogPost[] = [
     slug: "bus-trip-planning",
     date: "2026-11-09",
     image: "/hero/luxembourg.jpg",
-    planTripActions: true,
     title: {
       lv: "Ceļojums ar autobusu – kā saplānot visu bez lieka stresa?",
       en: "Travelling by coach: how to plan it all without the stress",

@@ -99,9 +99,17 @@ export function OrdersTableClient({
                     <td className="px-4 py-3 font-medium text-ivory">{order.reference}</td>
                     <td className="px-4 py-3 text-ivory/90">
                       <p>
-                        {order.origin} → {order.destination}
+                        {[order.origin, ...(order.stops ?? []).map((stop) => stop.name), order.destination].join(" \u2192 ")}
                         {order.returnTo ? ` → ${order.returnTo}` : ""}
                       </p>
+                      {order.routeEstimate ? (
+                        <a className="text-xs underline" href={order.routeEstimate.mapsUrl} target="_blank" rel="noreferrer">
+                          Google Maps · {order.routeEstimate.distanceKm} km
+                          {order.routeEstimate.durationMinutes !== null && ` · ${order.routeEstimate.durationMinutes} min`}
+                        </a>
+                      ) : (
+                        <p className="text-xs text-mist">{dictionary.locale === "lv" ? "Maršruts jāprecizē" : "Route needs review"}</p>
+                      )}
                       <p className="mt-1 text-xs text-mist">
                         {order.returnTo ? null : dictionary.staffDashboard.oneWay}
                         {order.departureOn ? (

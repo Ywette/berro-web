@@ -1,3 +1,5 @@
+import { computeRoute } from "@/lib/places/server";
+import { decodeStops } from "@/lib/orders/stops";
 import { sendNewOrderEmail } from "@/lib/email/send-order-email";
 import { sendOrderThankYouEmail } from "@/lib/email/send-order-thank-you";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
@@ -106,6 +108,7 @@ export function staffOrderToRow(order: StaffOrder, input: QuoteOrderInput) {
   return {
     id: order.id,
     reference: order.reference,
+    ...(order.routeEstimate ? { route_estimate: order.routeEstimate } : {}),
     origin: order.origin,
     destination: order.destination,
     return_to: order.returnTo,
@@ -166,6 +169,26 @@ export async function insertOrder(
     order.planDocumentPath = uploaded.path;
   } else if (input.planDocument?.trim()) {
     order.planDocument = input.planDocument.trim();
+  }
+
+  const stops = decodeStops(input.stops);
+  const confirmedPlaces = input.pickupPlace && input.dropoffPlace && stops.every((stop) => stop.placeId);
+  const catalogRoute = input.excursionSlug && input.pickup && input.dropoff;
+  const hasJourney = input.pickup !== input.dropoff || stops.length > 0;
+  if ((confirmedPlaces || catalogRoute) && hasJourney) {
+    try {
+      const route = await computeRoute(
+        { label: input.pickup, place: input.pickupPlace },
+        { label: input.dropoff, place: input.dropoffPlace },
+        "lv",
+        stops.map((stop) => ({ label: stop.name, place: stop.placeId })),
+      );
+      if (route && !route.estimated && route.distanceKm !== null) {
+        order.routeEstimate = { distanceKm: route.distanceKm, durationMinutes: route.durationMinutes, mapsUrl: route.mapsUrl };
+      }
+    } catch {
+      console.warn("[orders] route lookup unavailable");
+    }
   }
 
   const { error } = await supabase.from(ORDERS_TABLE).insert(staffOrderToRow(order, input));

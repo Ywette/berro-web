@@ -12,6 +12,7 @@ type PlaceFieldProps = {
   className?: string;
   defaultText?: string;
   defaultPlaceId?: string;
+  inlineSuggestions?: boolean;
   invalid?: boolean;
   onTextChange?: (value: string) => void;
   onPlaceChange?: (value: string, placeId: string) => void;
@@ -25,6 +26,7 @@ export function PlaceField({
   className = "",
   defaultText = "",
   defaultPlaceId = "",
+  inlineSuggestions = false,
   invalid = false,
   onTextChange,
   onPlaceChange,
@@ -48,10 +50,11 @@ export function PlaceField({
   }, [defaultText, defaultPlaceId]);
 
   async function load(query: string) {
+    if (query.trim().length < 2) return;
     const requestId = ++latestRequest.current;
     const params = new URLSearchParams({ q: query, locale: dictionary.locale });
-    const response = await fetch(`/api/places?${params.toString()}`);
-    if (!response.ok || requestId !== latestRequest.current) return;
+    const response = await fetch(`/api/places?${params.toString()}`).catch(() => null);
+    if (!response?.ok || requestId !== latestRequest.current) return;
     const data = (await response.json()) as { suggestions: PlaceSuggestion[] };
     if (requestId !== latestRequest.current) return;
     setSuggestions(data.suggestions);
@@ -59,7 +62,14 @@ export function PlaceField({
     setOpen(data.suggestions.length > 0);
   }
 
+  function close() {
+    clearTimeout(debounce.current);
+    latestRequest.current++;
+    setOpen(false);
+  }
+
   function onType(value: string) {
+    close();
     setText(value);
     setPlaceId("");
     onTextChange?.(value);
@@ -74,7 +84,7 @@ export function PlaceField({
     setPlaceId(suggestion.id);
     onTextChange?.(next);
     onPlaceChange?.(next, suggestion.id);
-    setOpen(false);
+    close();
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -93,7 +103,7 @@ export function PlaceField({
       choose(suggestions[active]);
     } else if (event.key === "Escape" && open) {
       event.preventDefault();
-      setOpen(false);
+      close();
     }
   }
 
@@ -107,12 +117,12 @@ export function PlaceField({
           value={text}
           aria-label={label}
           aria-invalid={invalid || undefined}
-          aria-required="true"
+          aria-required={inlineSuggestions ? undefined : true}
           onChange={(event) => onType(event.target.value)}
           onFocus={() => {
             if (!placeId) void load(text);
           }}
-          onBlur={() => setOpen(false)}
+          onBlur={close}
           onKeyDown={onKeyDown}
           placeholder={placeholder}
           autoComplete="off"
@@ -130,7 +140,7 @@ export function PlaceField({
           id={listId}
           role="listbox"
           aria-label={label}
-          className="absolute top-full right-0 left-0 z-30 mt-1 max-h-64 overflow-y-auto rounded-md bg-white py-1 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)]"
+          className={`${inlineSuggestions ? "relative" : "absolute top-full right-0 left-0"} z-30 mt-1 max-h-64 overflow-y-auto rounded-md bg-white py-1 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)]`}
         >
           {suggestions.map((suggestion, index) => (
             <li
@@ -141,14 +151,15 @@ export function PlaceField({
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => choose(suggestion)}
               onMouseEnter={() => setActive(index)}
-              className={`flex cursor-pointer items-baseline justify-between gap-3 px-3 py-2 ${
+              className={`flex flex-wrap cursor-pointer items-baseline justify-between gap-3 px-3 py-2 ${
                 index === active ? "bg-burgundy/10" : ""
               }`}
             >
               <span className="text-sm text-neutral-900">{suggestion.label}</span>
-              <span className="shrink-0 text-xs text-neutral-500">{suggestion.secondary}</span>
+              <span className="text-xs text-neutral-500">{suggestion.secondary}</span>
             </li>
           ))}
+          {suggestions.some((item) => item.id.startsWith("google:")) && <li role="presentation" className="px-3 py-1 text-xs text-neutral-600">Google Maps</li>}
         </ul>
       ) : null}
     </div>
