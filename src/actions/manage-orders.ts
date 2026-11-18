@@ -16,8 +16,16 @@ export async function updateOrderStatus(id: string, version: string, status: Ord
   if (!id || !version || !isOrderStatus(status)) return { error: "invalid" } as const;
   const db = createServiceSupabaseClient();
   if (!db) return { error: "failed" } as const;
+  const { data: existing, error: readError } = await db.from("orders")
+    .select("*").eq("id", id).eq("updated_at", version).maybeSingle();
+  if (readError || !existing) return { error: readError ? "failed" : "changed" } as const;
+  if (!Object.hasOwn(existing, "completed_statuses")) return { error: "statusCollectionSetup" } as const;
+  const completed = Array.from(new Set([
+    "new", ...(Array.isArray(existing.completed_statuses) ? existing.completed_statuses.filter(isOrderStatus) : []),
+    ...(isOrderStatus(existing.status) ? [existing.status] : []), status,
+  ]));
   const { data, error } = await db.from("orders")
-    .update({ status, updated_at: new Date().toISOString() })
+    .update({ status, completed_statuses: completed, updated_at: new Date().toISOString() })
     .eq("id", id).eq("updated_at", version).select("*").maybeSingle();
   if (error?.code === "23514" && /orders_status_check/.test(error.message)) {
     return { error: "statusSetup" } as const;
@@ -44,15 +52,24 @@ export async function manageOrder(id: string, version: string, form: FormData | 
   }
   const edit = readOrderEdit(form);
   if (!edit) return { error: "invalid" } as const;
-  const { data: original, error: readError } = await db.from("orders").select("origin,destination,departure_at,return_at,departure_on,return_on")
+  const { data: original, error: readError } = await db.from("orders").select("*")
     .eq("id", id).eq("updated_at", version).maybeSingle();
   if (!original) return { error: readError ? "failed" : "changed" } as const;
+  const hasStatusCollection = Object.hasOwn(original, "completed_statuses");
+  if (!hasStatusCollection && edit.status !== original.status) {
+    return { error: "statusCollectionSetup" } as const;
+  }
   const changedRoute = original.origin !== edit.origin || original.destination !== edit.destination;
+  const completed = Array.from(new Set([
+    "new", ...(Array.isArray(original.completed_statuses) ? original.completed_statuses.filter(isOrderStatus) : []),
+    ...(isOrderStatus(original.status) ? [original.status] : []), edit.status,
+  ]));
   function shiftDate(timestamp: string | null, day: string | null) {
     return timestamp && day ? day + new Date(timestamp).toISOString().slice(10) : null;
   }
   const { data, error } = await db.from("orders").update({
-    status: edit.status, passenger_count: edit.passengerCount, origin: edit.origin,
+    status: edit.status, ...(hasStatusCollection ? { completed_statuses: completed } : {}),
+    passenger_count: edit.passengerCount, origin: edit.origin,
     destination: edit.destination, requestor_name: edit.requestorName,
     requestor_company: edit.requestorCompany, requestor_email: edit.requestorEmail,
     requestor_phone: edit.requestorPhone, travel_type: edit.travelType,

@@ -860,7 +860,7 @@ export function HeroBooking({
                 <div className="hero-route-reveal-inner">
                   {draft.stops.length > 0 ? (
                     <div
-                      className={`relative max-h-40 space-y-2 overflow-y-auto overflow-x-visible py-0.5 transition-opacity duration-700 ${
+                      className={`relative space-y-2 py-0.5 transition-opacity duration-700 ${
                         stopsExpanded ? "opacity-100" : "opacity-0"
                       }`}
                     >

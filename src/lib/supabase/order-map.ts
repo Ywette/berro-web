@@ -25,9 +25,11 @@ export type OrderRow = {
   plan_document: string | null;
   plan_document_path: string | null;
   status: string;
+  completed_statuses?: string[] | null;
   departure_on: string | null;
   departure_at?: string | null;
   return_on: string | null;
+  return_at?: string | null;
   trip_duration_days?: number | null;
   stops: Array<{ name: string; waitMinutes?: number; wait_minutes?: number }> | null;
   waiting_minutes: number | null;
@@ -70,9 +72,15 @@ export function staffOrderFromRow(row: OrderRow): StaffOrder {
     planDocument: row.plan_document,
     planDocumentPath: row.plan_document_path,
     status: isOrderStatus(row.status) ? row.status : "new",
+    completedStatuses: Array.from(new Set([
+      "new" as const,
+      ...(Array.isArray(row.completed_statuses) ? row.completed_statuses.filter(isOrderStatus) : []),
+      ...(isOrderStatus(row.status) ? [row.status] : []),
+    ])),
     departureOn: row.departure_on,
     departureAt: row.departure_at ?? null,
     returnOn: row.return_on,
+    returnAt: row.return_at ?? null,
     tripDurationDays: row.trip_duration_days ?? tripDurationDays(row.departure_on, row.return_on),
     stops,
     waitingMinutes: row.waiting_minutes,

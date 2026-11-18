@@ -38,9 +38,11 @@ export type StaffOrder = {
   planDocument: string | null;
   planDocumentPath: string | null;
   status: OrderStatus;
+  completedStatuses?: OrderStatus[];
   departureOn: string | null;
   departureAt?: string | null;
   returnOn: string | null;
+  returnAt?: string | null;
   tripDurationDays?: number | null;
   stops: Array<{ name: string; waitMinutes: number }> | null;
   waitingMinutes: number | null;

@@ -35,8 +35,10 @@ export async function CalendarPanel() {
       locale={locale}
       labels={{
         availabilityRange: dictionary.staffDashboard.availabilityRange,
+        startTime: dictionary.hero.departureAt,
+        endTime: dictionary.hero.arrivalAt,
         clearRange: dictionary.staffDashboard.clearRange,
-        allEmployees: dictionary.staffDashboard.allEmployees,
+        allEmployees: dictionary.staffDashboard.calendarAllDrivers,
         allTransports: dictionary.staffDashboard.allTransports,
         availableStaff: dictionary.staffDashboard.availableStaff,
         scheduledStaff: dictionary.staffDashboard.scheduledStaff,
@@ -55,7 +57,7 @@ export async function CalendarPanel() {
         today: dictionary.staffDashboard.today,
         busy: dictionary.staffDashboard.busy,
         free: dictionary.staffDashboard.free,
-        employeesSection: dictionary.staffDashboard.employees,
+        employeesSection: dictionary.staffDashboard.calendarDrivers,
         fleetSection: dictionary.staffDashboard.fleet,
         roles: dictionary.roles,
       }}

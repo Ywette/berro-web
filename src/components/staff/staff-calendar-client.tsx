@@ -22,6 +22,8 @@ type ResourceMode = "available" | "scheduled";
 
 type Labels = {
   availabilityRange: string;
+  startTime: string;
+  endTime: string;
   clearRange: string;
   allEmployees: string;
   allTransports: string;
@@ -70,9 +72,10 @@ export function StaffCalendarClient({
   labels,
 }: StaffCalendarClientProps) {
   const [assignedOrders] = useAssignedOrders(orders);
-  const [fleetMode, setFleetMode] = useState<ResourceMode>("available");
-  const [staffMode, setStaffMode] = useState<ResourceMode>("available");
+  const [fleetModes, setFleetModes] = useState<ResourceMode[]>(["available"]);
+  const [staffModes, setStaffModes] = useState<ResourceMode[]>(["available"]);
   const [range, setRange] = useState({ from: "", to: "" });
+  const [times, setTimes] = useState({ start: "", end: "" });
   const [employeeId, setEmployeeId] = useState("all");
   const [vehicleId, setVehicleId] = useState("all");
   const [cursor, setCursor] = useState(() => {
@@ -85,21 +88,21 @@ export function StaffCalendarClient({
   const dateFilter = resolvedRange(range.from, range.to);
   const focusSpan = useMemo<DateSpan>(() => {
     if (range.from && range.to && range.from <= range.to) {
-      return { start: range.from, end: range.to };
+      return { start: range.from, end: range.to, startTime: times.start, endTime: times.end };
     }
     if (range.from && !range.to) {
-      return { start: range.from, end: range.from };
+      return { start: range.from, end: range.from, startTime: times.start, endTime: times.end };
     }
     return {
       start: toDayKey(new Date(Date.UTC(year, month, 1))),
       end: toDayKey(new Date(Date.UTC(year, month + 1, 0))),
     };
-  }, [month, range.from, range.to, year]);
+  }, [month, range.from, range.to, times.start, times.end, year]);
 
   const assignableEmployees = useMemo(
     () =>
       employees
-        .filter((employee) => employee.isActive && (employee.role === "driver" || employee.role === "guide"))
+        .filter((employee) => employee.isActive && employee.role === "driver")
         .sort((left, right) => left.fullName.localeCompare(right.fullName, locale)),
     [employees, locale],
   );
@@ -139,8 +142,16 @@ export function StaffCalendarClient({
     [activeVehicles, assignedOrders, focusSpan],
   );
 
-  const listedEmployees = staffMode === "available" ? availableEmployees : scheduledEmployees;
-  const listedVehicles = fleetMode === "available" ? availableVehicles : scheduledVehicles;
+  const listedEmployees = assignableEmployees.filter((employee) =>
+    staffModes.length === 0 ||
+    (staffModes.includes("available") && availableEmployees.includes(employee)) ||
+    (staffModes.includes("scheduled") && scheduledEmployees.includes(employee)),
+  );
+  const listedVehicles = activeVehicles.filter((vehicle) =>
+    fleetModes.length === 0 ||
+    (fleetModes.includes("available") && availableVehicles.includes(vehicle)) ||
+    (fleetModes.includes("scheduled") && scheduledVehicles.includes(vehicle)),
+  );
 
   const resolvedEmployeeId =
     employeeId === "all" || listedEmployees.some((employee) => employee.id === employeeId)
@@ -186,7 +197,7 @@ export function StaffCalendarClient({
       if (!order.departureOn) continue;
       const end = order.returnOn ?? order.departureOn;
 
-      if (staffMode === "scheduled") {
+      if (staffModes.includes("scheduled")) {
         if (order.assignedDriverId && visibleEmployeeIds.has(order.assignedDriverId)) {
           for (const day of eachDay(order.departureOn, end)) {
             const list = map.get(day) ?? [];
@@ -215,7 +226,7 @@ export function StaffCalendarClient({
       }
 
       if (
-        fleetMode === "scheduled" &&
+        fleetModes.includes("scheduled") &&
         order.assignedVehicleId &&
         visibleVehicleIds.has(order.assignedVehicleId)
       ) {
@@ -236,52 +247,72 @@ export function StaffCalendarClient({
     return map;
   }, [
     assignedOrders,
-    fleetMode,
-    staffMode,
+    fleetModes,
+    staffModes,
     vehicles,
     visibleEmployeeIds,
     visibleVehicleIds,
   ]);
 
   const freeByDay = useMemo(() => {
-    const map = new Map<string, { staff: number; fleet: number }>();
+    const map = new Map<string, { staff: number; fleet: number; staffReserved: number; fleetReserved: number }>();
 
     for (const day of days) {
       if (!day) continue;
       const key = toDayKey(day);
-      const span = { start: key, end: key };
+      const selectedEnd = range.to || range.from;
+      const validTimes = !range.from || !selectedEnd ||
+        `${range.from}T${times.start || "00:00"}` < `${selectedEnd}T${times.end || "24:00"}`;
+      const span = {
+        start: key,
+        end: key,
+        startTime: validTimes && key === range.from ? times.start : "",
+        endTime: validTimes && key === selectedEnd ? times.end : "",
+      };
       let staff = 0;
       let fleet = 0;
+      let staffReserved = 0;
+      let fleetReserved = 0;
 
-      if (staffMode === "available") {
+      if (staffModes.includes("available") || staffModes.length === 0) {
         const pool =
           resolvedEmployeeId === "all"
             ? listedEmployees
             : listedEmployees.filter((employee) => employee.id === resolvedEmployeeId);
         staff = pool.filter((employee) => isEmployeeFree(employee, span, assignedOrders)).length;
+        if (staffModes.length === 0) {
+          staffReserved = pool.filter((employee) => isEmployeeScheduled(employee, span, assignedOrders)).length;
+        }
       }
 
-      if (fleetMode === "available") {
+      if (fleetModes.includes("available") || fleetModes.length === 0) {
         const pool =
           resolvedVehicleId === "all"
             ? listedVehicles
             : listedVehicles.filter((vehicle) => vehicle.id === resolvedVehicleId);
         fleet = pool.filter((vehicle) => isVehicleFree(vehicle, span, assignedOrders)).length;
+        if (fleetModes.length === 0) {
+          fleetReserved = pool.filter((vehicle) => isVehicleScheduled(vehicle, span, assignedOrders)).length;
+        }
       }
 
-      map.set(key, { staff, fleet });
+      map.set(key, { staff, fleet, staffReserved, fleetReserved });
     }
 
     return map;
   }, [
     assignedOrders,
     days,
-    fleetMode,
+    fleetModes,
     listedEmployees,
     listedVehicles,
     resolvedEmployeeId,
     resolvedVehicleId,
-    staffMode,
+    range.from,
+    range.to,
+    times.start,
+    times.end,
+    staffModes,
   ]);
 
   const rangeStart = dateFilter.ok ? dateFilter.span.start : range.from || "";
@@ -324,9 +355,6 @@ export function StaffCalendarClient({
   ];
 
   function selectDay(dayKey: string) {
-    setEmployeeId("all");
-    setVehicleId("all");
-
     if (!range.from || (range.from && range.to)) {
       setRange({ from: dayKey, to: "" });
       return;
@@ -342,51 +370,29 @@ export function StaffCalendarClient({
 
   function clearRange() {
     setRange({ from: "", to: "" });
-    setEmployeeId("all");
-    setVehicleId("all");
+    setTimes({ start: "", end: "" });
   }
 
   return (
     <div className="space-y-5">
       <div className="space-y-4 rounded-2xl border border-line bg-card p-4 sm:p-5">
-        <div className="space-y-3">
-          <p className="text-xs tracking-wide text-mist uppercase">{labels.fleetSection}</p>
-          <div className="grid gap-2 sm:grid-cols-2" role="group" aria-label={labels.fleetSection}>
+        <div className="overflow-x-auto pb-1">
+          <div className="grid min-w-[680px] grid-cols-4 gap-2" role="group" aria-label={labels.availabilityRange}>
             {fleetButtons.map((button) => (
-              <ModeButton
-                key={`fleet-${button.id}`}
-                active={fleetMode === button.id}
-                label={button.label}
-                count={button.count}
-                countLabel={button.countLabel}
+              <ModeButton key={`fleet-${button.id}`} active={fleetModes.includes(button.id)}
+                icon="bus" mode={button.id} label={button.label} count={button.count} countLabel={button.countLabel}
                 onClick={() => {
-                  setFleetMode(button.id);
-                  setVehicleId("all");
-                }}
-              />
+                  setFleetModes((current) => current.includes(button.id)
+                    ? current.filter((mode) => mode !== button.id) : [...current, button.id]);
+                }} />
             ))}
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <p className="text-xs tracking-wide text-mist uppercase">{labels.employeesSection}</p>
-          <div
-            className="grid gap-2 sm:grid-cols-2"
-            role="group"
-            aria-label={labels.employeesSection}
-          >
             {staffButtons.map((button) => (
-              <ModeButton
-                key={`staff-${button.id}`}
-                active={staffMode === button.id}
-                label={button.label}
-                count={button.count}
-                countLabel={button.countLabel}
+              <ModeButton key={`staff-${button.id}`} active={staffModes.includes(button.id)}
+                icon="driver" mode={button.id} label={button.label} count={button.count} countLabel={button.countLabel}
                 onClick={() => {
-                  setStaffMode(button.id);
-                  setEmployeeId("all");
-                }}
-              />
+                  setStaffModes((current) => current.includes(button.id)
+                    ? current.filter((mode) => mode !== button.id) : [...current, button.id]);
+                }} />
             ))}
           </div>
         </div>
@@ -446,6 +452,21 @@ export function StaffCalendarClient({
             )}
           </div>
 
+          {range.from && (
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="grid gap-1 text-xs text-mist">{labels.startTime}
+                <input type="time" value={times.start}
+                  onChange={(event) => setTimes((current) => ({ ...current, start: event.target.value }))}
+                  className="h-10 rounded-lg border border-white/15 bg-night px-3 text-sm text-ivory [color-scheme:dark]" />
+              </label>
+              <label className="grid gap-1 text-xs text-mist">{labels.endTime}
+                <input type="time" value={times.end}
+                  onChange={(event) => setTimes((current) => ({ ...current, end: event.target.value }))}
+                  className="h-10 rounded-lg border border-white/15 bg-night px-3 text-sm text-ivory [color-scheme:dark]" />
+              </label>
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -481,7 +502,7 @@ export function StaffCalendarClient({
 
             const key = toDayKey(day);
             const assignments = assignmentsByDay.get(key) ?? [];
-            const freeCounts = freeByDay.get(key) ?? { staff: 0, fleet: 0 };
+            const freeCounts = freeByDay.get(key) ?? { staff: 0, fleet: 0, staffReserved: 0, fleetReserved: 0 };
             const isToday = key === toDayKey(new Date());
             const inRange = isDayInRange(key, rangeStart, rangeEnd);
             const isEdge = key === rangeStart || key === rangeEnd;
@@ -500,12 +521,20 @@ export function StaffCalendarClient({
                 </div>
 
                 <div className="mt-2 space-y-1 text-left">
-                  {fleetMode === "available" ? (
+                  {fleetModes.length === 0 && (
+                    <DayAvailability kind="bus" label={labels.fleetSection} free={freeCounts.fleet}
+                      reserved={freeCounts.fleetReserved} freeLabel={labels.free} reservedLabel={labels.busy} />
+                  )}
+                  {staffModes.length === 0 && (
+                    <DayAvailability kind="driver" label={labels.employeesSection} free={freeCounts.staff}
+                      reserved={freeCounts.staffReserved} freeLabel={labels.free} reservedLabel={labels.busy} />
+                  )}
+                  {fleetModes.includes("available") ? (
                     <p className="rounded-md bg-champagne/15 px-1.5 py-1 text-[10px] text-champagne">
                       {freeCounts.fleet} {labels.availableVehicles}
                     </p>
                   ) : null}
-                  {staffMode === "available" ? (
+                  {staffModes.includes("available") ? (
                     <p className="rounded-md bg-pine/15 px-1.5 py-1 text-[10px] text-pine">
                       {freeCounts.staff} {labels.availableStaff}
                     </p>
@@ -535,13 +564,13 @@ export function StaffCalendarClient({
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <ResourceList
+        {fleetModes.length > 0 && <ResourceList
           title={labels.fleetSection}
           count={listedVehicles.length}
           countLabel={
-            fleetMode === "available" ? labels.availableVehicles : labels.scheduledVehicles
+            fleetModes.length === 2 ? "" : fleetModes.includes("available") ? labels.availableVehicles : labels.scheduledVehicles
           }
-          emptyLabel={fleetMode === "available" ? labels.noFleetInRange : labels.noFleetScheduled}
+          emptyLabel={fleetModes.includes("available") ? labels.noFleetInRange : labels.noFleetScheduled}
         >
           {listedVehicles.map((vehicle) => {
             const scheduled = isVehicleScheduled(vehicle, focusSpan, assignedOrders);
@@ -558,13 +587,13 @@ export function StaffCalendarClient({
               </li>
             );
           })}
-        </ResourceList>
+        </ResourceList>}
 
-        <ResourceList
+        {staffModes.length > 0 && <ResourceList
           title={labels.employeesSection}
           count={listedEmployees.length}
-          countLabel={staffMode === "available" ? labels.availableStaff : labels.scheduledStaff}
-          emptyLabel={staffMode === "available" ? labels.noStaffInRange : labels.noStaffScheduled}
+          countLabel={staffModes.length === 2 ? "" : staffModes.includes("available") ? labels.availableStaff : labels.scheduledStaff}
+          emptyLabel={staffModes.includes("available") ? labels.noStaffInRange : labels.noStaffScheduled}
         >
           {listedEmployees.map((employee) => {
             const scheduled = isEmployeeScheduled(employee, focusSpan, assignedOrders);
@@ -581,7 +610,7 @@ export function StaffCalendarClient({
               </li>
             );
           })}
-        </ResourceList>
+        </ResourceList>}
       </div>
     </div>
   );
@@ -589,12 +618,16 @@ export function StaffCalendarClient({
 
 function ModeButton({
   active,
+  icon,
+  mode,
   label,
   count,
   countLabel,
   onClick,
 }: {
   active: boolean;
+  icon: "bus" | "driver";
+  mode: ResourceMode;
   label: string;
   count: number;
   countLabel: string;
@@ -605,17 +638,49 @@ function ModeButton({
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={
-        active
-          ? "rounded-xl border border-burgundy bg-burgundy/20 px-3 py-3 text-left transition"
-          : "rounded-xl border border-white/10 bg-night/40 px-3 py-3 text-left transition hover:border-white/25"
-      }
+      className={`rounded-xl border px-3 py-3 text-left transition ${
+        mode === "available"
+          ? active ? "border-emerald-400/60 bg-emerald-400/15 text-emerald-200" : "border-emerald-400/25 bg-night/40 text-emerald-300/70 hover:border-emerald-400/50"
+          : active ? "border-rose-400/60 bg-rose-400/15 text-rose-200" : "border-rose-400/25 bg-night/40 text-rose-300/70 hover:border-rose-400/50"
+      }`}
     >
-      <span className="block text-sm font-medium text-ivory">{label}</span>
+      <span className="flex items-center gap-2 text-sm font-medium"><ResourceIcon kind={icon} />{label}</span>
       <span className="mt-1 block text-xs text-mist">
         {count} {countLabel}
       </span>
     </button>
+  );
+}
+
+function ResourceIcon({ kind }: { kind: "bus" | "driver" }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 shrink-0"
+      fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      {kind === "bus" ? (
+        <><rect x="4" y="3" width="16" height="16" rx="3" /><path d="M4 10h16M7 19v2m10-2v2M7.5 15h.01M16.5 15h.01" /></>
+      ) : (
+        <><circle cx="12" cy="8" r="3.5" /><path d="M5 20c.7-4 3.4-6 7-6s6.3 2 7 6" /></>
+      )}
+    </svg>
+  );
+}
+
+function DayAvailability({ kind, label, free, reserved, freeLabel, reservedLabel }: {
+  kind: "bus" | "driver";
+  label: string;
+  free: number;
+  reserved: number;
+  freeLabel: string;
+  reservedLabel: string;
+}) {
+  const description = `${label}: ${free} ${freeLabel}, ${reserved} ${reservedLabel}`;
+  return (
+    <p title={description} aria-label={description} className="flex flex-wrap items-center gap-1 text-[10px]">
+      <span className="text-mist"><ResourceIcon kind={kind} /></span>
+      {free > 0 && <span className="rounded bg-emerald-400/20 px-1 text-emerald-200">{free} {freeLabel}</span>}
+      {reserved > 0 && <span className="rounded bg-rose-400/20 px-1 text-rose-200">{reserved} {reservedLabel}</span>}
+      {free === 0 && reserved === 0 && <span className="text-mist">—</span>}
+    </p>
   );
 }
 

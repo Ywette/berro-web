@@ -2,7 +2,7 @@ import type { FleetVehicle } from "@/lib/content/fleet";
 import type { StaffOrder } from "@/types/dashboard";
 import type { Employee } from "@/types/staff";
 
-export type DateSpan = { start: string; end: string };
+export type DateSpan = { start: string; end: string; startTime?: string; endTime?: string };
 
 export function orderSpan(order: StaffOrder): DateSpan | null {
   if (!order.departureOn || !isIsoDate(order.departureOn)) return null;
@@ -15,6 +15,43 @@ export function orderSpan(order: StaffOrder): DateSpan | null {
 
 export function rangesOverlap(left: DateSpan, right: DateSpan) {
   return left.start <= right.end && right.start <= left.end;
+}
+
+// Existing order timestamps store the customer's wall-clock time with a UTC suffix.
+// Keep date-only orders conservative until both times are known.
+function orderTimes(order: StaffOrder): DateSpan | null {
+  const days = orderSpan(order);
+  if (!days) return null;
+  const start = order.departureAt?.slice(0, 16);
+  const end = order.returnAt?.slice(0, 16);
+  const timestamp = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+  if (!start || !end || !timestamp.test(start) || !timestamp.test(end) ||
+      start.slice(0, 10) !== days.start || end.slice(0, 10) !== days.end || end <= start ||
+      start.slice(11) === end.slice(11)) {
+    return null;
+  }
+  return { start, end };
+}
+
+function rangeOverlapsOrder(span: DateSpan, order: StaffOrder): boolean {
+  const days = orderSpan(order);
+  if (!days || !rangesOverlap(days, span)) return false;
+  const trip = orderTimes(order);
+  if (!trip || (!span.startTime && !span.endTime)) return true;
+  const start = `${span.start}T${span.startTime || "00:00"}`;
+  const end = `${span.end}T${span.endTime || "24:00"}`;
+  if (end <= start) return true;
+  return start < trip.end && trip.start < end;
+}
+
+function ordersOverlap(left: StaffOrder, right: StaffOrder): boolean {
+  const leftDays = orderSpan(left);
+  const rightDays = orderSpan(right);
+  if (!leftDays || !rightDays || !rangesOverlap(leftDays, rightDays)) return false;
+  const leftTimes = orderTimes(left);
+  const rightTimes = orderTimes(right);
+  if (!leftTimes || !rightTimes) return true;
+  return leftTimes.start < rightTimes.end && rightTimes.start < leftTimes.end;
 }
 
 export function resolvedRange(
@@ -58,7 +95,10 @@ export function employeeChoices(
       const assignedId = role === "driver" ? order.assignedDriverId : order.assignedGuideId;
       if (assignedId === employee.id) return true;
       if (!span) return true;
-      return isEmployeeFree(employee, span, others);
+      return !others.some((other) =>
+        (other.assignedDriverId === employee.id || other.assignedGuideId === employee.id) &&
+        ordersOverlap(order, other),
+      );
     })
     .sort((left, right) => left.fullName.localeCompare(right.fullName, "lv"));
 }
@@ -84,7 +124,9 @@ export function vehicleChoices(order: StaffOrder, vehicles: FleetVehicle[], orde
       if (!vehicle.isActive || vehicle.passengers < order.passengerCount) return false;
       if (!documentsCover(vehicle, coveredThrough)) return false;
       if (!span) return true;
-      return isVehicleFree(vehicle, span, others);
+      return !others.some((other) =>
+        other.assignedVehicleId === vehicle.id && ordersOverlap(order, other),
+      );
     })
     .sort((left, right) => vehicleLabel(left).localeCompare(vehicleLabel(right), "lv"));
 }
@@ -96,14 +138,12 @@ export function vehicleLabel(vehicle: FleetVehicle) {
 
 function occupiesEmployee(order: StaffOrder, employeeId: string, span: DateSpan) {
   if (order.assignedDriverId !== employeeId && order.assignedGuideId !== employeeId) return false;
-  const trip = orderSpan(order);
-  return trip ? rangesOverlap(trip, span) : false;
+  return rangeOverlapsOrder(span, order);
 }
 
 function occupiesVehicle(order: StaffOrder, vehicleId: string, span: DateSpan) {
   if (order.assignedVehicleId !== vehicleId) return false;
-  const trip = orderSpan(order);
-  return trip ? rangesOverlap(trip, span) : false;
+  return rangeOverlapsOrder(span, order);
 }
 
 function documentsCover(vehicle: FleetVehicle, day: string) {

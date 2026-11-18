@@ -5,19 +5,24 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAssignedOrders } from "./use-assigned-orders";
 import { useDictionary } from "@/components/i18n/locale-provider";
-import { intlLocales } from "@/lib/i18n/locale";
 import { formatDate } from "@/lib/content/format-date";
 import { filterOrders } from "@/lib/orders/filter";
+import { formatRouteAddress } from "@/lib/orders/format-address";
 import { ORDER_STATUSES, isOrderStatus, type OrderStatus, type StaffOrder } from "@/types/dashboard";
 
-const statusTone: Record<OrderStatus, string> = {
-  new: "border-sky-300/25 bg-sky-300/10 text-sky-100",
-  calculated: "border-amber-300/25 bg-amber-300/10 text-amber-100",
-  transport: "border-cyan-300/25 bg-cyan-300/10 text-cyan-100",
-  sent: "border-violet-300/25 bg-violet-300/10 text-violet-100",
-  approved: "border-emerald-300/25 bg-emerald-300/10 text-emerald-100",
-  paid: "border-teal-300/25 bg-teal-300/10 text-teal-100",
-};
+const stageOrder: OrderStatus[] = ["new", "transport", "calculated", "sent", "approved", "paid"];
+
+function StageIcon({ status }: { status: OrderStatus }) {
+  const paths: Record<OrderStatus, React.ReactNode> = {
+    new: <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z" />,
+    transport: <><rect x="4" y="3" width="16" height="16" rx="3" /><path d="M4 10h16M7 19v2m10-2v2M8 15h.01M16 15h.01" /></>,
+    calculated: <><path d="M18 5.5A7 7 0 0 0 7 12a7 7 0 0 0 11 6.5M4 10h10M4 14h10" /></>,
+    sent: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m4 7 8 6 8-6" /></>,
+    approved: <path d="m4 12 5 5L20 6" />,
+    paid: <><rect x="2.5" y="6" width="19" height="12" rx="2" /><circle cx="12" cy="12" r="2.5" /><path d="M5 9h1m12 6h1" /></>,
+  };
+  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">{paths[status]}</svg>;
+}
 
 export function OrdersTableClient({ initialOrders, demoNote }: {
   initialOrders: StaffOrder[];
@@ -33,7 +38,6 @@ export function OrdersTableClient({ initialOrders, demoNote }: {
   const query = searchParams.get("q") ?? "";
   const requestedStatus = searchParams.get("status");
   const status = requestedStatus && isOrderStatus(requestedStatus) ? requestedStatus : "";
-  const priceFormat = new Intl.NumberFormat(intlLocales[dictionary.locale], { style: "currency", currency: "EUR" });
 
   function setFilter(key: string, value: string) {
     const url = new URL(window.location.href);
@@ -71,7 +75,7 @@ export function OrdersTableClient({ initialOrders, demoNote }: {
   }
 
   function route(order: StaffOrder) {
-    return `${order.origin || "—"} → ${order.destination || "—"}`;
+    return `${formatRouteAddress(order.origin || "—")} → ${formatRouteAddress(order.destination || "—")}`;
   }
 
   function date(order: StaffOrder) {
@@ -80,7 +84,20 @@ export function OrdersTableClient({ initialOrders, demoNote }: {
   }
 
   function badge(order: StaffOrder) {
-    return <span className={`inline-flex max-w-full items-center rounded-full border px-2.5 py-1 text-xs font-medium ${statusTone[order.status]}`}>{staff.orderStates[order.status]}</span>;
+    const completed = new Set(["new", order.status, ...(order.completedStatuses ?? [])]);
+    return <div className="flex flex-wrap gap-1" aria-label={staff.state}>
+      {stageOrder.map((stage) => {
+        const active = completed.has(stage);
+        const stageName = stage === "sent" ? staff.stageSent : staff.orderStates[stage];
+        const label = `${stageName} · ${active ? staff.stageComplete : staff.stagePending}`;
+        return <span key={stage} title={label} aria-label={label} role="img"
+          className={`grid h-8 w-8 place-items-center rounded-lg border ${active
+            ? "border-emerald-400/30 bg-emerald-400/15 text-emerald-300"
+            : "border-white/10 bg-white/5 text-gray-400"}`}>
+          <StageIcon status={stage} />
+        </span>;
+      })}
+    </div>;
   }
 
   function actions(order: StaffOrder) {
@@ -136,8 +153,7 @@ export function OrdersTableClient({ initialOrders, demoNote }: {
                   <th className="w-[17%] px-3 py-4 font-medium lg:w-[15%]">{dictionary.hero.departureAt}</th>
                   <th className="w-[25%] px-3 py-4 font-medium lg:w-[23%]">{staff.route}</th>
                   <th className="hidden w-[7%] px-3 py-4 font-medium lg:table-cell">{staff.passengers}</th>
-                  <th className="w-[16%] px-3 py-4 font-medium lg:w-[12%]">{staff.state}</th>
-                  <th className="w-[15%] px-3 py-4 font-medium lg:w-[10%]">{staff.orderPrice}</th>
+                  <th className="w-[25%] px-3 py-4 font-medium lg:w-[23%]">{staff.state}</th>
                   <th className="w-32 px-3 py-4 font-medium"><span className="sr-only">{labels.actions}</span></th>
                 </tr>
               </thead>
@@ -153,7 +169,6 @@ export function OrdersTableClient({ initialOrders, demoNote }: {
                   <td className="break-words px-3 py-4 align-top text-ivory/90">{route(order)}{Boolean(order.stops?.length) && <p className="mt-1 text-xs text-mist">+ {order.stops!.length} {labels.stops}</p>}</td>
                   <td className="hidden px-3 py-4 align-top lg:table-cell">{order.passengerCount}</td>
                   <td className="px-3 py-4 align-top">{badge(order)}</td>
-                  <td className="break-words px-3 py-4 align-top">{order.price != null ? priceFormat.format(order.price) : "—"}</td>
                   <td className="px-2 py-2 align-top">{actions(order)}</td>
                 </tr>;
               })}</tbody>
@@ -165,7 +180,7 @@ export function OrdersTableClient({ initialOrders, demoNote }: {
               <div className="flex items-start justify-between gap-3"><div><Link href={url} onNavigate={rememberPosition} className="font-semibold text-ivory underline-offset-4 hover:underline">{order.reference}</Link><p className="mt-1 text-sm text-mist">{order.requestorName || "—"}</p></div>{badge(order)}</div>
               <p className="mt-4 break-words font-medium text-ivory">{route(order)}</p>
               {Boolean(order.stops?.length) && <p className="mt-1 text-xs text-mist">+ {order.stops!.length} {labels.stops}</p>}
-              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-mist"><span>{date(order)}</span><span>{order.passengerCount} {staff.passengers.toLocaleLowerCase()}</span>{order.price != null && <span className="font-medium text-ivory">{priceFormat.format(order.price)}</span>}</div>
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-mist"><span>{date(order)}</span><span>{order.passengerCount} {staff.passengers.toLocaleLowerCase()}</span></div>
               <div className="mt-4 flex items-center gap-2 border-t border-line pt-3"><Link href={url} onNavigate={rememberPosition} className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-white/20 px-3 text-sm font-medium text-ivory hover:bg-white/10">{labels.open}</Link>{actions(order)}</div>
             </article>;
           })}</div>

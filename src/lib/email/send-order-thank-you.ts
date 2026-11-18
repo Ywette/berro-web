@@ -1,6 +1,7 @@
 ﻿import { Resend } from "resend";
 import { formatDate } from "@/lib/content/format-date";
 import { parseLocale } from "@/lib/i18n/locale";
+import { formatRouteAddress } from "@/lib/orders/format-address";
 import type { QuoteOrderInput } from "@/lib/orders/session-orders";
 import type { StaffOrder } from "@/types/dashboard";
 
@@ -71,7 +72,8 @@ export async function sendOrderThankYouEmail(order: StaffOrder, input?: QuoteOrd
   const name = order.requestorName?.trim();
   const greeting = name ? `${t.hello} ${name},` : t.greeting;
   const routePoints = [order.origin, ...(order.stops ?? []).map((stop) => stop.name),
-    order.destination, order.returnTo].filter((place): place is string => Boolean(place && place !== "—"));
+    order.destination, order.returnTo].filter((place): place is string => Boolean(place && place !== "—"))
+    .map(formatRouteAddress);
   const rows = [
     [t.departure, order.departureOn && formatDate(order.departureOn)],
     [t.returning, order.returnOn && formatDate(order.returnOn)],

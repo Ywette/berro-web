@@ -1,5 +1,7 @@
 import { Resend } from "resend";
 import { formatDate } from "@/lib/content/format-date";
+import { formatDuration } from "@/lib/quote";
+import { formatRouteAddress } from "@/lib/orders/format-address";
 import type { QuoteOrderInput } from "@/lib/orders/session-orders";
 import type { StaffOrder } from "@/types/dashboard";
 
@@ -21,7 +23,12 @@ function ordersInbox() {
 function routeLine(order: StaffOrder) {
   const parts = [order.origin, ...(order.stops ?? []).map((stop) => stop.name), order.destination];
   if (order.returnTo) parts.push(order.returnTo);
-  return parts.join(" → ");
+  return parts.map(formatRouteAddress).join(" → ");
+}
+
+function escapeHtml(value: string) {
+  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
 }
 
 export async function sendNewOrderEmail(order: StaffOrder, input?: QuoteOrderInput) {
@@ -47,6 +54,23 @@ export async function sendNewOrderEmail(order: StaffOrder, input?: QuoteOrderInp
     input?.excursionTitle?.trim() ||
     (input?.excursionSlug?.trim() ? input.excursionSlug.trim() : null);
 
+  const estimate = order.routeEstimate;
+  const duration = estimate && formatDuration(estimate.durationMinutes);
+  const mapsLabel = estimate
+    ? `Google Maps · ${estimate.distanceKm} km${duration ? ` · ${duration}` : ""}`
+    : null;
+  let mapsUrl: string | null = null;
+  if (estimate) {
+    try {
+      const parsed = new URL(estimate.mapsUrl);
+      if (parsed.protocol === "https:" && parsed.hostname === "www.google.com" && parsed.pathname.startsWith("/maps/")) {
+        mapsUrl = parsed.toString();
+      }
+    } catch {
+      // The route summary remains readable if its link is unavailable.
+    }
+  }
+
   const lines = [
     `New quote request ${order.reference}`,
     "",
@@ -55,7 +79,7 @@ export async function sendNewOrderEmail(order: StaffOrder, input?: QuoteOrderInp
     excursion ? `Excursion: ${excursion}` : null,
     `Travel type: ${travelType}`,
     `Route: ${routeLine(order)}`,
-    order.routeEstimate ? `Google Maps driving estimate: ${order.routeEstimate.distanceKm} km${order.routeEstimate.durationMinutes === null ? "" : `, ${order.routeEstimate.durationMinutes} min`}\n${order.routeEstimate.mapsUrl}` : "Route estimate needs review",
+    mapsLabel || "Route estimate needs review",
     `Departure: ${formatDate(order.departureOn || input?.departure)}`,
     `Return: ${formatDate(order.returnOn || input?.returnAt)}`,
     `Passengers: ${order.passengerCount || "—"}`,
@@ -69,13 +93,26 @@ export async function sendNewOrderEmail(order: StaffOrder, input?: QuoteOrderInp
     `Open order: ${staffOrdersUrl}`,
   ].filter((line) => line !== null);
 
+  const html = `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6;color:#242124">${lines.map((line) => {
+    if (mapsLabel && mapsUrl && line === mapsLabel) {
+      return `<a href="${escapeHtml(mapsUrl)}">${escapeHtml(mapsLabel)}</a>`;
+    }
+    if (line === `Open order: ${staffOrdersUrl}`) {
+      return `<a href="${escapeHtml(staffOrdersUrl)}">Open order</a>`;
+    }
+    return line ? escapeHtml(line) : "&nbsp;";
+  }).join("<br>")}</div>`;
+  const text = lines.map((line) => line === mapsLabel && mapsUrl
+    ? `${line}\n${mapsUrl}` : line).join("\n");
+
   const resend = new Resend(apiKey);
   const { error } = await resend.emails.send({
     from,
     to,
     replyTo: order.requestorEmail || undefined,
     subject: `Berro Travel — new order ${order.reference}`,
-    text: lines.join("\n"),
+    text,
+    html,
   });
 
   if (error) {

@@ -87,7 +87,9 @@ export function OrderEditor({ order, draftKey, onSaved }: {
       } else {
         const edit = readOrderEdit(form);
         if (!edit) setError(labels.invalid);
-        else { discard(); onSaved({ ...order, ...edit, routeEstimate: edit.origin === order.origin &&
+        else { discard(); onSaved({ ...order, ...edit, completedStatuses: Array.from(new Set([
+          "new", ...(order.completedStatuses ?? []), order.status, edit.status,
+        ])), routeEstimate: edit.origin === order.origin &&
           edit.destination === order.destination ? order.routeEstimate : null }); }
       }
     } catch {

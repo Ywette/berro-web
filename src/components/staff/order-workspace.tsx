@@ -19,6 +19,7 @@ import type { OrderStatus, StaffOrder } from "@/types/dashboard";
 import { formatTripDuration, tripDurationDays } from "@/lib/orders/trip-duration";
 import { formatDate, formatRigaTimestamp } from "@/lib/content/format-date";
 import { formatDuration } from "@/lib/quote";
+import { formatRouteAddress } from "@/lib/orders/format-address";
 
 export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, orders, confirmDelete, backUrl }: {
   id: string;
@@ -110,7 +111,9 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
           // An existing draft keeps its original version if browser storage is unavailable.
         }
       } else {
-        next = { ...order, status };
+        next = { ...order, status, completedStatuses: Array.from(new Set([
+          "new", ...(order.completedStatuses ?? []), order.status, status,
+        ])) };
         writeSessionOrders([next, ...readSessionOrders().filter((item) => item.id !== order.id)]);
       }
       setOrder(applyLocalCalculations(applyAssignmentPatches([next]))[0]);
@@ -179,7 +182,7 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
           <h3 className="text-sm text-mist">{staff.route}</h3>
           <ol className="my-2 list-decimal space-y-1 pl-5">
             {[order.origin, ...(order.stops ?? []).map((stop) => stop.name), order.destination, order.returnTo]
-              .filter(Boolean).map((place, index) => <li key={index}>{place}</li>)}
+              .filter((place): place is string => Boolean(place)).map((place, index) => <li key={index} title={place}>{formatRouteAddress(place)}</li>)}
           </ol>
           {estimate && (
             <a href={estimate.mapsUrl} target="_blank" rel="noreferrer" className="text-sm underline">
@@ -265,14 +268,17 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
           </div>
         </section>
         <div className="flex flex-wrap gap-2" role="group" aria-label={staff.state}>
-          {(["transport", "calculated", "sent", "approved", "paid"] as const).map((status) => (
+          {(["transport", "calculated", "sent", "approved", "paid"] as const).map((status) => {
+            const completed = order.status === status || (order.completedStatuses ?? []).includes(status);
+            return (
             <button key={status} type="button" disabled={statusBusy} onClick={() => changeStatus(status)}
-              aria-pressed={order.status === status}
-              className={`min-h-10 rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50 ${order.status === status
-                ? "border-burgundy bg-burgundy text-white" : "border-white/20 text-ivory hover:bg-white/10"}`}>
-              {status === "sent" ? staff.stageSent : staff.orderStates[status]}
+              aria-pressed={completed}
+              className={`min-h-10 rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50 ${completed
+                ? "border-emerald-400/30 bg-emerald-400/15 text-emerald-300" : "border-white/10 bg-white/5 text-gray-400 hover:bg-white/10"}`}>
+              {status === "sent" ? (completed ? staff.stageSent : staff.stageSend) : staff.orderStates[status]}
             </button>
-          ))}
+            );
+          })}
         </div>
         {statusError && <p role="alert" className="text-sm text-rose-200">{statusError}</p>}
         <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
