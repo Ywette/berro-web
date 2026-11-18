@@ -70,34 +70,62 @@ export async function sendOrderThankYouEmail(order: StaffOrder, input?: QuoteOrd
   const t = copy[language];
   const name = order.requestorName?.trim();
   const greeting = name ? `${t.hello} ${name},` : t.greeting;
-  const route = [order.origin, ...(order.stops ?? []).map((stop) => stop.name),
-    order.destination, order.returnTo].filter((place) => place && place !== "—").join(" → ");
+  const routePoints = [order.origin, ...(order.stops ?? []).map((stop) => stop.name),
+    order.destination, order.returnTo].filter((place): place is string => Boolean(place && place !== "—"));
   const rows = [
-    [t.route, route],
     [t.departure, order.departureOn && formatDate(order.departureOn)],
     [t.returning, order.returnOn && formatDate(order.returnOn)],
     [t.passengers, String(order.passengerCount)],
   ].filter((row): row is [string, string] => Boolean(row[1]));
   const text = [
     greeting, "", t.thanks, t.message, `${t.reference}: ${order.reference}`, "",
-    t.summary, ...rows.map(([label, value]) => `${label}: ${value}`), "",
+    t.summary, ...(routePoints.length ? [`${t.route}: ${routePoints.join(" → ")}`] : []),
+    ...rows.map(([label, value]) => `${label}: ${value}`), "",
     t.contact, "", t.regards, t.team, "berro@berro.lv",
   ].join("\n");
   const rowsHtml = rows.map(([label, value]) =>
-    `<tr><td style="padding:8px 12px;color:#666;font-size:14px;vertical-align:top">${escapeHtml(label)}</td><td style="padding:8px 12px;color:#242124;font-size:14px;vertical-align:top">${escapeHtml(value)}</td></tr>`
+    `<tr><td style="padding:7px 8px 7px 0;color:#777;font-size:13px;line-height:1.4;vertical-align:top">${escapeHtml(label)}</td><td style="padding:7px 0;color:#242124;font-size:14px;font-weight:bold;line-height:1.4;vertical-align:top;white-space:nowrap">${escapeHtml(value)}</td></tr>`
   ).join("");
-  const logo = escapeHtml(`${siteUrl()}/brand/berro-travel-logo-white.png`);
+  const routeHtml = routePoints.map((point, index) => {
+    const last = index === routePoints.length - 1;
+    const first = index === 0;
+    const color = first ? "#8bcdae" : last ? "#922b48" : "#bd9c68";
+    const marker = first
+      ? '<span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:#8bcdae;color:#18382e;font-size:12px;line-height:22px;text-align:center">●</span>'
+      : last
+        ? '<span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:#922b48;color:#ffffff;font-size:14px;line-height:22px;text-align:center">&#9873;</span>'
+        : `<span style="color:${color};font-size:19px;line-height:24px">●</span>`;
+    return `<tr><td width="30" align="center" valign="top" style="width:30px;padding:0;vertical-align:top">
+      <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:30px"><tr>
+        <td align="center" style="height:24px;line-height:24px">${marker}</td>
+      </tr><tr><td align="center" style="height:${last ? "0" : "20"}px;line-height:0;font-size:0">
+        ${last ? "" : '<div style="width:1px;height:20px;background:#c7b7a2;font-size:0;line-height:0">&nbsp;</div>'}
+      </td></tr></table></td>
+      <td valign="top" style="padding:3px 8px 16px 7px;color:#242124;font-size:14px;line-height:1.4;overflow-wrap:anywhere">${escapeHtml(point)}</td></tr>`;
+  }).join("");
+  const logo = escapeHtml(`${siteUrl()}/brand/berro-travel-logo-dark.png`);
   const html = `<!doctype html><html lang="${language}"><body style="margin:0;padding:0;background:#f3f1ef;font-family:Arial,sans-serif;color:#242124">
 <table role="presentation" style="width:100%;border-collapse:collapse;background:#f3f1ef"><tr><td align="center" style="padding:28px 12px">
 <table role="presentation" style="width:100%;max-width:600px;border-collapse:collapse;background:#ffffff">
-<tr><td style="padding:25px 30px;background:#171419"><img src="${logo}" width="168" alt="Berro Travel" style="display:block;max-width:100%;height:auto"></td></tr>
+<tr><td bgcolor="#101012" style="padding:24px 30px;background-color:#101012"><img src="${logo}" width="168" alt="Berro Travel" style="display:block;width:168px;max-width:100%;height:auto;border:0;color:#ffffff;font-size:18px;font-weight:bold"></td></tr>
 <tr><td style="padding:32px 30px">
 <p style="margin:0 0 18px;font-size:16px">${escapeHtml(greeting)}</p>
 <h1 style="margin:0 0 14px;font-family:Georgia,serif;font-size:26px;font-weight:normal;color:#242124">${escapeHtml(t.thanks)}</h1>
 <p style="margin:0 0 20px;line-height:1.6">${escapeHtml(t.message)}</p>
 <p style="margin:0 0 24px;color:#84263f"><strong>${escapeHtml(t.reference)}: ${escapeHtml(order.reference)}</strong></p>
 <h2 style="font-size:16px;margin:0 0 10px">${escapeHtml(t.summary)}</h2>
-<table role="presentation" style="width:100%;border-collapse:collapse;background:#f7f5f3">${rowsHtml}</table>
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;background:#f7f5f3"><tr><td style="padding:20px 16px;font-size:0">
+<!--[if mso]><table role="presentation" width="100%"><tr><td width="50%" valign="top"><![endif]-->
+<div style="display:inline-block;vertical-align:top;width:100%;max-width:250px;font-size:14px">
+<p style="margin:0 0 12px;color:#777;font-size:13px;font-weight:bold">${escapeHtml(t.route)}</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse">${routeHtml}</table>
+</div>
+<!--[if mso]></td><td width="50%" valign="top"><![endif]-->
+<div style="display:inline-block;vertical-align:top;width:100%;max-width:250px;font-size:14px">
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse">${rowsHtml}</table>
+</div>
+<!--[if mso]></td></tr></table><![endif]-->
+</td></tr></table>
 <p style="margin:24px 0;line-height:1.6">${escapeHtml(t.contact)}</p>
 <p style="margin:0;line-height:1.6">${escapeHtml(t.regards)},<br><strong>${escapeHtml(t.team)}</strong><br><a href="mailto:berro@berro.lv" style="color:#84263f">berro@berro.lv</a></p>
 </td></tr></table></td></tr></table></body></html>`;

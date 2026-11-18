@@ -18,15 +18,10 @@ export function OrderCalculationForm({ order, onSaved, onLockChange }: {
   const [error, setError] = useState("");
   const [values, setValues] = useState<Record<keyof OrderCalculation, string>>(() => {
     const saved = order.calculation;
+    const legacy = saved && "fuelPrice" in saved;
     return {
-      travelMinutes: String(saved?.travelMinutes ?? order.routeEstimate?.durationMinutes ?? ""),
-      luggageMinutes: String(saved?.luggageMinutes ?? order.passengerCount * 0.5),
-      fuelPrice: saved ? String(saved.fuelPrice) : "",
-      kilometres: String(saved?.kilometres ?? order.routeEstimate?.distanceKm ?? ""),
-      fuelConsumption: saved ? String(saved.fuelConsumption) : "",
-      driverCost: saved ? String(saved.driverCost) : "",
-      vehicleCost: saved ? String(saved.vehicleCost) : "",
-      extraExpenses: saved ? String(saved.extraExpenses) : "0",
+      vehicleCost: legacy ? String(order.price ?? "") : saved ? String(saved.vehicleCost) : "",
+      extraExpenses: legacy ? "0" : saved ? String(saved.extraExpenses) : "",
     };
   });
   const entries = Object.values(values);
@@ -34,10 +29,8 @@ export function OrderCalculationForm({ order, onSaved, onLockChange }: {
   const numeric = Object.fromEntries(Object.entries(values).map(([key, value]) => [key, Number(value)])) as OrderCalculation;
   const price = valid ? calculationTotal(numeric) : null;
   const fields: Array<[keyof OrderCalculation, string]> = [
-    ["travelMinutes", labels.travel], ["luggageMinutes", labels.luggage],
-    ["fuelPrice", labels.fuelPrice], ["kilometres", labels.distance],
-    ["fuelConsumption", labels.consumption], ["driverCost", labels.driver],
-    ["vehicleCost", labels.vehicle], ["extraExpenses", labels.extras],
+    ["vehicleCost", dictionary.staffDashboard.rentalPrice],
+    ["extraExpenses", dictionary.staffDashboard.extraServices],
   ];
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -69,7 +62,6 @@ export function OrderCalculationForm({ order, onSaved, onLockChange }: {
           </label>
         ))}
       </fieldset>
-      <p className="text-xs text-mist">{labels.formula}</p>
       <p className="font-semibold">{labels.total} {price === null ? "—" : new Intl.NumberFormat(dictionary.locale, { style: "currency", currency: "EUR" }).format(price)}</p>
       {error && <p role="alert" className="text-sm text-rose-200">{error}</p>}
       {locked ? <p role="status" className="text-sm text-mist">{labels.saved}</p> : null}

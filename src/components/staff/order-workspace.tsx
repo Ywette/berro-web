@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDictionary } from "@/components/i18n/locale-provider";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { manageOrder } from "@/actions/manage-orders";
+import { manageOrder, updateOrderStatus } from "@/actions/manage-orders";
 import { OrderEditor } from "./order-editor";
 import { OrderCalculationForm } from "./order-calculation";
 import { mergeOrdersWithSession, readSessionOrders, writeSessionOrders } from "@/lib/orders/session-orders";
@@ -15,7 +15,7 @@ import type { Employee } from "@/types/staff";
 import { formatTravelTypeLabel } from "@/lib/quote-travel-types";
 import { formatHeardAboutLabel } from "@/lib/quote-heard-about";
 import { employeeChoices, vehicleChoices, vehicleLabel } from "@/lib/staff/availability";
-import type { StaffOrder } from "@/types/dashboard";
+import type { OrderStatus, StaffOrder } from "@/types/dashboard";
 import { formatTripDuration, tripDurationDays } from "@/lib/orders/trip-duration";
 import { formatDate, formatRigaTimestamp } from "@/lib/content/format-date";
 import { formatDuration } from "@/lib/quote";
@@ -42,6 +42,8 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
   const [calculationOpened, setCalculationOpened] = useState(false);
   const [calculationLocked, setCalculationLocked] = useState(Boolean(initialOrder?.calculation));
   const [error, setError] = useState("");
+  const [statusBusy, setStatusBusy] = useState(false);
+  const [statusError, setStatusError] = useState("");
   const draftKey = `berro:order-draft:${userId}:${id}`;
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -83,6 +85,40 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
     setOrder(applyLocalCalculations(applyAssignmentPatches([next]))[0]);
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
     setEditing(false);
+  }
+  async function changeStatus(status: OrderStatus) {
+    if (!order || statusBusy || status === order.status) return;
+    setStatusBusy(true);
+    setStatusError("");
+    try {
+      let next: StaffOrder;
+      if (order.updatedAt) {
+        const result = await updateOrderStatus(order.id, order.updatedAt, status);
+        if (result.error) { setStatusError(staff.orderEdit[result.error]); return; }
+        next = result.order;
+        try {
+          const raw = sessionStorage.getItem(draftKey);
+          if (raw) {
+            const draft = JSON.parse(raw);
+            if (draft.version === order.updatedAt) {
+              draft.version = next.updatedAt;
+              if (draft.fields) delete draft.fields.status;
+              sessionStorage.setItem(draftKey, JSON.stringify(draft));
+            }
+          }
+        } catch {
+          // An existing draft keeps its original version if browser storage is unavailable.
+        }
+      } else {
+        next = { ...order, status };
+        writeSessionOrders([next, ...readSessionOrders().filter((item) => item.id !== order.id)]);
+      }
+      setOrder(applyLocalCalculations(applyAssignmentPatches([next]))[0]);
+    } catch {
+      setStatusError(staff.orderEdit.failed);
+    } finally {
+      setStatusBusy(false);
+    }
   }
   async function remove() {
     if (!order || busy) return;
@@ -210,7 +246,7 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
           </div>
         )}
         <div id="order-edit" hidden={!editing} className={editing ? undefined : "!hidden"}>
-          {loaded && <OrderEditor key={draftKey} order={order} draftKey={draftKey} onSaved={saved} />}
+          {loaded && <OrderEditor key={`${draftKey}:${order.updatedAt ?? ""}`} order={order} draftKey={draftKey} onSaved={saved} />}
         </div>
         <section className="border-t border-line pt-5">
           <h2>
@@ -228,6 +264,17 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
             {calculationOpened && <OrderCalculationForm key={order.id} order={order} onSaved={saved} onLockChange={setCalculationLocked} />}
           </div>
         </section>
+        <div className="flex flex-wrap gap-2" role="group" aria-label={staff.state}>
+          {(["transport", "calculated", "sent", "approved", "paid"] as const).map((status) => (
+            <button key={status} type="button" disabled={statusBusy} onClick={() => changeStatus(status)}
+              aria-pressed={order.status === status}
+              className={`min-h-10 rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50 ${order.status === status
+                ? "border-burgundy bg-burgundy text-white" : "border-white/20 text-ivory hover:bg-white/10"}`}>
+              {status === "sent" ? staff.stageSent : staff.orderStates[status]}
+            </button>
+          ))}
+        </div>
+        {statusError && <p role="alert" className="text-sm text-rose-200">{statusError}</p>}
         <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
           <button type="button" className="mr-auto rounded-lg border border-rose-300/40 px-4 py-2 text-sm font-medium text-rose-200 hover:bg-rose-300/10" onClick={() => ref.current?.showModal()}>
             {staff.orderEdit.remove}

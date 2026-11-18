@@ -167,7 +167,7 @@ export const demoOrders: StaffOrder[] = [
     travelTypeDetail: null,
     planDocument: null,
     planDocumentPath: null,
-    status: "in_progress",
+    status: "new",
     departureOn: "2026-11-12",
     returnOn: null,
     stops: null,

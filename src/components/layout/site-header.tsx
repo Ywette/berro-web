@@ -32,7 +32,6 @@ export async function SiteHeader() {
     { href: "/staff/excursions", label: dictionary.staffDashboard.excursionsNav },
     { href: "/staff/documents", label: dictionary.staffDashboard.documentsNav },
     { href: "/staff/employees", label: dictionary.staffDashboard.employees },
-    { href: "/staff/calculation", label: dictionary.staffDashboard.calculation },
   ] as const;
 
   return (

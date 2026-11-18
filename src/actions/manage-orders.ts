@@ -5,6 +5,28 @@ import { revalidatePath } from "next/cache";
 import { readOrderEdit } from "@/lib/orders/edit";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 import { staffOrderFromRow, type OrderRow } from "@/lib/supabase/order-map";
+import { isOrderStatus, type OrderStatus } from "@/types/dashboard";
+
+export async function updateOrderStatus(id: string, version: string, status: OrderStatus) {
+  const user = await currentUser();
+  if (!user) return { error: "signedOut" } as const;
+  if (user.publicMetadata.role !== "staff" && user.publicMetadata.role !== "admin") {
+    return { error: "access" } as const;
+  }
+  if (!id || !version || !isOrderStatus(status)) return { error: "invalid" } as const;
+  const db = createServiceSupabaseClient();
+  if (!db) return { error: "failed" } as const;
+  const { data, error } = await db.from("orders")
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq("id", id).eq("updated_at", version).select("*").maybeSingle();
+  if (error?.code === "23514" && /orders_status_check/.test(error.message)) {
+    return { error: "statusSetup" } as const;
+  }
+  if (error) console.error("[orders] status update failed", error.code, error.message);
+  if (error || !data) return { error: error ? "failed" : "changed" } as const;
+  revalidatePath("/staff/orders");
+  return { order: staffOrderFromRow(data as OrderRow) } as const;
+}
 
 export async function manageOrder(id: string, version: string, form: FormData | null) {
   const user = await currentUser();

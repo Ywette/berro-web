@@ -1,6 +1,7 @@
 export const ORDER_STATUSES = [
   "new",
-  "in_progress",
+  "calculated",
+  "transport",
   "sent",
   "approved",
   "paid",
@@ -9,14 +10,8 @@ export const ORDER_STATUSES = [
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 export type OrderCalculation = {
-  travelMinutes: number;
-  luggageMinutes: number;
-  fuelPrice: number;
-  kilometres: number;
-  driverCost: number;
   vehicleCost: number;
   extraExpenses: number;
-  fuelConsumption: number;
 };
 
 export type StaffOrder = {

@@ -12,7 +12,8 @@ import { ORDER_STATUSES, isOrderStatus, type OrderStatus, type StaffOrder } from
 
 const statusTone: Record<OrderStatus, string> = {
   new: "border-sky-300/25 bg-sky-300/10 text-sky-100",
-  in_progress: "border-amber-300/25 bg-amber-300/10 text-amber-100",
+  calculated: "border-amber-300/25 bg-amber-300/10 text-amber-100",
+  transport: "border-cyan-300/25 bg-cyan-300/10 text-cyan-100",
   sent: "border-violet-300/25 bg-violet-300/10 text-violet-100",
   approved: "border-emerald-300/25 bg-emerald-300/10 text-emerald-100",
   paid: "border-teal-300/25 bg-teal-300/10 text-teal-100",
@@ -85,15 +86,25 @@ export function OrdersTableClient({ initialOrders, demoNote }: {
   function actions(order: StaffOrder) {
     const orderUrl = detailsUrl(order);
     return (
-      <details className="relative" onClick={(event) => event.stopPropagation()}>
-        <summary aria-label={`${labels.more} · ${order.reference}`} className="flex min-h-10 min-w-10 cursor-pointer list-none items-center justify-center rounded-lg border border-white/15 px-3 text-ivory hover:bg-white/10 [&::-webkit-details-marker]:hidden">⋯</summary>
-        <div className="absolute right-0 z-30 mt-2 w-64 space-y-3 rounded-xl border border-line bg-night p-4 text-left shadow-xl">
-          <Link href={orderUrl + "#edit"} onNavigate={rememberPosition} className="block rounded px-1 py-1 text-sm hover:text-white">{staff.editTransport}</Link>
-          <Link href={orderUrl + "&delete=1"} onNavigate={rememberPosition} className="block rounded px-1 py-1 text-sm text-rose-200">{staff.deleteOrder}</Link>
-          {order.price == null && <Link href={`/staff/calculation?order=${encodeURIComponent(order.id)}`} className="block px-1 py-1 text-sm">{staff.calculatePrice}</Link>}
-          {order.planDocumentPath && <a href={`/api/staff/order-document?id=${encodeURIComponent(order.id)}`} target="_blank" rel="noopener noreferrer" className="block break-words px-1 py-1 text-sm underline">{dictionary.pricing.planDocument}</a>}
-        </div>
-      </details>
+      <div className="flex items-center justify-end gap-1" onClick={(event) => event.stopPropagation()}>
+        {order.planDocumentPath && (
+          <a href={`/api/staff/order-document?id=${encodeURIComponent(order.id)}`} target="_blank" rel="noopener noreferrer"
+            aria-label={`${dictionary.pricing.planDocument} · ${order.reference}`} title={dictionary.pricing.planDocument}
+            className="grid min-h-10 min-w-10 place-items-center rounded-lg text-mist hover:bg-white/10 hover:text-white">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M21 11.5 12 20.5a6 6 0 0 1-8.5-8.5l9-9a4 4 0 0 1 5.7 5.7l-9 9a2 2 0 0 1-2.8-2.8l8.5-8.5" /></svg>
+          </a>
+        )}
+        <Link href={orderUrl + "#edit"} onNavigate={rememberPosition}
+          aria-label={`${staff.editTransport} · ${order.reference}`} title={staff.editTransport}
+          className="grid min-h-10 min-w-10 place-items-center rounded-lg text-ivory/80 hover:bg-white/10 hover:text-white">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="m15 5 4 4M4 20l4.5-.9L20 7.6a2.1 2.1 0 0 0 0-3l-.6-.6a2.1 2.1 0 0 0-3 0L4.9 15.5 4 20Z" /></svg>
+        </Link>
+        <Link href={orderUrl + "&delete=1"} onNavigate={rememberPosition}
+          aria-label={`${staff.deleteOrder} · ${order.reference}`} title={staff.deleteOrder}
+          className="grid min-h-10 min-w-10 place-items-center rounded-lg text-rose-200 hover:bg-rose-300/10">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M4 7h16M10 11v6m4-6v6M5 7l1 13h12l1-13M9 7V4h6v3" /></svg>
+        </Link>
+      </div>
     );
   }
 
@@ -127,7 +138,7 @@ export function OrdersTableClient({ initialOrders, demoNote }: {
                   <th className="hidden w-[7%] px-3 py-4 font-medium lg:table-cell">{staff.passengers}</th>
                   <th className="w-[16%] px-3 py-4 font-medium lg:w-[12%]">{staff.state}</th>
                   <th className="w-[15%] px-3 py-4 font-medium lg:w-[10%]">{staff.orderPrice}</th>
-                  <th className="w-[10%] px-3 py-4 font-medium lg:w-[6%]"><span className="sr-only">{labels.actions}</span></th>
+                  <th className="w-32 px-3 py-4 font-medium"><span className="sr-only">{labels.actions}</span></th>
                 </tr>
               </thead>
               <tbody>{filtered.map((order) => {

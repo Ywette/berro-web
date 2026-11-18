@@ -1,7 +1,7 @@
 import { isValidContactPhone, sanitizeContactPhone } from "@/lib/contact/validation";
 import { tripDurationDays } from "@/lib/orders/trip-duration";
 import { decodeStops, totalWaitingMinutes } from "@/lib/orders/stops";
-import type { StaffOrder } from "@/types/dashboard";
+import { isOrderStatus, type StaffOrder } from "@/types/dashboard";
 
 export const SESSION_ORDERS_KEY = "berro-crm-demo-orders";
 
@@ -110,7 +110,9 @@ export function readSessionOrders(): StaffOrder[] {
     const raw = window.sessionStorage.getItem(SESSION_ORDERS_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as StaffOrder[];
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed)
+      ? parsed.map((order) => ({ ...order, status: isOrderStatus(order.status) ? order.status : "new" }))
+      : [];
   } catch {
     return [];
   }
