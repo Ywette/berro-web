@@ -6,6 +6,8 @@ import {
 import { insertOrder } from "@/lib/orders/store";
 import type { QuoteOrderInput, QuoteTripMode } from "@/lib/orders/session-orders";
 import type { StaffOrder } from "@/types/dashboard";
+import { getLocale } from "@/lib/i18n/get-dictionary";
+import { parseLocale } from "@/lib/i18n/locale";
 
 export type SubmitQuoteOrderState =
   | { ok: true; order: StaffOrder }
@@ -25,6 +27,7 @@ export async function submitQuoteOrderFromFormData(
   const email = text(formData, "email")?.trim() || undefined;
 
   const input: QuoteOrderInput = {
+    locale: text(formData, "locale") ? parseLocale(text(formData, "locale")) : await getLocale(),
     trip: text(formData, "trip"),
     tripMode:
       tripMode === "oneWay" || tripMode === "roundTrip"

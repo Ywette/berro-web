@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDate } from "@/lib/content/format-date";
+
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useDictionary } from "@/components/i18n/locale-provider";
@@ -150,11 +152,11 @@ export function CrmHandoff({
           </div>
           <div>
             <dt className="text-mist">{dictionary.quote.departure}</dt>
-            <dd className="mt-1 text-ivory">{order.departureOn ?? "—"}</dd>
+            <dd className="mt-1 text-ivory">{formatDate(order.departureOn)}</dd>
           </div>
           <div>
             <dt className="text-mist">{dictionary.quote.return}</dt>
-            <dd className="mt-1 text-ivory">{order.returnOn ?? "—"}</dd>
+            <dd className="mt-1 text-ivory">{formatDate(order.returnOn)}</dd>
           </div>
           <div>
             <dt className="text-mist">{dictionary.staffDashboard.passengers}</dt>

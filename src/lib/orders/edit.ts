@@ -1,4 +1,5 @@
 import { isOrderStatus, type StaffOrder } from "@/types/dashboard";
+import { tripDurationDays } from "@/lib/orders/trip-duration";
 
 export function readOrderEdit(form: FormData) {
   const text = (key: string) => String(form.get(key) ?? "").trim();
@@ -16,7 +17,7 @@ export function readOrderEdit(form: FormData) {
   if (!isOrderStatus(status) || !Number.isSafeInteger(passengers) || passengers < 1 ||
       passengers > 2147483647 || (!origin && !destination)) return null;
   return {
-    status, departureOn, returnOn, passengerCount: passengers, origin: origin || "—", destination: destination || "—",
+    status, departureOn, returnOn, tripDurationDays: tripDurationDays(departureOn, returnOn), passengerCount: passengers, origin: origin || "—", destination: destination || "—",
     requestorName: text("name") || null, requestorEmail: text("email") || null,
     requestorPhone: text("phone") || null, requestorCompany: text("company") || null,
     travelType: text("travelType") || null,

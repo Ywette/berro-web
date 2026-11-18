@@ -226,6 +226,7 @@ export function QuotePlanForm({ formId = "plan-book", defaults }: QuotePlanFormP
     setSaving(true);
     try {
       const formData = new FormData();
+      formData.set("locale", dictionary.locale);
       for (const [key, value] of Object.entries(input)) {
         if (value) formData.set(key, value);
       }

@@ -18,31 +18,42 @@ export function OrderEditor({ order, draftKey, onSaved }: {
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [draft, setDraft] = useState<Record<string, string>>({});
-  const [version, setVersion] = useState(order.updatedAt);
-  const [draftStatus, setDraftStatus] = useState<"empty" | "saved" | "failed">("empty");
-  const [ready, setReady] = useState(false);
-  const purpose = draft.travelType ?? order.travelType ?? "";
-
-  useEffect(() => {
+  const [initial] = useState(() => {
     try {
       const raw = sessionStorage.getItem(draftKey);
       if (raw) {
         const saved = JSON.parse(raw);
-        setDraft(saved.fields);
-        setVersion(saved.version);
-        setDraftStatus("saved");
+        if (saved.fields && typeof saved.fields === "object" &&
+            Object.values(saved.fields).every((value) => typeof value === "string")) {
+          return { fields: saved.fields as Record<string, string>, version: saved.version as string | undefined, status: "saved" as const };
+        }
       }
-    } catch { setDraftStatus("failed"); }
-    setReady(true);
-  }, [draftKey]);
+    } catch { /* A blocked store is reported when the first edit is made. */ }
+    return { fields: {}, version: order.updatedAt, status: "empty" as const };
+  });
+  const [draft, setDraft] = useState<Record<string, string>>(initial.fields);
+  const [version, setVersion] = useState(initial.version);
+  const [draftStatus, setDraftStatus] = useState<"empty" | "saved" | "failed">(initial.status);
+  const purpose = draft.travelType ?? order.travelType ?? "";
 
   useEffect(() => {
-    if (!busy && draftStatus !== "failed") return;
+    if (!busy && draftStatus !== "failed" && !error) return;
     function warn(event: BeforeUnloadEvent) { event.preventDefault(); event.returnValue = ""; }
     window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [busy, draftStatus]);
+    function warnOnLink(event: MouseEvent) {
+      const link = event.target instanceof Element ? event.target.closest("a[href]") : null;
+      if (!link || link.getAttribute("target") === "_blank" || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      if (!window.confirm(staff.leaveOrder)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }
+    document.addEventListener("click", warnOnLink, true);
+    return () => {
+      window.removeEventListener("beforeunload", warn);
+      document.removeEventListener("click", warnOnLink, true);
+    };
+  }, [busy, draftStatus, error, staff.leaveOrder]);
 
   function change(name: string, value: string) {
     const fields = { ...draft, [name]: value };
@@ -101,7 +112,7 @@ export function OrderEditor({ order, draftKey, onSaved }: {
   return (
     <form id="edit" onSubmit={submit} className="scroll-mt-24 space-y-5 border-t border-line pt-5">
         <h2 className="text-xl font-semibold">{staff.editTransport}</h2>
-        <fieldset disabled={busy || !ready} className="grid gap-3 text-sm sm:grid-cols-2">
+        <fieldset disabled={busy} className="grid gap-3 text-sm sm:grid-cols-2">
             {fields.map(([name, label, value, type]) => (
               <label key={name}>{label}<input className={inputClass} name={name} type={type} value={draft[name] ?? value ?? ""} onChange={(e) => change(name, e.target.value)}
                 required={type === "number"} min={type === "number" ? 1 : undefined} /></label>
@@ -121,7 +132,6 @@ export function OrderEditor({ order, draftKey, onSaved }: {
         <p role="status" className="text-sm text-mist">{busy ? staff.savingTransport : draftStatus === "saved" ? staff.draftSaved : draftStatus === "failed" ? labels.failed : ""}</p>
         <div className="flex justify-end gap-3">
           {draftStatus !== "empty" && <button type="button" disabled={busy} onClick={discard}>{staff.discardDraft}</button>}
-          <button type="submit" disabled={busy || !ready || draftStatus === "empty"} className="rounded-lg bg-burgundy px-3 py-2 text-white disabled:opacity-50">{labels.save}</button>
         </div>
     </form>
   );

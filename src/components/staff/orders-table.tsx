@@ -1,7 +1,5 @@
 import { OrdersTableClient } from "@/components/staff/orders-table-client";
-import { listEmployees } from "@/lib/data/employees";
 import { listOrders } from "@/lib/data/orders";
-import { listVehicles } from "@/lib/data/vehicles";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 
 export async function OrdersTable() {
@@ -20,16 +18,9 @@ export async function OrdersTable() {
     );
   }
 
-  const [employees, vehicles] = await Promise.all([
-    listEmployees().catch(() => []),
-    listVehicles().catch(() => []),
-  ]);
-
   return (
     <OrdersTableClient
       initialOrders={orders}
-      employees={employees}
-      vehicles={vehicles}
       demoNote={null}
     />
   );

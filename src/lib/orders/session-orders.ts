@@ -1,4 +1,5 @@
 import { isValidContactPhone, sanitizeContactPhone } from "@/lib/contact/validation";
+import { tripDurationDays } from "@/lib/orders/trip-duration";
 import { decodeStops, totalWaitingMinutes } from "@/lib/orders/stops";
 import type { StaffOrder } from "@/types/dashboard";
 
@@ -7,6 +8,7 @@ export const SESSION_ORDERS_KEY = "berro-crm-demo-orders";
 export type QuoteTripMode = "oneWay" | "roundTrip";
 
 export type QuoteOrderInput = {
+  locale?: string;
   trip?: string;
   tripMode?: QuoteTripMode | string;
   name?: string;
@@ -156,6 +158,7 @@ export function orderFromQuoteInput(input: QuoteOrderInput): StaffOrder {
   return {
     id,
     reference,
+    requestLocale: input.locale ?? null,
     createdAt: new Date(stamp).toISOString(),
     origin: (input.pickup || "—").trim() || "—",
     destination: destination || "—",
@@ -173,7 +176,9 @@ export function orderFromQuoteInput(input: QuoteOrderInput): StaffOrder {
     planDocumentPath: input.planDocumentPath?.trim() || null,
     status: "new",
     departureOn: toDateOnly(input.departure),
+    departureAt: input.departure ?? null,
     returnOn: toDateOnly(input.returnAt),
+    tripDurationDays: tripDurationDays(toDateOnly(input.departure), toDateOnly(input.returnAt)),
     stops: stops.map((stop) => ({ name: stop.name, waitMinutes: stop.waitMinutes })),
     waitingMinutes: waiting > 0 ? waiting : null,
     assignedDriverId: null,

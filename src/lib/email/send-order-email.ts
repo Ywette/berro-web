@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { formatDate } from "@/lib/content/format-date";
 import type { QuoteOrderInput } from "@/lib/orders/session-orders";
 import type { StaffOrder } from "@/types/dashboard";
 
@@ -50,12 +51,13 @@ export async function sendNewOrderEmail(order: StaffOrder, input?: QuoteOrderInp
     `New quote request ${order.reference}`,
     "",
     `Reference: ${order.reference}`,
+    input?.locale ? `Request language: ${input.locale.toUpperCase()}` : null,
     excursion ? `Excursion: ${excursion}` : null,
     `Travel type: ${travelType}`,
     `Route: ${routeLine(order)}`,
     order.routeEstimate ? `Google Maps driving estimate: ${order.routeEstimate.distanceKm} km${order.routeEstimate.durationMinutes === null ? "" : `, ${order.routeEstimate.durationMinutes} min`}\n${order.routeEstimate.mapsUrl}` : "Route estimate needs review",
-    `Departure: ${order.departureOn || input?.departure || "—"}`,
-    `Return: ${order.returnOn || input?.returnAt || "—"}`,
+    `Departure: ${formatDate(order.departureOn || input?.departure)}`,
+    `Return: ${formatDate(order.returnOn || input?.returnAt)}`,
     `Passengers: ${order.passengerCount || "—"}`,
     "",
     `Name: ${order.requestorName || "—"}`,

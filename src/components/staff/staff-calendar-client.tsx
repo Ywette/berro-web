@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDate } from "@/lib/content/format-date";
+
 import { useMemo, useState, type ReactNode } from "react";
 import { useAssignedOrders } from "@/components/staff/use-assigned-orders";
 import type { FleetVehicle } from "@/lib/content/fleet";
@@ -164,12 +166,6 @@ export function StaffCalendarClient({
     year: "numeric",
     timeZone: "UTC",
   }).format(cursor);
-  const dateLabel = new Intl.DateTimeFormat(intlLocales[locale], {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  });
 
   const days = useMemo(() => buildMonthDays(year, month), [year, month]);
   const weekdayLabels = useMemo(() => {
@@ -292,9 +288,9 @@ export function StaffCalendarClient({
   const rangeEnd = dateFilter.ok ? dateFilter.span.end : range.to || range.from || "";
   const selectedRangeLabel =
     range.from && range.to
-      ? `${dateLabel.format(new Date(`${rangeStart}T00:00:00Z`))} – ${dateLabel.format(new Date(`${rangeEnd}T00:00:00Z`))}`
+      ? `${formatDate(rangeStart)} – ${formatDate(rangeEnd)}`
       : range.from
-        ? dateLabel.format(new Date(`${range.from}T00:00:00Z`))
+        ? formatDate(range.from)
         : null;
 
   const fleetButtons: { id: ResourceMode; label: string; count: number; countLabel: string }[] = [

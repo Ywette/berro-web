@@ -324,8 +324,8 @@ export function HeroBooking({
                 ? caught.message
                 : dictionary.pricing.documentReadError;
       setPlanError(message || dictionary.pricing.documentReadError);
-      setPlanFile(null);
-      setDraft((current) => ({ ...current, planDocumentName: null, planNote: "" }));
+      setPlanFile(file);
+      setDraft((current) => ({ ...current, planDocumentName: file.name, planNote: "" }));
     } finally {
       setReadingPlan(false);
     }
@@ -463,6 +463,7 @@ export function HeroBooking({
   async function submitContact(contact: OfferContactSubmit) {
     const input = buildQuoteInput(contact);
     const formData = new FormData();
+    formData.set("locale", dictionary.locale);
     for (const [key, value] of Object.entries(input)) {
       if (value) formData.set(key, value);
     }

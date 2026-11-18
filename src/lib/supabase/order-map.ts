@@ -1,11 +1,14 @@
 import { isOrderStatus, type StaffOrder } from "@/types/dashboard";
+import { tripDurationDays } from "@/lib/orders/trip-duration";
 
 export type OrderRow = {
   id: string;
   reference: string;
+  request_locale?: string | null;
   created_at: string;
   updated_at: string;
   price?: number | null;
+  calculation?: StaffOrder["calculation"];
   route_estimate?: StaffOrder["routeEstimate"];
   origin: string;
   destination: string;
@@ -23,7 +26,9 @@ export type OrderRow = {
   plan_document_path: string | null;
   status: string;
   departure_on: string | null;
+  departure_at?: string | null;
   return_on: string | null;
+  trip_duration_days?: number | null;
   stops: Array<{ name: string; waitMinutes?: number; wait_minutes?: number }> | null;
   waiting_minutes: number | null;
   assigned_driver_id: string | null;
@@ -44,9 +49,11 @@ export function staffOrderFromRow(row: OrderRow): StaffOrder {
   return {
     id: row.id,
     reference: row.reference,
+    requestLocale: row.request_locale ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     price: row.price ?? null,
+    calculation: row.calculation ?? null,
     routeEstimate: row.route_estimate,
     origin: row.origin,
     destination: row.destination,
@@ -64,7 +71,9 @@ export function staffOrderFromRow(row: OrderRow): StaffOrder {
     planDocumentPath: row.plan_document_path,
     status: isOrderStatus(row.status) ? row.status : "new",
     departureOn: row.departure_on,
+    departureAt: row.departure_at ?? null,
     returnOn: row.return_on,
+    tripDurationDays: row.trip_duration_days ?? tripDurationDays(row.departure_on, row.return_on),
     stops,
     waitingMinutes: row.waiting_minutes,
     assignedDriverId: row.assigned_driver_id,

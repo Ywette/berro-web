@@ -108,6 +108,7 @@ export function staffOrderToRow(order: StaffOrder, input: QuoteOrderInput) {
   return {
     id: order.id,
     reference: order.reference,
+    request_locale: input.locale ?? null,
     ...(order.routeEstimate ? { route_estimate: order.routeEstimate } : {}),
     origin: order.origin,
     destination: order.destination,
@@ -191,9 +192,20 @@ export async function insertOrder(
     }
   }
 
-  const { error } = await supabase.from(ORDERS_TABLE).insert(staffOrderToRow(order, input));
+  const row = staffOrderToRow(order, input);
+  let { error } = await supabase.from(ORDERS_TABLE).insert(row);
+  if (error && /request_locale/i.test(error.message) && /column|schema cache/i.test(error.message)) {
+    const { request_locale: missingLocale, ...compatibleRow } = row;
+    void missingLocale;
+    ({ error } = await supabase.from(ORDERS_TABLE).insert(compatibleRow));
+    if (!error) console.warn("[orders] request language column is missing; language was not stored");
+  }
   if (error) {
     console.error("[orders] insert failed", error.message);
+    if (order.planDocumentPath) {
+      const cleanup = await supabase.storage.from(ORDER_PLANS_BUCKET).remove([order.planDocumentPath]);
+      if (cleanup.error) console.error("[orders] plan cleanup failed", cleanup.error.message);
+    }
     return { ok: false, error: error.message };
   }
 

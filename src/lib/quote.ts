@@ -3,16 +3,13 @@ import { intlLocales } from "@/lib/i18n/locale";
 import type { TripRoute } from "@/lib/places/types";
 import { isQuoteTripKind, quoteTripKinds, quoteTripLabel } from "@/lib/quote-trips";
 import { formatTravelTypeLabel } from "@/lib/quote-travel-types";
+import { formatDate } from "@/lib/content/format-date";
 
 export function formatTripDate(value: string | undefined, locale: Locale) {
+  void locale;
   const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
   if (!match) return value;
-  const [, year, month, day, hour, minute] = match.map(Number);
-  return new Intl.DateTimeFormat(intlLocales[locale], {
-    dateStyle: "long",
-    timeStyle: "short",
-    timeZone: "UTC",
-  }).format(new Date(Date.UTC(year, month - 1, day, hour, minute)));
+  return `${formatDate(value)} ${match[4]}:${match[5]}`;
 }
 
 export function formatDistance(route: TripRoute, locale: Locale) {
@@ -21,10 +18,16 @@ export function formatDistance(route: TripRoute, locale: Locale) {
   return `${route.estimated ? "≈ " : ""}${km} km`;
 }
 
-export function formatDuration(minutes: number | null) {
+export function formatDuration(minutes: number | null, locale: Locale = "en") {
   if (minutes === null) return null;
-  const hours = Math.floor(minutes / 60);
-  return hours ? `${hours} h ${minutes % 60} min` : `${minutes} min`;
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  const remainder = minutes % 60;
+  const dayLabel = locale === "lv" ? (days === 1 ? "diena" : "dienas")
+    : locale === "fr" ? (days === 1 ? "jour" : "jours")
+    : locale === "ru" ? "дн." : (days === 1 ? "day" : "days");
+  return [days ? `${days} ${dayLabel}` : null, hours ? `${hours} h` : null,
+    remainder || (!days && !hours) ? `${remainder} min` : null].filter(Boolean).join(" ");
 }
 
 export function quoteMessage(

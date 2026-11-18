@@ -61,7 +61,12 @@ export async function SiteHeader() {
             </Link>
             <LanguageSwitch locale={locale} label={dictionary.nav.language} />
             <Suspense fallback={signInLink}>
-              <Show when="signed-in" fallback={signInLink}><AccountMenu staffLabel={dictionary.nav.staff} /></Show>
+              <Show when="signed-in" fallback={signInLink}>
+                <Link href="/staff" className="whitespace-nowrap text-sm text-ivory hover:underline">
+                  {dictionary.nav.staff}
+                </Link>
+                <AccountMenu staffLabel={dictionary.nav.staff} />
+              </Show>
             </Suspense>
             <MobileMenu
               publicLinks={publicLinks}

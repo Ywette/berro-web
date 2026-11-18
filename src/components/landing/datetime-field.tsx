@@ -42,16 +42,12 @@ function toValue(year: number, month: number, day: number, hour: string, minute:
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T${hour}:${minute}`;
 }
 
-function formatDisplay(value: string, compact = false) {
+function formatDisplay(value: string) {
   const parsed = parseValue(value);
   if (!parsed) return "";
   const day = String(parsed.day).padStart(2, "0");
   const month = String(parsed.month).padStart(2, "0");
-  if (compact) {
-    const year = String(parsed.year).slice(-2);
-    return `${day}.${month}.${year} ${parsed.hour}:${parsed.minute}`;
-  }
-  return `${day}.${month}.${parsed.year} ${parsed.hour}:${parsed.minute}`;
+  return `${day}-${month}-${parsed.year} ${parsed.hour}:${parsed.minute}`;
 }
 
 function daysInMonth(year: number, month: number) {
@@ -90,20 +86,11 @@ export function DateTimeInput({
   const [draftHour, setDraftHour] = useState(parsed?.hour ?? "09");
   const [draftMinute, setDraftMinute] = useState(parsed?.minute ?? "");
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
-  const [compactDisplay, setCompactDisplay] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const listId = useId();
   const minParsed = parseMin(min);
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
-
-  useEffect(() => {
-    const media = window.matchMedia("(max-width: 639px)");
-    const sync = () => setCompactDisplay(media.matches);
-    sync();
-    media.addEventListener("change", sync);
-    return () => media.removeEventListener("change", sync);
-  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -202,7 +189,7 @@ export function DateTimeInput({
 
   const blanks = startWeekday(viewYear, viewMonth);
   const totalDays = daysInMonth(viewYear, viewMonth);
-  const display = formatDisplay(value, compactDisplay);
+  const display = formatDisplay(value);
 
   return (
     <div ref={rootRef} className="relative min-w-0 w-full">
@@ -313,7 +300,7 @@ export function DateTimeInput({
                 <div className="flex w-full shrink-0 flex-col border-t border-white/10 pt-2 sm:w-[7.25rem] sm:border-t-0 sm:border-l sm:pt-0 sm:pl-3">
                   <p className="mb-2 text-[11px] text-mist">
                     {draftDate
-                      ? `${String(draftDate.day).padStart(2, "0")}.${String(draftDate.month).padStart(2, "0")}.${draftDate.year}`
+                      ? `${String(draftDate.day).padStart(2, "0")}-${String(draftDate.month).padStart(2, "0")}-${draftDate.year}`
                       : "—"}
                   </p>
                   <div className="grid min-h-0 flex-1 grid-cols-2 gap-2">

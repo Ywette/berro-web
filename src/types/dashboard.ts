@@ -8,12 +8,25 @@ export const ORDER_STATUSES = [
 
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
+export type OrderCalculation = {
+  travelMinutes: number;
+  luggageMinutes: number;
+  fuelPrice: number;
+  kilometres: number;
+  driverCost: number;
+  vehicleCost: number;
+  extraExpenses: number;
+  fuelConsumption: number;
+};
+
 export type StaffOrder = {
   id: string;
   reference: string;
+  requestLocale?: string | null;
   createdAt?: string | null;
   updatedAt?: string;
   price?: number | null;
+  calculation?: OrderCalculation | null;
   routeEstimate?: { distanceKm: number; durationMinutes: number | null; mapsUrl: string } | null;
   origin: string;
   destination: string;
@@ -31,7 +44,9 @@ export type StaffOrder = {
   planDocumentPath: string | null;
   status: OrderStatus;
   departureOn: string | null;
+  departureAt?: string | null;
   returnOn: string | null;
+  tripDurationDays?: number | null;
   stops: Array<{ name: string; waitMinutes: number }> | null;
   waitingMinutes: number | null;
   assignedDriverId: string | null;
