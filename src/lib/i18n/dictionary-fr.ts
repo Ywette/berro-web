@@ -428,7 +428,7 @@ export const fr: Dictionary = {
     applyFor: "S’inscrire pour le",
     plannedDate: "Date de départ prévue",
     filterRegistrationOpen: "Inscriptions ouvertes",
-    filterAnyDate: "Toutes les excursions",
+    filterAllRegistrations: "Toutes les inscriptions ouvertes",
     registrationClosed: "Les inscriptions sont actuellement fermées.",
     filterLabel: "Pays ou région",
     filterAll: "Toutes",

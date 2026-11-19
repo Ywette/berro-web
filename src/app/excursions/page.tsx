@@ -55,7 +55,7 @@ async function ExcursionsCatalogSection() {
         filterAll={dictionary.excursions.filterAll}
         filterEmpty={dictionary.excursions.filterEmpty}
         filterRegistrationOpen={dictionary.excursions.filterRegistrationOpen}
-        filterAnyDate={dictionary.excursions.filterAnyDate}
+        filterAllRegistrations={dictionary.excursions.filterAllRegistrations}
         applyForLabel={dictionary.excursions.applyFor}
         regionLabels={{
           latvia: dictionary.excursions.filterLatvia,

@@ -36,7 +36,7 @@ type ExcursionsCatalogProps = {
   filterAll: string;
   filterEmpty: string;
   filterRegistrationOpen: string;
-  filterAnyDate: string;
+  filterAllRegistrations: string;
   applyForLabel: string;
   regionLabels: Record<ExcursionRegion, string>;
 };
@@ -44,7 +44,7 @@ type ExcursionsCatalogProps = {
 type CatalogFilterProps = {
   group: string;
   label: string;
-  allLabel: string;
+  allLabel?: string;
   options: { value: string; label: string }[];
   selected: string[];
   onChange: (values: string[]) => void;
@@ -77,13 +77,15 @@ function CatalogFilter({ group, label, allLabel, options, selected, onChange, st
           </svg>
         </summary>
         <fieldset aria-label={label} className="excursion-filter-options absolute inset-x-0 top-full mt-1 grid min-w-0 max-h-64 gap-1 overflow-y-auto rounded-xl border border-white/20 bg-[#141418] p-2 shadow-xl">
-          <button
-            type="button"
-            onClick={() => onChange([])}
-            className="rounded-lg px-2 py-1.5 text-left text-sm text-mist hover:bg-white/10"
-          >
-            {allLabel}
-          </button>
+          {allLabel && (
+            <button
+              type="button"
+              onClick={() => onChange([])}
+              className="rounded-lg px-2 py-1.5 text-left text-sm text-mist hover:bg-white/10"
+            >
+              {allLabel}
+            </button>
+          )}
           {options.map(({ value, label: optionLabel }) => (
             <label key={value} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-ivory hover:bg-white/10">
               <input
@@ -108,26 +110,38 @@ function CatalogFilter({ group, label, allLabel, options, selected, onChange, st
   );
 }
 
+const allRegistrations = "all";
+
 export function ExcursionsCatalog({
   items,
   filterLabel,
   filterAll,
   filterEmpty,
   filterRegistrationOpen,
-  filterAnyDate,
+  filterAllRegistrations,
   applyForLabel,
   regionLabels,
 }: ExcursionsCatalogProps) {
   const filterGroup = useId();
   const [regions, setRegions] = useState<string[]>([]);
-  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [registrationSelection, setRegistrationSelection] = useState<string[]>([]);
+  const hasOpenRegistrations = items.some((item) => item.isActive);
   const dates = [...new Set(items.flatMap((item) =>
     item.isActive && item.plannedDate ? [item.plannedDate] : [],
   ))].sort();
+  const allOpenSelected = registrationSelection.includes(allRegistrations);
+  const selectedDates = dates.filter((date) => registrationSelection.includes(date));
   const visible = items.filter((item) =>
     (!regions.length || item.regions?.some((value) => regions.includes(value))) &&
-    (!dates.length || !selectedDates.length || (item.isActive && item.plannedDate && selectedDates.includes(item.plannedDate))),
+    (!hasOpenRegistrations || (!allOpenSelected && !selectedDates.length) ||
+      (item.isActive && (allOpenSelected || (item.plannedDate && selectedDates.includes(item.plannedDate))))),
   );
+
+  function changeRegistrationSelection(values: string[]) {
+    setRegistrationSelection(values.at(-1) === allRegistrations
+      ? [allRegistrations]
+      : values.filter((value) => value !== allRegistrations));
+  }
 
   return (
     <div className="grid gap-6">
@@ -140,14 +154,16 @@ export function ExcursionsCatalog({
           selected={regions}
           onChange={setRegions}
         />
-        {dates.length > 0 && (
+        {hasOpenRegistrations && (
           <CatalogFilter
             group={filterGroup}
             label={filterRegistrationOpen}
-            allLabel={filterAnyDate}
-            options={dates.map((value) => ({ value, label: formatDate(value) }))}
-            selected={selectedDates}
-            onChange={setSelectedDates}
+            options={[
+              { value: allRegistrations, label: filterAllRegistrations },
+              ...dates.map((value) => ({ value, label: formatDate(value) })),
+            ]}
+            selected={registrationSelection}
+            onChange={changeRegistrationSelection}
             steadyGlow
           />
         )}
