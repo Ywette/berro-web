@@ -11,7 +11,7 @@ import {
   type SetStateAction,
 } from "react";
 import { useDictionary } from "@/components/i18n/locale-provider";
-import { DateTimeField } from "@/components/landing/datetime-field";
+import { DateTimeField, formatDateTimeDisplay } from "@/components/landing/datetime-field";
 import {
   OfferRequestDialog,
   type OfferContactSubmit,
@@ -23,6 +23,7 @@ import {
 } from "@/components/landing/passenger-field";
 import { TravelTypeField } from "@/components/landing/travel-type-field";
 import { submitQuoteOrder } from "@/lib/orders/client";
+import { earliestArrival } from "@/lib/orders/arrival-time";
 import { parsePlanDocument } from "@/lib/plan-document/client";
 import type { ExtractedPlanFields } from "@/lib/plan-document/types";
 import {
@@ -30,7 +31,7 @@ import {
   type QuoteOrderInput,
   type QuoteTripMode,
 } from "@/lib/orders/session-orders";
-import { createStop, encodeStops } from "@/lib/orders/stops";
+import { createStop, DEFAULT_STOP_WAIT_MINUTES, encodeStops, MAX_STOP_WAIT_MINUTES } from "@/lib/orders/stops";
 import {
   splitDateTime,
   toDatetimeLocalInput,
@@ -50,6 +51,7 @@ type HeroStop = {
   id: string;
   place: string;
   placeId?: string;
+  duration: string;
 };
 
 type HeroTripDraft = {
@@ -132,8 +134,9 @@ const emptyDraft = (): HeroTripDraft => ({
   planNote: "",
 });
 
-function newStop(place = ""): HeroStop {
-  return { id: createStop(place || "stop", 15).id, place };
+function newStop(place = "", waitMinutes?: number): HeroStop {
+  const stop = createStop(place, waitMinutes);
+  return { id: stop.id, place, duration: waitMinutes == null ? "" : String(stop.waitMinutes) };
 }
 
 export type HeroBookingPrefill = {
@@ -209,6 +212,53 @@ export function HeroBooking({
     selectedExcursion?.title ?? prefill?.excursionTitle ?? "";
   const excursionDurationDays =
     selectedExcursion?.durationDays ?? prefill?.durationDays ?? null;
+  const quoteStops = draft.stops.filter((stop) => stop.place.trim()).map((stop) => ({
+    ...createStop(stop.place, stop.duration === "" ? undefined : Number(stop.duration), stop.id),
+    placeId: stop.placeId,
+  }));
+  const routeStops = quoteStops.map((stop) => ({ label: stop.name, place: stop.placeId }));
+  const from = draft.pickup.trim();
+  const to = draft.dropoff.trim();
+  const routeRequest = !isExcursionOrder && draft.tripMode && from && to && (from !== to || routeStops.length)
+    ? JSON.stringify({ from, to, fromPlace: draft.pickupPlace, toPlace: draft.dropoffPlace, stops: routeStops, locale: dictionary.locale })
+    : "";
+  const [routeDuration, setRouteDuration] = useState<{ request: string; minutes: number } | null>(null);
+  const drivingMinutes = routeRequest && routeDuration?.request === routeRequest ? routeDuration.minutes : null;
+  const minimumEnd = earliestArrival(draft.departureAt, drivingMinutes, quoteStops);
+  const minimumPlaceholder = drivingMinutes !== null && minimumEnd
+    ? formatDateTimeDisplay(minimumEnd)
+    : undefined;
+  const earliestEndLabel = minimumPlaceholder ? `${dictionary.hero.earliestTripEnd} ${minimumPlaceholder}` : undefined;
+  const stopDurationPlaceholder = dictionary.hero.stopDuration.replace("{minutes}", String(DEFAULT_STOP_WAIT_MINUTES));
+  const suggestedEnd = minimumPlaceholder && minimumEnd
+    ? { value: minimumEnd, confirmLabel: dictionary.hero.confirmSuggestedTime }
+    : undefined;
+
+  useEffect(() => {
+    if (!routeRequest) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch("/api/route", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: routeRequest,
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const { route } = await response.json();
+        if (!controller.signal.aborted && Number.isFinite(route?.durationMinutes)) {
+          setRouteDuration({ request: routeRequest, minutes: route.durationMinutes });
+        }
+      } catch {
+        // Keep the departure-time limit if the route estimate is unavailable.
+      }
+    }, 450);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [routeRequest]);
 
   useEffect(() => {
     if (prefill?.service) {
@@ -283,7 +333,7 @@ export function HeroBooking({
           const name = stop.name.trim();
           return name.length > 0 && !endpoints.has(normalizePlace(name));
         })
-        .map((stop) => newStop(stop.name.trim()));
+        .map((stop) => newStop(stop.name.trim(), stop.waitMinutes));
     }
     if (patch.tripMode === "roundTrip" && !(patch.stops && patch.stops.length > 0)) {
       patch.stops = [newStop()];
@@ -374,9 +424,7 @@ export function HeroBooking({
       isExcursionOrder && draft.departureAt
         ? returnAtFromDeparture(draft.departureAt, excursionDurationDays)
         : "";
-    const stops = draft.stops
-      .map((stop) => ({ ...createStop(stop.place), placeId: stop.placeId }))
-      .filter((stop) => stop.name.length > 0);
+    const stops = [...quoteStops];
 
     const catalogReturn = isExcursionOrder && needsReturn && resolvedPickup !== resolvedDropoff;
     if (catalogReturn) stops.unshift({ ...createStop(resolvedDropoff), placeId: undefined });
@@ -431,10 +479,10 @@ export function HeroBooking({
         errors.add("pickup");
         errors.add("dropoff");
       }
-      if (draft.tripMode === "oneWay" && !draft.arrivalAt) {
+      if (draft.tripMode === "oneWay" && (!draft.arrivalAt || (minimumEnd && draft.arrivalAt < minimumEnd))) {
         errors.add("arrivalAt");
       }
-      if (draft.tripMode === "roundTrip" && !draft.returnAt) {
+      if (draft.tripMode === "roundTrip" && (!draft.returnAt || (minimumEnd && draft.returnAt < minimumEnd))) {
         errors.add("returnAt");
       }
     }
@@ -867,7 +915,7 @@ export function HeroBooking({
                       {draft.stops.map((stop, index) => (
                         <div
                           key={stop.id}
-                          className="grid grid-cols-[1.75rem_minmax(0,1fr)_2.25rem] items-center gap-x-2.5"
+                          className="grid grid-cols-[1.75rem_minmax(0,1fr)_6.5rem_2.25rem] items-center gap-x-2"
                         >
                           <RouteMarker kind="stop" />
                           <PlaceField
@@ -883,6 +931,21 @@ export function HeroBooking({
                                 stops: draft.stops.map((item) =>
                                   item.id === stop.id ? { ...item, place, placeId } : item,
                                 ),
+                              });
+                            }}
+                          />
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            aria-label={`${dictionary.hero.stopPlaceholder} ${index + 1} · ${stopDurationPlaceholder}`}
+                            placeholder={stopDurationPlaceholder}
+                            value={stop.duration}
+                            className={fieldClass()}
+                            onChange={(event) => {
+                              const duration = event.target.value;
+                              if (!/^\d{0,4}$/.test(duration) || Number(duration) > MAX_STOP_WAIT_MINUTES) return;
+                              patchDraft({
+                                stops: draft.stops.map((item) => item.id === stop.id ? { ...item, duration } : item),
                               });
                             }}
                           />
@@ -931,7 +994,10 @@ export function HeroBooking({
                     <DateTimeField
                       label={dictionary.hero.arrivalAt}
                       value={draft.arrivalAt}
-                      min={draft.departureAt || undefined}
+                      min={minimumEnd}
+                      placeholder={minimumPlaceholder}
+                      suggestion={suggestedEnd}
+                      aria-label={earliestEndLabel ? `${dictionary.hero.arrivalAt}. ${earliestEndLabel}` : undefined}
                       hideLabel
                       invalid={invalid.has("arrivalAt")}
                       className="h-9 rounded-full sm:h-10"
@@ -940,13 +1006,19 @@ export function HeroBooking({
                         clearFieldError(setInvalid, "arrivalAt");
                       }}
                     />
+                    {earliestEndLabel && draft.arrivalAt && minimumEnd && draft.arrivalAt < minimumEnd && (
+                      <p className="mt-1 text-xs text-champagne">{earliestEndLabel}</p>
+                    )}
                   </div>
                 ) : (
                   <div className={invalid.has("returnAt") ? "relative z-40 overflow-visible" : ""}>
                     <DateTimeField
                       label={dictionary.hero.returnAt}
                       value={draft.returnAt}
-                      min={draft.departureAt || undefined}
+                      min={minimumEnd}
+                      placeholder={minimumPlaceholder}
+                      suggestion={suggestedEnd}
+                      aria-label={earliestEndLabel ? `${dictionary.hero.returnAt}. ${earliestEndLabel}` : undefined}
                       hideLabel
                       invalid={invalid.has("returnAt")}
                       className="h-9 rounded-full sm:h-10"
@@ -955,6 +1027,9 @@ export function HeroBooking({
                         clearFieldError(setInvalid, "returnAt");
                       }}
                     />
+                    {earliestEndLabel && draft.returnAt && minimumEnd && draft.returnAt < minimumEnd && (
+                      <p className="mt-1 text-xs text-champagne">{earliestEndLabel}</p>
+                    )}
                   </div>
                 )}
               </div>

@@ -9,6 +9,7 @@ export async function POST(request: Request) {
       to?: string;
       toPlace?: string;
       locale?: string;
+      stops?: { label: string; place?: string }[];
     };
 
     const from = body.from?.trim() ?? "";
@@ -18,10 +19,18 @@ export async function POST(request: Request) {
     }
 
     const locale = parseLocale(body.locale);
+    const stops = body.stops ?? [];
+    if (!Array.isArray(stops) || stops.length > 25 || stops.some((stop) =>
+      typeof stop?.label !== "string" || !stop.label.trim() ||
+      (stop.place !== undefined && typeof stop.place !== "string"),
+    )) {
+      return Response.json({ error: "invalid_stops" }, { status: 400 });
+    }
     const route = await computeRoute(
       { place: body.fromPlace, label: from },
       { place: body.toPlace, label: to },
       locale,
+      stops,
     );
 
     return Response.json({ route });

@@ -1,5 +1,7 @@
 import { computeRoute } from "@/lib/places/server";
 import { decodeStops } from "@/lib/orders/stops";
+import { earliestArrival } from "@/lib/orders/arrival-time";
+import { dictionaries, parseLocale } from "@/lib/i18n/dictionary";
 import { sendNewOrderEmail } from "@/lib/email/send-order-email";
 import { sendOrderThankYouEmail } from "@/lib/email/send-order-thank-you";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
@@ -161,6 +163,31 @@ export async function insertOrder(
 
   const order = orderFromQuoteInput(input);
 
+  const stops = decodeStops(input.stops);
+  const locale = parseLocale(input.locale);
+  const hasEndpoints = input.pickup?.trim() && input.dropoff?.trim();
+  const hasJourney = input.pickup !== input.dropoff || stops.length > 0;
+  if (hasEndpoints && hasJourney) {
+    try {
+      const route = await computeRoute(
+        { label: input.pickup, place: input.pickupPlace },
+        { label: input.dropoff, place: input.dropoffPlace },
+        locale,
+        stops.map((stop) => ({ label: stop.name, place: stop.placeId })),
+      );
+      if (route && !route.estimated && route.distanceKm !== null) {
+        order.routeEstimate = { distanceKm: route.distanceKm, durationMinutes: route.durationMinutes, mapsUrl: route.mapsUrl };
+      }
+    } catch {
+      console.warn("[orders] route lookup unavailable");
+    }
+  }
+
+  const minimumEnd = earliestArrival(input.departure, order.routeEstimate?.durationMinutes, stops);
+  if (!input.excursionSlug && minimumEnd && input.returnAt && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(input.returnAt) && input.returnAt < minimumEnd) {
+    return { ok: false, error: dictionaries[locale].hero.tripEndTooEarly };
+  }
+
   if (planFile && planFile.size > 0) {
     const uploaded = await uploadOrderPlanDocument(order.id, planFile);
     if ("error" in uploaded) {
@@ -170,26 +197,6 @@ export async function insertOrder(
     order.planDocumentPath = uploaded.path;
   } else if (input.planDocument?.trim()) {
     order.planDocument = input.planDocument.trim();
-  }
-
-  const stops = decodeStops(input.stops);
-  const confirmedPlaces = input.pickupPlace && input.dropoffPlace && stops.every((stop) => stop.placeId);
-  const catalogRoute = input.excursionSlug && input.pickup && input.dropoff;
-  const hasJourney = input.pickup !== input.dropoff || stops.length > 0;
-  if ((confirmedPlaces || catalogRoute) && hasJourney) {
-    try {
-      const route = await computeRoute(
-        { label: input.pickup, place: input.pickupPlace },
-        { label: input.dropoff, place: input.dropoffPlace },
-        "lv",
-        stops.map((stop) => ({ label: stop.name, place: stop.placeId })),
-      );
-      if (route && !route.estimated && route.distanceKm !== null) {
-        order.routeEstimate = { distanceKm: route.distanceKm, durationMinutes: route.durationMinutes, mapsUrl: route.mapsUrl };
-      }
-    } catch {
-      console.warn("[orders] route lookup unavailable");
-    }
   }
 
   const row = staffOrderToRow(order, input);

@@ -19,6 +19,7 @@ type DateTimeInputProps = {
   invalid?: boolean;
   className?: string;
   placeholder?: string;
+  suggestion?: { value: string; confirmLabel: string };
   "aria-label"?: string;
 };
 
@@ -42,7 +43,7 @@ function toValue(year: number, month: number, day: number, hour: string, minute:
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T${hour}:${minute}`;
 }
 
-function formatDisplay(value: string) {
+export function formatDateTimeDisplay(value: string) {
   const parsed = parseValue(value);
   if (!parsed) return "";
   const day = String(parsed.day).padStart(2, "0");
@@ -73,6 +74,7 @@ export function DateTimeInput({
   invalid = false,
   className,
   placeholder = "—",
+  suggestion,
   "aria-label": ariaLabel,
 }: DateTimeInputProps) {
   const parsed = parseValue(value);
@@ -95,12 +97,19 @@ export function DateTimeInput({
   useEffect(() => {
     if (!open) return;
     const next = parseValue(value);
+    const minimum = parseMin(min);
     if (next) {
       setViewYear(next.year);
       setViewMonth(next.month);
       setDraftDate({ year: next.year, month: next.month, day: next.day });
       setDraftHour(next.hour);
       setDraftMinute(next.minute);
+    } else if (minimum) {
+      setViewYear(minimum.year);
+      setViewMonth(minimum.month);
+      setDraftDate({ year: minimum.year, month: minimum.month, day: minimum.day });
+      setDraftHour(minimum.hour);
+      setDraftMinute("");
     } else {
       setViewYear(now.getFullYear());
       setViewMonth(now.getMonth() + 1);
@@ -108,7 +117,7 @@ export function DateTimeInput({
       setDraftHour("09");
       setDraftMinute("");
     }
-  }, [open, value, now]);
+  }, [open, value, now, min]);
 
   useLayoutEffect(() => {
     if (!open || !rootRef.current) {
@@ -180,8 +189,14 @@ export function DateTimeInput({
     setDraftDate({ year, month, day });
   }
 
+  function isDisabledTime(hour: string, minute: string) {
+    if (!draftDate) return true;
+    const candidate = toValue(draftDate.year, draftDate.month, draftDate.day, hour, minute);
+    return Boolean(min && candidate < min);
+  }
+
   function chooseMinute(minute: string) {
-    if (!draftDate) return;
+    if (!draftDate || isDisabledTime(draftHour, minute)) return;
     setDraftMinute(minute);
     onChange(toValue(draftDate.year, draftDate.month, draftDate.day, draftHour, minute));
     setOpen(false);
@@ -189,26 +204,47 @@ export function DateTimeInput({
 
   const blanks = startWeekday(viewYear, viewMonth);
   const totalDays = daysInMonth(viewYear, viewMonth);
-  const display = formatDisplay(value);
+  const display = formatDateTimeDisplay(value);
+  const canConfirmSuggestion = suggestion && (!value || value < suggestion.value);
 
   return (
     <div ref={rootRef} className="relative min-w-0 w-full">
       {name ? <input type="hidden" name={name} value={value} /> : null}
 
-      <button
-        type="button"
-        aria-label={ariaLabel}
-        aria-invalid={invalid || undefined}
-        aria-expanded={open}
-        aria-controls={listId}
-        onClick={() => setOpen((current) => !current)}
-        className={`flex h-9 w-full min-w-0 items-center gap-1.5 rounded-full border bg-white/95 px-2.5 text-left text-xs outline-none sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${
-          invalid ? "field-error-blink" : "border-transparent"
-        } ${display ? "text-neutral-900" : "text-neutral-400"} ${className ?? ""}`}
-      >
-        <CalendarGlyph />
-        <span className="min-w-0 flex-1 truncate">{display || placeholder}</span>
-      </button>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          aria-label={ariaLabel}
+          aria-invalid={invalid || undefined}
+          aria-expanded={open}
+          aria-controls={listId}
+          onClick={() => setOpen((current) => !current)}
+          className={`flex h-9 w-full min-w-0 items-center gap-1.5 rounded-full border bg-white/95 px-2.5 text-left text-xs outline-none sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${
+            invalid ? "field-error-blink" : "border-transparent"
+          } ${display ? "text-neutral-900" : "text-neutral-400"} ${className ?? ""}`}
+        >
+          <CalendarGlyph />
+          <span className={`min-w-0 flex-1 ${!display && canConfirmSuggestion ? "hero-time-suggestion leading-tight text-neutral-700" : "truncate"}`}>
+            {display || placeholder}
+          </span>
+        </button>
+        {canConfirmSuggestion && (
+          <button
+            type="button"
+            aria-label={suggestion.confirmLabel}
+            title={suggestion.confirmLabel}
+            onClick={() => {
+              onChange(suggestion.value);
+              setOpen(false);
+            }}
+            className="grid size-7 shrink-0 place-items-center rounded-full border border-champagne/50 bg-night/80 text-champagne hover:bg-champagne hover:text-night"
+          >
+            <svg viewBox="0 0 16 16" className="size-4" aria-hidden="true">
+              <path d="m3 8 3 3 7-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        )}
+      </div>
 
       {open && coords && portalRoot
         ? createPortal(
@@ -311,7 +347,7 @@ export function DateTimeInput({
                           <button
                             key={hour}
                             type="button"
-                            disabled={!draftDate}
+                            disabled={isDisabledTime(hour, "55")}
                             onClick={() => setDraftHour(hour)}
                             className={`block w-full px-1.5 py-1 text-center text-xs ${
                               draftHour === hour
@@ -331,7 +367,7 @@ export function DateTimeInput({
                           <button
                             key={minute}
                             type="button"
-                            disabled={!draftDate}
+                            disabled={isDisabledTime(draftHour, minute)}
                             onClick={() => chooseMinute(minute)}
                             className={`block w-full px-1.5 py-1 text-center text-xs ${
                               draftMinute === minute

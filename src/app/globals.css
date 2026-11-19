@@ -252,6 +252,18 @@ input.datetime-input::-webkit-calendar-picker-indicator {
   }
 }
 
+@keyframes hero-time-suggestion-blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-time-suggestion {
+    animation: hero-time-suggestion-blink 1.4s steps(1) infinite;
+  }
+}
+
 .field-error-blink {
   position: relative;
   z-index: 40;

@@ -1,4 +1,5 @@
 export const DEFAULT_STOP_WAIT_MINUTES = 15;
+export const MAX_STOP_WAIT_MINUTES = 24 * 60;
 
 export type QuoteStop = {
   id: string;
@@ -92,7 +93,7 @@ export function decodeStops(value: string | undefined): QuoteStop[] {
 
 function sanitizeWaitMinutes(value: number) {
   if (!Number.isFinite(value) || value < 0) return DEFAULT_STOP_WAIT_MINUTES;
-  return Math.min(24 * 60, Math.round(value));
+  return Math.min(MAX_STOP_WAIT_MINUTES, Math.round(value));
 }
 
 function createStopId() {
