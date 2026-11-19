@@ -110,7 +110,8 @@ export function staffOrderToRow(order: StaffOrder, input: QuoteOrderInput) {
   return {
     id: order.id,
     reference: order.reference,
-    request_locale: input.locale ?? null,
+    ...(input.locale ? { request_locale: input.locale } : {}),
+    ...(order.excursionSlug ? { excursion_slug: order.excursionSlug, excursion_title: order.excursionTitle } : {}),
     ...(order.routeEstimate ? { route_estimate: order.routeEstimate } : {}),
     origin: order.origin,
     destination: order.destination,
@@ -201,11 +202,17 @@ export async function insertOrder(
 
   const row = staffOrderToRow(order, input);
   let { error } = await supabase.from(ORDERS_TABLE).insert(row);
-  if (error && /request_locale/i.test(error.message) && /column|schema cache/i.test(error.message)) {
-    const { request_locale: missingLocale, ...compatibleRow } = row;
-    void missingLocale;
-    ({ error } = await supabase.from(ORDERS_TABLE).insert(compatibleRow));
-    if (!error) console.warn("[orders] request language column is missing; language was not stored");
+  for (let retry = 0; retry < 2 && error && /column|schema cache/i.test(error.message); retry++) {
+    if ("request_locale" in row && /request_locale/i.test(error.message)) {
+      delete row.request_locale;
+    } else if ("excursion_slug" in row && /excursion_(slug|title)/i.test(error.message)) {
+      delete row.excursion_slug;
+      delete row.excursion_title;
+    } else {
+      break;
+    }
+    console.warn("[orders] optional metadata columns are missing", error.message);
+    ({ error } = await supabase.from(ORDERS_TABLE).insert(row));
   }
   if (error) {
     console.error("[orders] insert failed", error.message);

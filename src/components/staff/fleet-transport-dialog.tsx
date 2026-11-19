@@ -113,10 +113,10 @@ function linesLocaleValue(
 }
 
 const inputClass =
-  "mt-1.5 w-full rounded-lg border border-white/15 bg-night px-3 py-2 text-sm text-ivory [color-scheme:dark]";
+  "mt-1.5 w-full rounded-lg border border-staff-control bg-night px-3 py-2 text-sm text-ivory [color-scheme:light]";
 
 const textareaClass =
-  "mt-1.5 w-full resize-y rounded-lg border border-white/15 bg-night px-3 py-2 text-sm text-ivory [color-scheme:dark]";
+  "mt-1.5 w-full resize-y rounded-lg border border-staff-control bg-night px-3 py-2 text-sm text-ivory [color-scheme:light]";
 
 function Field({
   label,
@@ -140,7 +140,7 @@ function Field({
         {required ? " *" : ""}
       </span>
       {children}
-      {hint ? <span className="mt-1 block text-[11px] text-mist/80">{hint}</span> : null}
+      {hint ? <span className="mt-1 block text-[11px] text-mist">{hint}</span> : null}
     </Tag>
   );
 }
@@ -287,17 +287,17 @@ export function FleetTransportDialog({
       onClick={onClose}
     >
       <div
-        className="popup-enter-panel my-4 w-full max-w-3xl rounded-2xl border border-white/10 bg-card shadow-2xl"
+        className="popup-enter-panel my-4 w-full max-w-3xl rounded-2xl border border-line bg-card shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
+        <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
           <h2 className="font-serif text-2xl tracking-wide text-ivory">
             {mode === "edit" ? labels.editTitle : labels.addTitle}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-white/20 px-3 py-1.5 text-xs text-ivory hover:border-white/50"
+            className="rounded-full border border-staff-control px-3 py-1.5 text-xs text-ivory hover:border-staff-focus"
           >
             {labels.close}
           </button>
@@ -314,7 +314,7 @@ export function FleetTransportDialog({
           {clientError || state.error ? (
             <p
               id="fleet-transport-form-error"
-              className="rounded-xl bg-burgundy/15 px-3 py-2 text-sm text-rose-200"
+              className="rounded-xl bg-burgundy/15 px-3 py-2 text-sm text-staff-danger"
               role="alert"
             >
               {clientError ?? state.error}
@@ -325,7 +325,7 @@ export function FleetTransportDialog({
             <div
               role="tablist"
               aria-label="Content language"
-              className="flex flex-wrap gap-1 rounded-lg border border-white/10 bg-white/5 p-1"
+              className="flex flex-wrap gap-1 rounded-lg border border-line bg-staff-subtle p-1"
             >
               {locales.map((tabLocale) => {
                 const active = contentLocale === tabLocale;
@@ -339,8 +339,8 @@ export function FleetTransportDialog({
                     className={[
                       "min-w-12 flex-1 rounded-md px-3 py-1.5 text-xs font-semibold tracking-wide transition",
                       active
-                        ? "bg-burgundy text-white"
-                        : "text-ivory/70 hover:bg-white/10 hover:text-white",
+                        ? "bg-burgundy text-staff-on-accent"
+                        : "text-ivory hover:bg-staff-hover hover:text-ivory",
                     ].join(" ")}
                   >
                     {localeFieldLabels[tabLocale]}
@@ -505,7 +505,7 @@ export function FleetTransportDialog({
                 return (
                   <label
                     key={country.code}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/12 px-3 py-1.5 text-xs text-ivory"
+                    className="inline-flex items-center gap-2 rounded-full border border-line px-3 py-1.5 text-xs text-ivory"
                   >
                     <input
                       type="checkbox"
@@ -539,9 +539,9 @@ export function FleetTransportDialog({
             }}
           />
 
-          <div className="space-y-3 border-t border-white/10 pt-4">
+          <div className="space-y-3 border-t border-line pt-4">
             {clientError || state.error ? (
-              <p className="rounded-xl bg-burgundy/15 px-3 py-2 text-sm text-rose-200" role="alert">
+              <p className="rounded-xl bg-burgundy/15 px-3 py-2 text-sm text-staff-danger" role="alert">
                 {clientError ?? state.error}
               </p>
             ) : null}
@@ -549,14 +549,14 @@ export function FleetTransportDialog({
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-full border border-white/20 px-4 py-2 text-sm text-ivory hover:border-white/50"
+                className="rounded-full border border-staff-control px-4 py-2 text-sm text-ivory hover:border-staff-focus"
               >
                 {labels.close}
               </button>
               <button
                 type="submit"
                 disabled={pending || uploading}
-                className="rounded-full bg-burgundy px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-deep disabled:opacity-60"
+                className="rounded-full bg-burgundy px-4 py-2 text-sm font-medium text-staff-on-accent hover:bg-burgundy-deep disabled:opacity-60"
               >
                 {pending || uploading ? labels.savingTransport : labels.saveTransport}
               </button>

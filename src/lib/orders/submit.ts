@@ -10,6 +10,7 @@ import { getLocale } from "@/lib/i18n/get-dictionary";
 import { parseLocale } from "@/lib/i18n/locale";
 import { dictionaries } from "@/lib/i18n/dictionary";
 import { getManagedExcursionBySlug } from "@/lib/data/managed-excursions";
+import { pickLocalizedText } from "@/lib/i18n/localized-content";
 
 export type SubmitQuoteOrderState =
   | { ok: true; order: StaffOrder }
@@ -85,6 +86,8 @@ export async function submitQuoteOrderFromFormData(
     if (!excursion?.isActive) {
       return { ok: false, error: dictionaries[locale].excursions.registrationClosed };
     }
+    input.excursionSlug = excursion.slug;
+    input.excursionTitle = pickLocalizedText(excursion.title, locale);
   }
 
   return insertOrder(input, planFile);

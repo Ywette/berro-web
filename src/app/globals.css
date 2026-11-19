@@ -15,6 +15,12 @@
   --pine: #8dcea8;
   --leaf: #3f8f3a;
   --leaf-deep: #347832;
+  --chrome-control: rgb(255 255 255 / 0.15);
+  --chrome-control-hover: rgb(255 255 255 / 0.4);
+  --chrome-line: rgb(255 255 255 / 0.1);
+  --chrome-menu: #141418;
+  --chrome-hover: rgb(255 255 255 / 0.08);
+  --chrome-hover-text: #ffffff;
   /* Sticky header: main row + mobile secondary nav */
   --site-header-height: 7.25rem;
 }
@@ -41,13 +47,120 @@
   --color-pine: var(--pine);
   --color-leaf: var(--leaf);
   --color-leaf-deep: var(--leaf-deep);
+  --color-chrome-control: var(--chrome-control);
+  --color-chrome-control-hover: var(--chrome-control-hover);
+  --color-chrome-line: var(--chrome-line);
+  --color-chrome-menu: var(--chrome-menu);
+  --color-chrome-hover: var(--chrome-hover);
+  --color-chrome-hover-text: var(--chrome-hover-text);
+  --color-staff-subtle: var(--staff-subtle);
+  --color-staff-hover: var(--staff-hover);
+  --color-staff-control: var(--staff-control);
+  --color-staff-focus: var(--staff-focus);
+  --color-staff-on-accent: var(--staff-on-accent);
+  --color-staff-success: var(--staff-success);
+  --color-staff-success-solid: var(--staff-success-solid);
+  --color-staff-success-surface: var(--staff-success-surface);
+  --color-staff-success-line: var(--staff-success-line);
+  --color-staff-danger: var(--staff-danger);
+  --color-staff-danger-solid: var(--staff-danger-solid);
+  --color-staff-danger-surface: var(--staff-danger-surface);
+  --color-staff-danger-line: var(--staff-danger-line);
   --font-sans: var(--font-geist-sans);
   --font-serif: var(--font-playfair);
   --font-mono: var(--font-geist-mono);
 }
 
+/* The staff layout marks routes that use the light palette, including shared
+   navigation and popovers rendered outside the route subtree. */
+body:has(.staff-theme) {
+  --staff-on-accent: #ffffff;
+  --staff-success-solid: #155a3b;
+  --staff-danger-solid: #8c2636;
+  --chrome-control: var(--staff-control);
+  --chrome-control-hover: var(--staff-focus);
+  --chrome-line: var(--line);
+  --chrome-menu: var(--card);
+  --chrome-hover: var(--staff-hover);
+  --chrome-hover-text: var(--foreground);
+  background: var(--background);
+  color: var(--foreground);
+}
+
+body:has(.staff-theme[data-theme="light"]) {
+  color-scheme: light;
+  --background: #f6f3f5;
+  --foreground: #000000;
+  --night: var(--background);
+  --card: #ffffff;
+  --panel: #fbf9fa;
+  --ivory: var(--foreground);
+  --mist: var(--foreground);
+  --line: #d8cfd6;
+  --burgundy: #8e243f;
+  --burgundy-deep: #721d33;
+  --champagne: #704709;
+  --staff-subtle: #f4eff3;
+  --staff-hover: #ece5eb;
+  --staff-control: #7b707a;
+  --staff-focus: #60408e;
+  --staff-success: var(--staff-success-solid);
+  --staff-success-surface: #e2f4e9;
+  --staff-success-line: #41765d;
+  --staff-danger: var(--staff-danger-solid);
+  --staff-danger-surface: #fbe8ec;
+  --staff-danger-line: #a85663;
+  --pine: var(--staff-success);
+  --leaf: var(--staff-success);
+  --leaf-deep: #10472e;
+}
+
+body:has(.staff-theme[data-theme="dark"]) {
+  --staff-subtle: #222126;
+  --staff-hover: #302c34;
+  --staff-control: #928899;
+  --staff-focus: #d3bcff;
+  --staff-success: #a0e5ba;
+  --staff-success-surface: #1d382a;
+  --staff-success-line: #71b489;
+  --staff-danger: #ffc0ca;
+  --staff-danger-surface: #47232d;
+  --staff-danger-line: #d78493;
+}
+
+.staff-brand-light {
+  display: none;
+}
+
+body:has(.staff-theme[data-theme="light"]) .staff-brand-light {
+  display: block;
+}
+
+body:has(.staff-theme[data-theme="light"]) .site-brand-dark {
+  display: none;
+}
+
+.staff-theme :where(input:not([type="hidden"]), select, textarea) {
+  border-color: var(--staff-control);
+  color-scheme: inherit;
+}
+
+.staff-theme :where(input, textarea)::placeholder {
+  color: var(--mist);
+  opacity: 1;
+}
+
+body:has(.staff-theme) :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--staff-focus);
+  outline-offset: 2px;
+}
+
 html {
   color-scheme: dark;
+}
+
+html:has(.staff-theme[data-theme="light"]) {
+  color-scheme: light;
 }
 
 /* Reverse of the macOS Genie minimize: cards unfurl into place. */
@@ -166,6 +279,7 @@ input.datetime-input::-webkit-calendar-picker-indicator {
   opacity: 0.55;
   cursor: pointer;
 }
+
 
 @keyframes popup-enter {
   from {

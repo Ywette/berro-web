@@ -23,7 +23,7 @@ export function StaffNav({ links }: { links: readonly StaffNavLink[] }) {
             className={
               active
                 ? "rounded-full bg-ivory px-4 py-2 text-sm font-medium text-night"
-                : "rounded-full border border-white/15 px-4 py-2 text-sm text-ivory/80 hover:border-white/40 hover:text-white"
+                : "rounded-full border border-chrome-control px-4 py-2 text-sm text-ivory hover:border-chrome-control-hover hover:text-chrome-hover-text"
             }
           >
             {link.label}

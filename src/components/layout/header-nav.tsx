@@ -79,7 +79,7 @@ export function MobileMenu({
         aria-controls={menuId}
         aria-label={open ? closeLabel : menuLabel}
         onClick={() => setOpen((current) => !current)}
-        className="grid h-9 w-9 place-items-center rounded-full border border-white/20 text-ivory hover:border-white/50"
+        className="grid h-9 w-9 place-items-center rounded-full border border-chrome-control text-ivory hover:border-chrome-control-hover"
       >
         {open ? <CloseIcon /> : <BurgerIcon />}
       </button>
@@ -90,7 +90,7 @@ export function MobileMenu({
           onClick={(event) => {
             if ((event.target as HTMLElement).closest("a")) setOpen(false);
           }}
-          className="popup-enter-panel absolute inset-x-0 top-full border-b border-white/10 bg-night px-4 py-4 shadow-lg"
+          className="popup-enter-panel absolute inset-x-0 top-full border-b border-chrome-line bg-night px-4 py-4 shadow-lg"
         >
           {onStaff ? (
             <StaffNav links={staffLinks} />

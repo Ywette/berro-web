@@ -10,7 +10,7 @@ export async function SiteHeader() {
   const [dictionary, locale] = await Promise.all([getDictionary(), getLocale()]);
   const signInLink = (
     <Link href="/sign-in" aria-label={dictionary.login.signIn} title={dictionary.login.signIn}
-      className="grid h-9 w-9 place-items-center rounded-full border border-white/20 text-ivory hover:border-white/50 focus-visible:outline-2 focus-visible:outline-offset-2">
+      className="grid h-9 w-9 place-items-center rounded-full border border-chrome-control text-ivory hover:border-chrome-control-hover focus-visible:outline-2 focus-visible:outline-offset-2">
       <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none"
         stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="8" cy="8" r="4.5" />
@@ -35,7 +35,7 @@ export async function SiteHeader() {
   ] as const;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-white/10 bg-night/95 backdrop-blur-md">
+    <header className="sticky top-0 z-30 border-b border-chrome-line bg-night/95 backdrop-blur-md">
       <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3.5 sm:px-6">
         <Link href="/" aria-label="Berro Travel" className="shrink-0">
           <Image
@@ -44,7 +44,14 @@ export async function SiteHeader() {
             width={352}
             height={112}
             priority
-            className="h-8 w-auto sm:h-9"
+            className="site-brand-dark h-8 w-auto sm:h-9"
+          />
+          <Image
+            src="/brand/berro-travel-logo-white.png"
+            alt=""
+            width={352}
+            height={112}
+            className="staff-brand-light h-8 w-auto sm:h-9"
           />
         </Link>
         <div className="flex items-center gap-3 sm:gap-5">

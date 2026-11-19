@@ -282,7 +282,7 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
                         setAssignment((current) => current && { ...current, driverId: employee?.id ?? null, driverName: employee?.fullName ?? null });
                         setAssignmentError("");
                       }}
-                      className="mt-1 block w-full rounded-lg border border-white/15 bg-night px-3 py-2 text-sm text-ivory [color-scheme:dark]">
+                      className="mt-1 block w-full rounded-lg border border-staff-control bg-night px-3 py-2 text-sm text-ivory [color-scheme:light]">
                       <option value="">{staff.unassigned}</option>
                       {assignment?.driverId && !drivers.some((item) => item.id === assignment.driverId) && (
                         <option value={assignment.driverId}>{assignment.driverName || assignment.driverId}</option>
@@ -296,7 +296,7 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
                     <dd>
                     <select id="order-vehicle" value={assignment?.vehicleId ?? ""} disabled={!loaded || assignmentBusy || statusBusy}
                       onChange={(event) => { const value = event.target.value || null; setAssignment((current) => current && { ...current, vehicleId: value }); setAssignmentError(""); }}
-                      className="mt-1 block w-full rounded-lg border border-white/15 bg-night px-3 py-2 text-sm text-ivory [color-scheme:dark]">
+                      className="mt-1 block w-full rounded-lg border border-staff-control bg-night px-3 py-2 text-sm text-ivory [color-scheme:light]">
                       <option value="">{staff.unassigned}</option>
                       {assignment?.vehicleId && !availableVehicles.some((item) => item.id === assignment.vehicleId) && (
                         <option value={assignment.vehicleId}>{vehicle ? vehicleLabel(vehicle) : assignment.vehicleId}</option>
@@ -347,19 +347,19 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
             <button key={status} type="button" disabled={statusBusy || assignmentBusy || order.status === "cancelled"} onClick={() => changeStatus(status)}
               aria-pressed={completed}
               className={`min-h-10 rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50 ${completed
-                ? "border-emerald-400/30 bg-emerald-400/15 text-emerald-300" : "border-white/10 bg-white/5 text-gray-400 hover:bg-white/10"}`}>
+                ? "border-staff-success-line bg-staff-success-surface text-staff-success" : "border-line bg-staff-subtle text-mist hover:bg-staff-hover"}`}>
               {status === "sent" ? (completed ? staff.stageSent : staff.stageSend) : staff.orderStates[status]}
             </button>
             );
           })}
         </div>
-        {statusError && <p role="alert" className="text-sm text-rose-200">{statusError}</p>}
+        {statusError && <p role="alert" className="text-sm text-staff-danger">{statusError}</p>}
         <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
-          <button type="button" className="rounded-lg border border-rose-300/40 px-4 py-2 text-sm font-medium text-rose-200 hover:bg-rose-300/10" onClick={() => ref.current?.showModal()}>
+          <button type="button" className="rounded-lg border border-staff-danger-line px-4 py-2 text-sm font-medium text-staff-danger hover:bg-staff-danger-surface" onClick={() => ref.current?.showModal()}>
             {staff.orderEdit.remove}
           </button>
           <button type="button" disabled={statusBusy || assignmentBusy} onClick={() => void changeCancellation()}
-            className="mr-auto rounded-lg border border-rose-300/40 px-4 py-2 text-sm font-medium text-rose-200 hover:bg-rose-300/10 disabled:opacity-50">
+            className="mr-auto rounded-lg border border-staff-danger-line px-4 py-2 text-sm font-medium text-staff-danger hover:bg-staff-danger-surface disabled:opacity-50">
             {order.status === "cancelled" ? staff.restoreOrder : staff.cancelOrder}
           </button>
           <button type="button" onClick={() => {
@@ -367,17 +367,17 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
             window.history.replaceState(null, "", window.location.pathname + window.location.search + (next ? "#edit" : ""));
             setEditing(next);
             if (next) setCalculating(false);
-          }} className="rounded-lg border border-white/25 px-4 py-2 text-sm font-medium text-ivory hover:bg-white/10" aria-expanded={editing} aria-controls="order-edit">
+          }} className="rounded-lg border border-staff-control px-4 py-2 text-sm font-medium text-ivory hover:bg-staff-hover" aria-expanded={editing} aria-controls="order-edit">
             {editing ? staff.fleetFormClose : staff.editTransport}
           </button>
           <button type={editing || (calculating && !calculationLocked && (!assignmentChanged || calculationDirty)) ? "submit" : "button"} form={editing ? "edit" : "order-calculation-form"}
             onClick={() => { if (!editing && (!calculating || calculationLocked || (assignmentChanged && !calculationDirty))) void saveAssignment(order); }}
             disabled={assignmentBusy || statusBusy || (!assignmentChanged && !editing && (!calculating || calculationLocked))}
-            className="rounded-lg bg-burgundy px-4 py-2 text-sm font-medium text-white hover:bg-burgundy/80 disabled:opacity-50">
+            className="rounded-lg bg-burgundy px-4 py-2 text-sm font-medium text-staff-on-accent hover:bg-burgundy-deep disabled:opacity-50">
             {staff.saveOrderChanges}
           </button>
         </div>
-        {assignmentError && <p role="alert" className="text-sm text-rose-200">{assignmentError}</p>}
+        {assignmentError && <p role="alert" className="text-sm text-staff-danger">{assignmentError}</p>}
         <dialog ref={ref} aria-labelledby="delete-order-title" onCancel={(event) => { event.preventDefault(); if (!busy) closeDelete(); }}
           className="m-auto w-[min(32rem,94vw)] space-y-5 rounded-xl border border-line bg-card p-6 text-ivory backdrop:bg-black/70">
           <h2 id="delete-order-title" className="text-lg font-semibold">{staff.orderEdit.remove}</h2>
@@ -385,7 +385,7 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
           {error && <p role="alert">{error}</p>}
           <div className="flex justify-end gap-4">
             <button type="button" disabled={busy} onClick={closeDelete}>{staff.fleetFormClose}</button>
-            <button type="button" disabled={busy} onClick={remove} className="rounded-lg bg-burgundy px-3 py-2">{staff.orderEdit.remove}</button>
+            <button type="button" disabled={busy} onClick={remove} className="rounded-lg bg-burgundy px-3 py-2 text-staff-on-accent">{staff.orderEdit.remove}</button>
           </div>
         </dialog>
     </article>

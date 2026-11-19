@@ -65,7 +65,7 @@ export function OrderCalculationForm({ order, onSaved, onLockChange, onDirtyChan
         ))}
       </fieldset>
       <p className="font-semibold">{labels.total} {price === null ? "—" : new Intl.NumberFormat(dictionary.locale, { style: "currency", currency: "EUR" }).format(price)}</p>
-      {error && <p role="alert" className="text-sm text-rose-200">{error}</p>}
+      {error && <p role="alert" className="text-sm text-staff-danger">{error}</p>}
       {locked ? <p role="status" className="text-sm text-mist">{labels.saved}</p> : null}
       {locked && <button type="button" onClick={() => { setLocked(false); onLockChange(false); }} className="rounded-lg border border-line px-4 py-2">{labels.edit}</button>}
     </form>

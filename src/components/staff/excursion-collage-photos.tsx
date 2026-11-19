@@ -73,7 +73,7 @@ function ArrowButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className={`absolute z-10 grid size-7 place-items-center rounded-full border border-white/40 bg-night/75 text-sm text-ivory shadow-sm backdrop-blur-sm transition hover:bg-night/90 disabled:pointer-events-none disabled:opacity-0 ${positionClass}`}
+      className={`absolute z-10 grid size-7 place-items-center rounded-full border border-staff-control bg-night/75 text-sm text-ivory shadow-sm backdrop-blur-sm transition hover:bg-night/90 disabled:pointer-events-none disabled:opacity-0 ${positionClass}`}
     >
       {icon}
     </button>
@@ -182,9 +182,9 @@ export function ExcursionCollagePhotos({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-xs text-mist">{labels.photos}</p>
-          <p className="mt-1 text-[11px] text-mist/80">{labels.photosHint}</p>
+          <p className="mt-1 text-[11px] text-mist">{labels.photosHint}</p>
           {processError ? (
-            <p className="mt-1 text-[11px] text-rose-200/90" role="alert">
+            <p className="mt-1 text-[11px] text-staff-danger" role="alert">
               {processError}
             </p>
           ) : null}
@@ -194,7 +194,7 @@ export function ExcursionCollagePhotos({
             type="button"
             onClick={() => openPicker(null)}
             disabled={processing}
-            className="rounded-full border border-white/20 px-3 py-1.5 text-xs text-ivory hover:border-white/50 disabled:opacity-60"
+            className="rounded-full border border-staff-control px-3 py-1.5 text-xs text-ivory hover:border-staff-focus disabled:opacity-60"
           >
             {labels.upload}
           </button>
@@ -215,7 +215,7 @@ export function ExcursionCollagePhotos({
 
       <div>
         <p className="mb-2 text-[11px] text-mist">{labels.preview}</p>
-        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-white/10">
+        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-line">
           <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-0.5 bg-night">
             {slots.map((photo, index) => {
               const canUp = neighborIndex(index, "up") !== null && Boolean(photos[index]) && Boolean(photos[neighborIndex(index, "up")!]);
@@ -233,7 +233,7 @@ export function ExcursionCollagePhotos({
                 Boolean(photos[neighborIndex(index, "right")!]);
 
               return (
-                <div key={photo?.id ?? `empty-${index}`} className="relative min-h-0 overflow-hidden bg-[#242426]">
+                <div key={photo?.id ?? `empty-${index}`} className="relative min-h-0 overflow-hidden bg-staff-subtle">
                   {photo ? (
                     <>
                       <button
@@ -280,9 +280,9 @@ export function ExcursionCollagePhotos({
                       type="button"
                       onClick={() => openPicker(index)}
                       disabled={processing || !canUploadMore}
-                      className="absolute inset-0 grid place-items-center text-xs text-mist hover:bg-white/5 disabled:opacity-50"
+                      className="absolute inset-0 grid place-items-center text-xs text-mist hover:bg-staff-hover disabled:opacity-50"
                     >
-                      <span className="rounded-full border border-dashed border-white/25 px-3 py-1.5">
+                      <span className="rounded-full border border-dashed border-staff-control px-3 py-1.5">
                         {labels.slot} {index + 1}
                       </span>
                     </button>

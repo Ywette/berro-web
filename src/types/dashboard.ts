@@ -19,6 +19,8 @@ export type StaffOrder = {
   id: string;
   reference: string;
   requestLocale?: string | null;
+  excursionSlug?: string | null;
+  excursionTitle?: string | null;
   createdAt?: string | null;
   updatedAt?: string;
   price?: number | null;

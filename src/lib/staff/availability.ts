@@ -26,19 +26,18 @@ function orderTimes(order: StaffOrder): DateSpan | null {
   const end = order.returnAt?.slice(0, 16);
   const timestamp = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
   if (!start || !end || !timestamp.test(start) || !timestamp.test(end) ||
-      start.slice(0, 10) !== days.start || end.slice(0, 10) !== days.end || end <= start ||
-      start.slice(11) === end.slice(11)) {
+      start.slice(0, 10) !== days.start || end.slice(0, 10) !== days.end || end <= start) {
     return null;
   }
   return { start, end };
 }
 
-function rangeOverlapsOrder(span: DateSpan, order: StaffOrder): boolean {
+export function rangeOverlapsOrder(span: DateSpan, order: StaffOrder): boolean {
   if (order.status === "cancelled") return false;
   const days = orderSpan(order);
   if (!days || !rangesOverlap(days, span)) return false;
   const trip = orderTimes(order);
-  if (!trip || (!span.startTime && !span.endTime)) return true;
+  if (!trip) return true;
   const start = `${span.start}T${span.startTime || "00:00"}`;
   const end = `${span.end}T${span.endTime || "24:00"}`;
   if (end <= start) return true;
@@ -59,13 +58,17 @@ function ordersOverlap(left: StaffOrder, right: StaffOrder): boolean {
 export function resolvedRange(
   from: string,
   to: string,
+  startTime = "",
+  endTime = "",
 ): { ok: true; span: DateSpan } | { ok: false; invalid: boolean } {
   if (!from && !to) return { ok: false, invalid: false };
-  if (from && to && from > to) return { ok: false, invalid: true };
   const start = from || to;
   const end = to || from;
   if (!isIsoDate(start) || !isIsoDate(end)) return { ok: false, invalid: false };
-  return { ok: true, span: { start, end } };
+  if (`${start}T${startTime || "00:00"}` >= `${end}T${endTime || "24:00"}`) {
+    return { ok: false, invalid: true };
+  }
+  return { ok: true, span: { start, end, startTime, endTime } };
 }
 
 export function isEmployeeFree(employee: Employee, span: DateSpan, orders: StaffOrder[]) {

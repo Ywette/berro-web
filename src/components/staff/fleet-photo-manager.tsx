@@ -89,12 +89,12 @@ export function FleetPhotoManager({ photos, mainId, onChange, labels }: FleetPho
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-xs text-mist">{labels.photos}</p>
-          <p className="mt-1 text-[11px] text-mist/80">{labels.photosHint}</p>
+          <p className="mt-1 text-[11px] text-mist">{labels.photosHint}</p>
         </div>
         {canUploadMore ? (
           <label
             htmlFor={inputId}
-            className="cursor-pointer rounded-full border border-white/20 px-3 py-1.5 text-xs text-ivory hover:border-white/50"
+            className="cursor-pointer rounded-full border border-staff-control px-3 py-1.5 text-xs text-ivory hover:border-staff-focus"
           >
             {labels.upload}
           </label>
@@ -122,8 +122,8 @@ export function FleetPhotoManager({ photos, mainId, onChange, labels }: FleetPho
                 onDragStart={() => setDragId(photo.id)}
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={() => onDrop(photo.id)}
-                className={`overflow-hidden rounded-xl border bg-[#141418] ${
-                  isMain ? "border-burgundy" : "border-white/12"
+                className={`overflow-hidden rounded-xl border bg-panel ${
+                  isMain ? "border-burgundy" : "border-line"
                 }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element -- local object URLs + uploads */}
@@ -132,14 +132,14 @@ export function FleetPhotoManager({ photos, mainId, onChange, labels }: FleetPho
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[11px] text-mist">#{index + 1}</span>
                     {isMain ? (
-                      <span className="rounded-full bg-burgundy/25 px-2 py-0.5 text-[11px] text-rose-100">
+                      <span className="rounded-full bg-burgundy/25 px-2 py-0.5 text-[11px] text-staff-danger">
                         {labels.main}
                       </span>
                     ) : (
                       <button
                         type="button"
                         onClick={() => onChange(photos, photo.id)}
-                        className="text-[11px] text-ivory/80 underline-offset-2 hover:text-white hover:underline"
+                        className="text-[11px] text-ivory underline-offset-2 hover:text-ivory hover:underline"
                       >
                         {labels.setMain}
                       </button>
@@ -150,7 +150,7 @@ export function FleetPhotoManager({ photos, mainId, onChange, labels }: FleetPho
                       type="button"
                       onClick={() => move(photo.id, -1)}
                       disabled={index === 0}
-                      className="rounded-md border border-white/15 px-2 py-1 text-[11px] text-mist disabled:opacity-40"
+                      className="rounded-md border border-staff-control px-2 py-1 text-[11px] text-mist disabled:opacity-40"
                     >
                       {labels.moveLeft}
                     </button>
@@ -158,14 +158,14 @@ export function FleetPhotoManager({ photos, mainId, onChange, labels }: FleetPho
                       type="button"
                       onClick={() => move(photo.id, 1)}
                       disabled={index === photos.length - 1}
-                      className="rounded-md border border-white/15 px-2 py-1 text-[11px] text-mist disabled:opacity-40"
+                      className="rounded-md border border-staff-control px-2 py-1 text-[11px] text-mist disabled:opacity-40"
                     >
                       {labels.moveRight}
                     </button>
                     <button
                       type="button"
                       onClick={() => remove(photo.id)}
-                      className="rounded-md border border-white/15 px-2 py-1 text-[11px] text-rose-200/90"
+                      className="rounded-md border border-staff-control px-2 py-1 text-[11px] text-staff-danger"
                     >
                       {labels.remove}
                     </button>

@@ -13,7 +13,9 @@ export async function CalendarPanel() {
   let loadError: string | null = null;
 
   try {
-    [employees, vehicles, orders] = await Promise.all([listEmployees(), listVehicles(), listOrders()]);
+    [employees, vehicles, orders] = await Promise.all([
+      listEmployees(), listVehicles(), listOrders(),
+    ]);
   } catch (error) {
     loadError =
       error instanceof Error ? error.message : dictionary.staffDashboard.ordersLoadError;
@@ -21,7 +23,7 @@ export async function CalendarPanel() {
 
   if (loadError) {
     return (
-      <p className="rounded-2xl bg-burgundy/15 px-5 py-4 text-sm text-rose-200" role="alert">
+      <p className="rounded-2xl bg-burgundy/15 px-5 py-4 text-sm text-staff-danger" role="alert">
         {loadError}
       </p>
     );
@@ -35,8 +37,10 @@ export async function CalendarPanel() {
       locale={locale}
       labels={{
         availabilityRange: dictionary.staffDashboard.availabilityRange,
-        startTime: dictionary.hero.departureAt,
-        endTime: dictionary.hero.arrivalAt,
+        availableFrom: dictionary.staffDashboard.availableFrom,
+        availableTo: dictionary.staffDashboard.availableTo,
+        rangeInvalid: dictionary.staffDashboard.rangeInvalid,
+        wholeDay: dictionary.staffDashboard.wholeDay,
         clearRange: dictionary.staffDashboard.clearRange,
         allEmployees: dictionary.staffDashboard.calendarAllDrivers,
         allTransports: dictionary.staffDashboard.allTransports,
@@ -54,11 +58,18 @@ export async function CalendarPanel() {
         noFleetScheduled: dictionary.staffDashboard.noFleetScheduled,
         monthPrev: dictionary.staffDashboard.monthPrev,
         monthNext: dictionary.staffDashboard.monthNext,
+        yearPrev: dictionary.staffDashboard.yearPrev,
+        yearNext: dictionary.staffDashboard.yearNext,
         today: dictionary.staffDashboard.today,
         busy: dictionary.staffDashboard.busy,
         free: dictionary.staffDashboard.free,
+        unavailable: dictionary.statuses.unavailable,
         employeesSection: dictionary.staffDashboard.calendarDrivers,
         fleetSection: dictionary.staffDashboard.fleet,
+        fleetKinds: dictionary.staffDashboard.calendarFleetKinds,
+        orderSection: dictionary.staffDashboard.ordersTitle,
+        orderReserved: dictionary.staffDashboard.calendarOrderReserved,
+        orderReady: dictionary.staffDashboard.calendarOrderReady,
         roles: dictionary.roles,
       }}
     />

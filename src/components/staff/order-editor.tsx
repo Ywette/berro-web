@@ -109,7 +109,7 @@ export function OrderEditor({ order, draftKey, onSaved }: {
     ["email", dictionary.hero.email, order.requestorEmail, "email"],
     ["phone", dictionary.hero.phone, order.requestorPhone, "tel"],
   ] as const;
-  const inputClass = "mt-1 block w-full rounded-lg border border-line bg-night p-2 text-ivory [color-scheme:dark]";
+  const inputClass = "mt-1 block w-full rounded-lg border border-line bg-night p-2 text-ivory [color-scheme:light]";
   return (
     <form id="edit" onSubmit={submit} className="scroll-mt-24 space-y-5 border-t border-line pt-5">
         <h2 className="text-xl font-semibold">{staff.editTransport}</h2>
@@ -129,7 +129,7 @@ export function OrderEditor({ order, draftKey, onSaved }: {
             {purpose === "other" && <label>{dictionary.quote.travelTypeOptions.other}<input className={inputClass}
               name="travelTypeDetail" value={draft.travelTypeDetail ?? order.travelTypeDetail ?? ""} onChange={(e) => change("travelTypeDetail", e.target.value)} /></label>}
           </fieldset>
-        {error && <p role="alert" className="text-rose-200">{error}</p>}
+        {error && <p role="alert" className="text-staff-danger">{error}</p>}
         <p role="status" className="text-sm text-mist">{busy ? staff.savingTransport : draftStatus === "saved" ? staff.draftSaved : draftStatus === "failed" ? labels.failed : ""}</p>
         <div className="flex justify-end gap-3">
           {draftStatus !== "empty" && <button type="button" disabled={busy} onClick={discard}>{staff.discardDraft}</button>}

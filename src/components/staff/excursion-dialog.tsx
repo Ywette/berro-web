@@ -89,7 +89,7 @@ function Field({
   hint?: string;
 }) {
   return (
-    <label className="grid gap-1.5 text-[11px] font-medium tracking-wide text-ivory/80">
+    <label className="grid gap-1.5 text-[11px] font-medium tracking-wide text-ivory">
       {label}
       {children}
       {hint ? <span className="text-[11px] font-normal text-mist">{hint}</span> : null}
@@ -98,10 +98,10 @@ function Field({
 }
 
 const inputClass =
-  "h-10 w-full rounded-lg border border-white/10 bg-white px-3 text-sm text-neutral-900 outline-none";
+  "h-10 w-full rounded-lg border border-line bg-card px-3 text-sm text-ivory outline-none";
 
 const textareaClass =
-  "w-full resize-y rounded-lg border border-white/10 bg-white px-3 py-2 text-sm text-neutral-900 outline-none";
+  "w-full resize-y rounded-lg border border-line bg-card px-3 py-2 text-sm text-ivory outline-none";
 
 export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionDialogProps) {
   const [photos, setPhotos] = useState<FleetPhotoDraft[]>(() => photosFromExcursion(excursion));
@@ -211,7 +211,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
         role="dialog"
         aria-modal="true"
         aria-labelledby="excursion-dialog-title"
-        className="popup-enter my-4 w-full max-w-xl rounded-2xl border border-white/10 bg-card p-5 text-ivory shadow-[0_30px_80px_-24px_rgba(0,0,0,0.9)] sm:p-6"
+        className="popup-enter my-4 w-full max-w-xl rounded-2xl border border-line bg-card p-5 text-ivory shadow-[0_30px_80px_-24px_rgba(0,0,0,0.9)] sm:p-6"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
@@ -222,7 +222,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
             type="button"
             onClick={onClose}
             aria-label={labels.close}
-            className="grid h-8 w-8 place-items-center rounded-full text-ivory/70 hover:bg-white/10 hover:text-white"
+            className="grid h-8 w-8 place-items-center rounded-full text-ivory hover:bg-staff-hover hover:text-ivory"
           >
             ×
           </button>
@@ -235,7 +235,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
             <div
               role="tablist"
               aria-label="Content language"
-              className="flex flex-wrap gap-1 rounded-lg border border-white/10 bg-white/5 p-1"
+              className="flex flex-wrap gap-1 rounded-lg border border-line bg-staff-subtle p-1"
             >
               {locales.map((locale) => {
                 const active = contentLocale === locale;
@@ -249,8 +249,8 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
                     className={[
                       "min-w-12 flex-1 rounded-md px-3 py-1.5 text-xs font-semibold tracking-wide transition",
                       active
-                        ? "bg-burgundy text-white"
-                        : "text-ivory/70 hover:bg-white/10 hover:text-white",
+                        ? "bg-burgundy text-staff-on-accent"
+                        : "text-ivory hover:bg-staff-hover hover:text-ivory",
                     ].join(" ")}
                   >
                     {localeFieldLabels[locale]}
@@ -370,21 +370,21 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
           )}
 
           <fieldset className="grid gap-1.5">
-            <legend className="text-[11px] font-medium tracking-wide text-ivory/80">
+            <legend className="text-[11px] font-medium tracking-wide text-ivory">
               {labels.region}
             </legend>
-            <div className="grid gap-2 rounded-lg border border-white/10 bg-white/5 p-3 sm:grid-cols-2">
+            <div className="grid gap-2 rounded-lg border border-line bg-staff-subtle p-3 sm:grid-cols-2">
               {excursionRegions.map((region) => (
                 <label
                   key={region}
-                  className="flex items-center gap-2 text-sm font-normal text-ivory/90"
+                  className="flex items-center gap-2 text-sm font-normal text-ivory"
                 >
                   <input
                     type="checkbox"
                     name="regions"
                     value={region}
                     defaultChecked={selectedRegions.has(region)}
-                    className="size-4 rounded border-white/30 bg-white accent-burgundy"
+                    className="size-4 rounded border-staff-control bg-card accent-burgundy"
                   />
                   {regionLabels[region]}
                 </label>
@@ -412,7 +412,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
           />
 
           {clientError || state.error ? (
-            <p role="alert" className="text-xs text-red-300">
+            <p role="alert" className="text-xs text-staff-danger">
               {clientError ?? state.error}
             </p>
           ) : null}
@@ -420,7 +420,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
           <button
             type="submit"
             disabled={pending || uploading}
-            className="mt-1 inline-flex h-11 w-full items-center justify-center rounded-lg bg-burgundy px-4 text-sm font-semibold text-white hover:bg-burgundy-deep disabled:opacity-60"
+            className="mt-1 inline-flex h-11 w-full items-center justify-center rounded-lg bg-burgundy px-4 text-sm font-semibold text-staff-on-accent hover:bg-burgundy-deep disabled:opacity-60"
           >
             {pending || uploading ? labels.saving : labels.save}
           </button>

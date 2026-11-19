@@ -45,7 +45,7 @@ export function FleetBoardClient({
         <button
           type="button"
           onClick={() => setDialog({ mode: "add", vehicle: null })}
-          className="rounded-full bg-burgundy px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-deep"
+          className="rounded-full bg-burgundy px-4 py-2 text-sm font-medium text-staff-on-accent hover:bg-burgundy-deep"
         >
           {labels.addTransport}
         </button>
@@ -58,7 +58,7 @@ export function FleetBoardClient({
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-line bg-card">
           <table className="w-full min-w-[860px] text-left text-sm">
-            <thead className="bg-white/5 text-mist">
+            <thead className="bg-staff-subtle text-mist">
               <tr>
                 <th className="px-4 py-3 font-medium">{labels.fleetTitle}</th>
                 <th className="px-4 py-3 font-medium">{labels.kind}</th>
@@ -87,7 +87,7 @@ export function FleetBoardClient({
                 return (
                   <tr
                     key={vehicle.id}
-                    className="border-t border-line align-middle hover:bg-white/[0.03]"
+                    className="border-t border-line align-middle hover:bg-staff-hover"
                   >
                     <td className="px-4 py-3">
                       <button
@@ -131,7 +131,7 @@ export function FleetBoardClient({
                           onClick={() => setDialog({ mode: "edit", vehicle })}
                           aria-label={labels.editTransport}
                           title={labels.editTransport}
-                          className="grid size-8 place-items-center rounded-md bg-emerald-400 text-black hover:bg-emerald-300"
+                          className="grid size-8 place-items-center rounded-md bg-staff-success-solid text-staff-on-accent hover:bg-leaf-deep"
                         >
                           <EditIcon />
                         </button>
@@ -141,7 +141,7 @@ export function FleetBoardClient({
                             type="submit"
                             aria-label={labels.deleteTransport}
                             title={labels.deleteTransport}
-                            className="grid size-8 place-items-center rounded-md bg-rose-400 text-black hover:bg-rose-300"
+                            className="grid size-8 place-items-center rounded-md bg-staff-danger-solid text-staff-on-accent hover:bg-burgundy-deep"
                           >
                             <DeleteIcon />
                           </button>
@@ -189,17 +189,17 @@ function ExpiryDate({
 
   if (state === "attention") {
     return (
-      <span className="inline-block border border-red-500 px-1.5 py-0.5 text-rose-200">
+      <span className="inline-block border border-staff-danger-line px-1.5 py-0.5 text-staff-danger">
         {label}
       </span>
     );
   }
 
   if (state === "blocked") {
-    return <span className="text-rose-300/90 line-through">{label}</span>;
+    return <span className="text-staff-danger line-through">{label}</span>;
   }
 
-  return <span className="text-ivory/85">{label}</span>;
+  return <span className="text-ivory">{label}</span>;
 }
 
 function EditIcon() {

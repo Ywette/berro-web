@@ -103,7 +103,7 @@ export function FleetCalendar({ vehicles, orders, locale, labels }: FleetCalenda
           <select
             value={vehicleId}
             onChange={(event) => setVehicleId(event.target.value)}
-            className="h-10 rounded-lg border border-white/15 bg-night px-3 text-sm text-ivory [color-scheme:dark]"
+            className="h-10 rounded-lg border border-staff-control bg-night px-3 text-sm text-ivory [color-scheme:light]"
           >
             <option value="all">{labels.allTransports}</option>
             {activeVehicles.map((vehicle) => (
@@ -117,7 +117,7 @@ export function FleetCalendar({ vehicles, orders, locale, labels }: FleetCalenda
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            className="rounded-full border border-white/15 px-3 py-1.5 text-xs text-ivory/80 hover:border-white/40"
+            className="rounded-full border border-staff-control px-3 py-1.5 text-xs text-ivory hover:border-staff-focus"
             onClick={() => setCursor(new Date(Date.UTC(year, month - 1, 1)))}
           >
             {labels.monthPrev}
@@ -125,7 +125,7 @@ export function FleetCalendar({ vehicles, orders, locale, labels }: FleetCalenda
           <p className="min-w-36 text-center text-sm capitalize text-ivory">{monthLabel}</p>
           <button
             type="button"
-            className="rounded-full border border-white/15 px-3 py-1.5 text-xs text-ivory/80 hover:border-white/40"
+            className="rounded-full border border-staff-control px-3 py-1.5 text-xs text-ivory hover:border-staff-focus"
             onClick={() => setCursor(new Date(Date.UTC(year, month + 1, 1)))}
           >
             {labels.monthNext}
@@ -164,8 +164,8 @@ export function FleetCalendar({ vehicles, orders, locale, labels }: FleetCalenda
                   key={key}
                   className={
                     isToday
-                      ? "min-h-24 rounded-xl border border-ivory/30 bg-white/5 p-2"
-                      : "min-h-24 rounded-xl border border-white/8 bg-night/40 p-2"
+                      ? "min-h-24 rounded-xl border border-ivory/30 bg-staff-subtle p-2"
+                      : "min-h-24 rounded-xl border border-line bg-night/40 p-2"
                   }
                 >
                   <div className="flex items-center justify-between gap-1">
@@ -179,7 +179,7 @@ export function FleetCalendar({ vehicles, orders, locale, labels }: FleetCalenda
                     <p className="mt-2 text-[10px] text-mist">
                       <span className="text-pine">{freeCount} {labels.available}</span>
                       {busyCount > 0 ? (
-                        <span className="text-rose-200"> · {busyCount} {labels.busy}</span>
+                        <span className="text-staff-danger"> · {busyCount} {labels.busy}</span>
                       ) : null}
                     </p>
                   ) : null}
@@ -188,7 +188,7 @@ export function FleetCalendar({ vehicles, orders, locale, labels }: FleetCalenda
                     {assignments.slice(0, 3).map((item) => (
                       <li
                         key={`${item.reference}-${item.vehicleId}`}
-                        className="truncate rounded-md bg-burgundy/20 px-1.5 py-1 text-[10px] text-rose-100"
+                        className="truncate rounded-md bg-burgundy/20 px-1.5 py-1 text-[10px] text-staff-danger"
                         title={`${item.vehicleName} · ${item.reference}`}
                       >
                         {vehicleId === "all" ? item.vehicleName : item.reference}
@@ -198,7 +198,7 @@ export function FleetCalendar({ vehicles, orders, locale, labels }: FleetCalenda
                       <li className="text-[10px] text-mist">+{assignments.length - 3}</li>
                     ) : null}
                     {vehicleId !== "all" && assignments.length === 0 ? (
-                      <li className="rounded-md bg-pine/15 px-1.5 py-1 text-[10px] text-pine">
+                      <li className="rounded-md bg-staff-success-surface px-1.5 py-1 text-[10px] text-pine">
                         {labels.free}
                       </li>
                     ) : null}
@@ -218,7 +218,7 @@ export function FleetCalendar({ vehicles, orders, locale, labels }: FleetCalenda
               );
 
               return (
-                <div key={vehicle.id} className="rounded-xl border border-white/8 bg-night/50 px-3 py-3">
+                <div key={vehicle.id} className="rounded-xl border border-line bg-night/50 px-3 py-3">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-medium text-ivory">{vehicleLabel(vehicle)}</p>
                     <span className="text-[11px] text-mist">

@@ -85,7 +85,7 @@ export function DriverCalendar({ drivers, orders, locale, labels }: DriverCalend
       <div className="flex flex-wrap items-center justify-end gap-2">
         <button
           type="button"
-          className="rounded-full border border-white/15 px-3 py-1.5 text-xs text-ivory/80 hover:border-white/40"
+          className="rounded-full border border-staff-control px-3 py-1.5 text-xs text-ivory hover:border-staff-focus"
           onClick={() => setCursor(new Date(Date.UTC(year, month - 1, 1)))}
         >
           {labels.monthPrev}
@@ -93,7 +93,7 @@ export function DriverCalendar({ drivers, orders, locale, labels }: DriverCalend
         <p className="min-w-36 text-center text-sm capitalize text-ivory">{monthLabel}</p>
         <button
           type="button"
-          className="rounded-full border border-white/15 px-3 py-1.5 text-xs text-ivory/80 hover:border-white/40"
+          className="rounded-full border border-staff-control px-3 py-1.5 text-xs text-ivory hover:border-staff-focus"
           onClick={() => setCursor(new Date(Date.UTC(year, month + 1, 1)))}
         >
           {labels.monthNext}
@@ -123,8 +123,8 @@ export function DriverCalendar({ drivers, orders, locale, labels }: DriverCalend
               key={key}
               className={
                 isToday
-                  ? "min-h-24 rounded-xl border border-ivory/30 bg-white/5 p-2"
-                  : "min-h-24 rounded-xl border border-white/8 bg-night/40 p-2"
+                  ? "min-h-24 rounded-xl border border-ivory/30 bg-staff-subtle p-2"
+                  : "min-h-24 rounded-xl border border-line bg-night/40 p-2"
               }
             >
               <div className="flex items-center justify-between gap-1">
@@ -137,7 +137,7 @@ export function DriverCalendar({ drivers, orders, locale, labels }: DriverCalend
                 {assignments.slice(0, 3).map((item) => (
                   <li
                     key={`${item.reference}-${item.driverId}`}
-                    className="truncate rounded-md bg-burgundy/20 px-1.5 py-1 text-[10px] text-rose-100"
+                    className="truncate rounded-md bg-burgundy/20 px-1.5 py-1 text-[10px] text-staff-danger"
                     title={`${item.driverName} · ${item.reference}`}
                   >
                     {item.driverName} · {item.reference}
@@ -162,7 +162,7 @@ export function DriverCalendar({ drivers, orders, locale, labels }: DriverCalend
           );
 
           return (
-            <div key={driver.id} className="rounded-xl border border-white/8 bg-night/50 px-3 py-3">
+            <div key={driver.id} className="rounded-xl border border-line bg-night/50 px-3 py-3">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm font-medium text-ivory">{driver.fullName}</p>
                 <span className="text-[11px] text-mist">

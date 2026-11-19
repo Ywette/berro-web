@@ -87,15 +87,15 @@ export function OrdersTableClient({ initialOrders, demoNote }: {
   function badge(order: StaffOrder) {
     const completed = new Set(["new", order.status, ...(order.completedStatuses ?? [])]);
     return <div className="flex flex-wrap gap-1" aria-label={staff.state}>
-      {order.status === "cancelled" && <span className="rounded-lg border border-rose-300/40 bg-rose-400/10 px-2 py-1 text-xs text-rose-200">{staff.orderStates.cancelled}</span>}
+      {order.status === "cancelled" && <span className="rounded-lg border border-staff-danger-line bg-staff-danger-surface px-2 py-1 text-xs text-staff-danger">{staff.orderStates.cancelled}</span>}
       {stageOrder.map((stage) => {
         const active = completed.has(stage);
         const stageName = stage === "sent" ? staff.stageSent : staff.orderStates[stage];
         const label = `${stageName} · ${active ? staff.stageComplete : staff.stagePending}`;
         return <span key={stage} title={label} aria-label={label} role="img"
           className={`grid h-8 w-8 place-items-center rounded-lg border ${active
-            ? "border-emerald-400/30 bg-emerald-400/15 text-emerald-300"
-            : "border-white/10 bg-white/5 text-gray-400"}`}>
+            ? "border-staff-success-line bg-staff-success-surface text-staff-success"
+            : "border-line bg-staff-subtle text-mist"}`}>
           <StageIcon status={stage} />
         </span>;
       })}
@@ -109,18 +109,18 @@ export function OrdersTableClient({ initialOrders, demoNote }: {
         {order.planDocumentPath && (
           <a href={`/api/staff/order-document?id=${encodeURIComponent(order.id)}`} target="_blank" rel="noopener noreferrer"
             aria-label={`${dictionary.pricing.planDocument} · ${order.reference}`} title={dictionary.pricing.planDocument}
-            className="grid min-h-10 min-w-10 place-items-center rounded-lg text-mist hover:bg-white/10 hover:text-white">
+            className="grid min-h-10 min-w-10 place-items-center rounded-lg text-mist hover:bg-staff-hover hover:text-ivory">
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M21 11.5 12 20.5a6 6 0 0 1-8.5-8.5l9-9a4 4 0 0 1 5.7 5.7l-9 9a2 2 0 0 1-2.8-2.8l8.5-8.5" /></svg>
           </a>
         )}
         <Link href={orderUrl + "#edit"} onNavigate={rememberPosition}
           aria-label={`${staff.editTransport} · ${order.reference}`} title={staff.editTransport}
-          className="grid min-h-10 min-w-10 place-items-center rounded-lg text-ivory/80 hover:bg-white/10 hover:text-white">
+          className="grid min-h-10 min-w-10 place-items-center rounded-lg text-ivory hover:bg-staff-hover hover:text-ivory">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="m15 5 4 4M4 20l4.5-.9L20 7.6a2.1 2.1 0 0 0 0-3l-.6-.6a2.1 2.1 0 0 0-3 0L4.9 15.5 4 20Z" /></svg>
         </Link>
         <Link href={orderUrl + "&delete=1"} onNavigate={rememberPosition}
           aria-label={`${staff.deleteOrder} · ${order.reference}`} title={staff.deleteOrder}
-          className="grid min-h-10 min-w-10 place-items-center rounded-lg text-rose-200 hover:bg-rose-300/10">
+          className="grid min-h-10 min-w-10 place-items-center rounded-lg text-staff-danger hover:bg-staff-danger-surface">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M4 7h16M10 11v6m4-6v6M5 7l1 13h12l1-13M9 7V4h6v3" /></svg>
         </Link>
       </div>
@@ -134,11 +134,11 @@ export function OrdersTableClient({ initialOrders, demoNote }: {
         <label className="block">
           <span className="sr-only">{labels.search}</span>
           <input type="search" value={query} onChange={(event) => setFilter("q", event.target.value)}
-            placeholder={labels.placeholder} className="h-11 w-full rounded-xl border border-white/15 bg-night px-4 text-sm text-ivory outline-none placeholder:text-mist focus:border-rose-300/70" />
+            placeholder={labels.placeholder} className="h-11 w-full rounded-xl border border-staff-control bg-night px-4 text-sm text-ivory outline-none placeholder:text-mist focus:border-staff-danger-line" />
         </label>
         <div className="flex flex-wrap items-center gap-2" role="group" aria-label={staff.state}>
-          <button type="button" aria-pressed={!status} onClick={() => setFilter("status", "")} className={`min-h-10 rounded-full border px-4 text-xs font-medium ${!status ? "border-burgundy bg-burgundy text-white" : "border-white/15 text-mist hover:text-white"}`}>{labels.all}</button>
-          {ORDER_STATUSES.map((item) => <button key={item} type="button" aria-pressed={status === item} onClick={() => setFilter("status", item)} className={`min-h-10 rounded-full border px-4 text-xs font-medium ${status === item ? "border-burgundy bg-burgundy text-white" : "border-white/15 text-mist hover:text-white"}`}>{staff.orderStates[item]}</button>)}
+          <button type="button" aria-pressed={!status} onClick={() => setFilter("status", "")} className={`min-h-10 rounded-full border px-4 text-xs font-medium ${!status ? "border-burgundy bg-burgundy text-staff-on-accent" : "border-staff-control text-mist hover:text-ivory"}`}>{labels.all}</button>
+          {ORDER_STATUSES.map((item) => <button key={item} type="button" aria-pressed={status === item} onClick={() => setFilter("status", item)} className={`min-h-10 rounded-full border px-4 text-xs font-medium ${status === item ? "border-burgundy bg-burgundy text-staff-on-accent" : "border-staff-control text-mist hover:text-ivory"}`}>{staff.orderStates[item]}</button>)}
           {(query || status) && <button type="button" onClick={() => { const url = new URL(window.location.href); url.searchParams.delete("q"); url.searchParams.delete("status"); window.history.replaceState(null, "", url); }} className="min-h-10 px-2 text-xs text-ivory underline">{labels.reset}</button>}
         </div>
       </div>
@@ -164,11 +164,11 @@ export function OrdersTableClient({ initialOrders, demoNote }: {
                 return <tr key={order.id} onClick={(event) => {
                   if ((event.target as HTMLElement).closest("a,button,select,summary,details")) return;
                   rememberPosition(); router.push(url);
-                }} className="cursor-pointer border-b border-line last:border-0 hover:bg-white/[0.035]">
+                }} className="cursor-pointer border-b border-line last:border-0 hover:bg-staff-hover">
                   <td className="px-3 py-4 align-top"><Link href={url} onNavigate={rememberPosition} className="font-semibold text-ivory hover:underline">{order.reference}</Link><p className="mt-1 break-words text-xs text-mist lg:hidden">{order.requestorName || "—"}</p></td>
                   <td className="hidden break-words px-3 py-4 align-top text-ivory lg:table-cell">{order.requestorName || "—"}{order.requestorCompany && <p className="mt-1 text-xs text-mist">{order.requestorCompany}</p>}</td>
                   <td className="break-words px-3 py-4 align-top">{date(order)}</td>
-                  <td className="break-words px-3 py-4 align-top text-ivory/90">{route(order)}{Boolean(order.stops?.length) && <p className="mt-1 text-xs text-mist">+ {order.stops!.length} {labels.stops}</p>}</td>
+                  <td className="break-words px-3 py-4 align-top text-ivory">{route(order)}{Boolean(order.stops?.length) && <p className="mt-1 text-xs text-mist">+ {order.stops!.length} {labels.stops}</p>}</td>
                   <td className="hidden px-3 py-4 align-top lg:table-cell">{order.passengerCount}</td>
                   <td className="px-3 py-4 align-top">{badge(order)}</td>
                   <td className="px-2 py-2 align-top">{actions(order)}</td>
@@ -183,7 +183,7 @@ export function OrdersTableClient({ initialOrders, demoNote }: {
               <p className="mt-4 break-words font-medium text-ivory">{route(order)}</p>
               {Boolean(order.stops?.length) && <p className="mt-1 text-xs text-mist">+ {order.stops!.length} {labels.stops}</p>}
               <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-mist"><span>{date(order)}</span><span>{order.passengerCount} {staff.passengers.toLocaleLowerCase()}</span></div>
-              <div className="mt-4 flex items-center gap-2 border-t border-line pt-3"><Link href={url} onNavigate={rememberPosition} className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-white/20 px-3 text-sm font-medium text-ivory hover:bg-white/10">{labels.open}</Link>{actions(order)}</div>
+              <div className="mt-4 flex items-center gap-2 border-t border-line pt-3"><Link href={url} onNavigate={rememberPosition} className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-staff-control px-3 text-sm font-medium text-ivory hover:bg-staff-hover">{labels.open}</Link>{actions(order)}</div>
             </article>;
           })}</div>
         </>

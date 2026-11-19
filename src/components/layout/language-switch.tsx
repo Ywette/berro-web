@@ -53,7 +53,7 @@ export function LanguageSwitch({ locale, label }: { locale: Locale; label: strin
         aria-controls={listId}
         disabled={pending}
         onClick={() => setOpen((current) => !current)}
-        className="inline-flex h-8 items-center gap-1.5 rounded-full border border-white/15 px-2.5 text-xs font-medium text-ivory/90 hover:border-white/35 hover:text-white disabled:opacity-60"
+        className="inline-flex h-8 items-center gap-1.5 rounded-full border border-chrome-control px-2.5 text-xs font-medium text-ivory hover:border-chrome-control-hover hover:text-chrome-hover-text disabled:opacity-60"
       >
         {locale.toUpperCase()}
         <ChevronIcon open={open} />
@@ -64,7 +64,7 @@ export function LanguageSwitch({ locale, label }: { locale: Locale; label: strin
           id={listId}
           role="listbox"
           aria-label={label}
-          className="popup-enter-panel absolute top-full right-0 z-50 mt-1.5 min-w-[4.5rem] overflow-hidden rounded-xl border border-white/15 bg-[#141418] py-1 shadow-[0_18px_40px_-20px_rgba(0,0,0,0.9)]"
+          className="popup-enter-panel absolute top-full right-0 z-50 mt-1.5 min-w-[4.5rem] overflow-hidden rounded-xl border border-chrome-control bg-chrome-menu py-1 shadow-[0_18px_40px_-20px_rgba(0,0,0,0.9)]"
         >
           {locales.map((code) => {
             const active = code === locale;
@@ -77,7 +77,7 @@ export function LanguageSwitch({ locale, label }: { locale: Locale; label: strin
                   className={`flex w-full items-center px-3 py-2 text-left text-xs font-medium transition disabled:opacity-60 ${
                     active
                       ? "bg-burgundy text-white"
-                      : "text-ivory/80 hover:bg-white/8 hover:text-white"
+                      : "text-ivory hover:bg-chrome-hover hover:text-chrome-hover-text"
                   }`}
                 >
                   {code.toUpperCase()}

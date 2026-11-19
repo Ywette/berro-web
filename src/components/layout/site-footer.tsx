@@ -23,7 +23,7 @@ export async function SiteFooter() {
   ] as const;
 
   return (
-    <footer className="mt-auto border-t border-white/8 bg-panel">
+    <footer className="mt-auto border-t border-chrome-line bg-panel">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -32,19 +32,26 @@ export async function SiteFooter() {
               alt="Berro Travel"
               width={352}
               height={112}
-              className="h-10 w-auto"
+              className="site-brand-dark h-10 w-auto"
+            />
+            <Image
+              src="/brand/berro-travel-logo-white.png"
+              alt="Berro Travel"
+              width={352}
+              height={112}
+              className="staff-brand-light h-10 w-auto"
             />
             <p className="mt-2 text-sm text-mist">{dictionary.footer.tagline}</p>
           </div>
           <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-mist">
             <StaffModeGate
               staff={staffLinks.map((link) => (
-                <Link key={link.href} href={link.href} className="hover:text-white">
+                <Link key={link.href} href={link.href} className="hover:text-chrome-hover-text">
                   {link.label}
                 </Link>
               ))}
               public={publicLinks.map((link) => (
-                <Link key={link.href} href={link.href} className="hover:text-white">
+                <Link key={link.href} href={link.href} className="hover:text-chrome-hover-text">
                   {link.label}
                 </Link>
               ))}
@@ -52,9 +59,9 @@ export async function SiteFooter() {
           </div>
         </div>
 
-        <dl className="grid gap-3 border-t border-white/8 pt-5 text-xs text-mist sm:grid-cols-3 sm:gap-6">
+        <dl className="grid gap-3 border-t border-chrome-line pt-5 text-xs text-mist sm:grid-cols-3 sm:gap-6">
           <div>
-            <dt className="tracking-wide text-mist/80 uppercase">{contact.legalAddress}</dt>
+            <dt className="tracking-wide text-mist uppercase">{contact.legalAddress}</dt>
             <dd className="mt-1.5 leading-5 text-ivory/85">
               {contact.addressLines.map((line) => (
                 <p key={line}>{line}</p>
@@ -62,11 +69,11 @@ export async function SiteFooter() {
             </dd>
           </div>
           <div>
-            <dt className="tracking-wide text-mist/80 uppercase">{contact.registrationNumber}</dt>
+            <dt className="tracking-wide text-mist uppercase">{contact.registrationNumber}</dt>
             <dd className="mt-1.5 text-ivory/85">{contact.registrationValue}</dd>
           </div>
           <div>
-            <dt className="tracking-wide text-mist/80 uppercase">{contact.vatNumber}</dt>
+            <dt className="tracking-wide text-mist uppercase">{contact.vatNumber}</dt>
             <dd className="mt-1.5 text-ivory/85">{contact.vatValue}</dd>
           </div>
         </dl>

@@ -52,7 +52,7 @@ export function ExcursionsBoardClient({
         <button
           type="button"
           onClick={() => setDialog({ mode: "add", excursion: null })}
-          className="rounded-full bg-burgundy px-4 py-2 text-sm font-medium text-white hover:bg-burgundy-deep"
+          className="rounded-full bg-burgundy px-4 py-2 text-sm font-medium text-staff-on-accent hover:bg-burgundy-deep"
         >
           {labels.add}
         </button>
@@ -65,7 +65,7 @@ export function ExcursionsBoardClient({
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-line bg-card">
           <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="bg-white/5 text-mist">
+            <thead className="bg-staff-subtle text-mist">
               <tr>
                 <th className="px-4 py-3 font-medium">{labels.boardTitle}</th>
                 <th className="px-4 py-3 font-medium">{labels.routeColumn}</th>
@@ -78,7 +78,7 @@ export function ExcursionsBoardClient({
               {excursions.map((excursion) => (
                 <tr
                   key={excursion.id}
-                  className="border-t border-line align-middle hover:bg-white/[0.03]"
+                  className="border-t border-line align-middle hover:bg-staff-hover"
                 >
                   <td className="px-4 py-3">
                     <button
@@ -103,7 +103,7 @@ export function ExcursionsBoardClient({
                         onClick={() => setDialog({ mode: "edit", excursion })}
                         aria-label={labels.edit}
                         title={labels.edit}
-                        className="grid size-8 place-items-center rounded-md bg-emerald-400 text-black hover:bg-emerald-300"
+                        className="grid size-8 place-items-center rounded-md bg-staff-success-solid text-staff-on-accent hover:bg-leaf-deep"
                       >
                         <EditIcon />
                       </button>
@@ -113,7 +113,7 @@ export function ExcursionsBoardClient({
                           type="submit"
                           aria-label={labels.delete}
                           title={labels.delete}
-                          className="grid size-8 place-items-center rounded-md bg-rose-400 text-black hover:bg-rose-300"
+                          className="grid size-8 place-items-center rounded-md bg-staff-danger-solid text-staff-on-accent hover:bg-burgundy-deep"
                         >
                           <DeleteIcon />
                         </button>

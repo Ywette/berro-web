@@ -35,10 +35,10 @@ type Labels = {
 };
 
 const statusTone: Record<DriverStatus, string> = {
-  available: "bg-pine/15 text-pine",
-  on_trip: "bg-burgundy/20 text-rose-200",
-  off_duty: "bg-white/8 text-mist",
-  unavailable: "bg-white/5 text-ivory/70",
+  available: "bg-staff-success-surface text-pine",
+  on_trip: "bg-burgundy/20 text-staff-danger",
+  off_duty: "bg-staff-subtle text-mist",
+  unavailable: "bg-staff-subtle text-ivory",
 };
 
 export function EmployeesSections({
@@ -81,7 +81,7 @@ export function EmployeesSections({
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-line bg-card">
             <table className="w-full min-w-[640px] text-left text-sm">
-              <thead className="bg-white/5 text-mist">
+              <thead className="bg-staff-subtle text-mist">
                 <tr>
                   <th className="px-4 py-3 font-medium">{labels.name}</th>
                   <th className="px-4 py-3 font-medium">{labels.role}</th>
@@ -167,7 +167,7 @@ function SectionButton({
       className={
         active
           ? "rounded-full bg-ivory px-4 py-2 text-sm font-medium text-night"
-          : "rounded-full border border-white/15 px-4 py-2 text-sm text-ivory/80 hover:border-white/40 hover:text-white"
+          : "rounded-full border border-staff-control px-4 py-2 text-sm text-ivory hover:border-staff-focus hover:text-ivory"
       }
     >
       {label}

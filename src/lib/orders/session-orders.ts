@@ -161,6 +161,8 @@ export function orderFromQuoteInput(input: QuoteOrderInput): StaffOrder {
     id,
     reference,
     requestLocale: input.locale ?? null,
+    excursionSlug: input.excursionSlug?.trim() || null,
+    excursionTitle: input.excursionSlug ? input.excursionTitle?.trim() || null : null,
     createdAt: new Date(stamp).toISOString(),
     origin: (input.pickup || "—").trim() || "—",
     destination: destination || "—",

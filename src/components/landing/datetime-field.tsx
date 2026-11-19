@@ -20,15 +20,19 @@ type DateTimeInputProps = {
   className?: string;
   placeholder?: string;
   suggestion?: { value: string; confirmLabel: string };
+  dateOnlyLabel?: string;
+  minuteStep?: 1 | 5;
+  appearance?: "light" | "dark";
   "aria-label"?: string;
 };
 
 const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 const HOURS = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, "0"));
-const MINUTES = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
+const MINUTES = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, "0"));
+const FIVE_MINUTE_OPTIONS = MINUTES.filter((_, index) => index % 5 === 0);
 
 function parseValue(value: string) {
-  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?$/);
   if (!match) return null;
   return {
     year: Number(match[1]),
@@ -48,7 +52,8 @@ export function formatDateTimeDisplay(value: string) {
   if (!parsed) return "";
   const day = String(parsed.day).padStart(2, "0");
   const month = String(parsed.month).padStart(2, "0");
-  return `${day}-${month}-${parsed.year} ${parsed.hour}:${parsed.minute}`;
+  const date = `${day}-${month}-${parsed.year}`;
+  return parsed.hour ? `${date} ${parsed.hour}:${parsed.minute}` : date;
 }
 
 function daysInMonth(year: number, month: number) {
@@ -75,6 +80,9 @@ export function DateTimeInput({
   className,
   placeholder = "—",
   suggestion,
+  dateOnlyLabel,
+  minuteStep = 5,
+  appearance = "light",
   "aria-label": ariaLabel,
 }: DateTimeInputProps) {
   const parsed = parseValue(value);
@@ -102,13 +110,13 @@ export function DateTimeInput({
       setViewYear(next.year);
       setViewMonth(next.month);
       setDraftDate({ year: next.year, month: next.month, day: next.day });
-      setDraftHour(next.hour);
-      setDraftMinute(next.minute);
+      setDraftHour(next.hour ?? "09");
+      setDraftMinute(next.minute ?? "");
     } else if (minimum) {
       setViewYear(minimum.year);
       setViewMonth(minimum.month);
       setDraftDate({ year: minimum.year, month: minimum.month, day: minimum.day });
-      setDraftHour(minimum.hour);
+      setDraftHour(minimum.hour ?? "09");
       setDraftMinute("");
     } else {
       setViewYear(now.getFullYear());
@@ -134,7 +142,7 @@ export function DateTimeInput({
       if (!rect) return;
       const narrow = window.innerWidth < 640;
       const width = narrow ? Math.min(320, window.innerWidth - 16) : 420;
-      const popoverHeight = narrow ? 360 : 320;
+      const popoverHeight = (narrow ? 360 : 320) + (dateOnlyLabel ? 36 : 0);
       // Fixed inside <dialog> is relative to the dialog, not the viewport.
       const origin = dialog
         ? dialog.getBoundingClientRect()
@@ -157,7 +165,7 @@ export function DateTimeInput({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [open]);
+  }, [open, dateOnlyLabel]);
 
   useEffect(() => {
     if (!open) return;
@@ -206,6 +214,8 @@ export function DateTimeInput({
   const totalDays = daysInMonth(viewYear, viewMonth);
   const display = formatDateTimeDisplay(value);
   const canConfirmSuggestion = suggestion && (!value || value < suggestion.value);
+  const minuteOptions = minuteStep === 1 ? MINUTES : FIVE_MINUTE_OPTIONS;
+  const dark = appearance === "dark";
 
   return (
     <div ref={rootRef} className="relative min-w-0 w-full">
@@ -219,11 +229,12 @@ export function DateTimeInput({
           aria-expanded={open}
           aria-controls={listId}
           onClick={() => setOpen((current) => !current)}
-          className={`flex h-9 w-full min-w-0 items-center gap-1.5 rounded-full border bg-white/95 px-2.5 text-left text-xs outline-none sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${
-            invalid ? "field-error-blink" : "border-transparent"
-          } ${display ? "text-neutral-900" : "text-neutral-400"} ${className ?? ""}`}
+          className={`flex h-9 w-full min-w-0 items-center gap-1.5 rounded-full border px-2.5 text-left text-xs sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${
+            dark ? `cursor-pointer bg-card text-ivory hover:bg-staff-hover ${invalid ? "border-staff-danger-line" : "border-staff-control"}` :
+              `border-transparent bg-white/95 outline-none ${display ? "text-neutral-900" : "text-neutral-400"}`
+          } ${invalid && !dark ? "field-error-blink" : ""} ${className ?? ""}`}
         >
-          <CalendarGlyph />
+          <CalendarGlyph light={dark} />
           <span className={`min-w-0 flex-1 ${!display && canConfirmSuggestion ? "hero-time-suggestion leading-tight text-neutral-700" : "truncate"}`}>
             {display || placeholder}
           </span>
@@ -254,7 +265,7 @@ export function DateTimeInput({
               role="dialog"
               aria-label={ariaLabel}
               style={{ top: coords.top, left: coords.left }}
-              className="popup-enter-panel fixed z-[10000] w-[min(100vw-1rem,20rem)] rounded-xl border border-white/15 bg-card p-2.5 shadow-2xl sm:w-[min(100vw-2rem,26.25rem)] sm:p-3"
+              className="popup-enter-panel fixed z-[10000] w-[min(100vw-1rem,20rem)] rounded-xl border border-chrome-control bg-card p-2.5 shadow-2xl sm:w-[min(100vw-2rem,26.25rem)] sm:p-3"
               onMouseDown={(event) => event.stopPropagation()}
               onClick={(event) => event.stopPropagation()}
             >
@@ -263,7 +274,7 @@ export function DateTimeInput({
                   <div className="mb-2 flex items-center justify-between gap-2 sm:mb-3">
                     <button
                       type="button"
-                      className="rounded-md px-2 py-1 text-sm text-ivory hover:bg-white/10"
+                      className="rounded-md px-2 py-1 text-sm text-ivory hover:bg-chrome-hover"
                       onClick={() => {
                         if (viewMonth === 1) {
                           setViewMonth(12);
@@ -280,7 +291,7 @@ export function DateTimeInput({
                     </p>
                     <button
                       type="button"
-                      className="rounded-md px-2 py-1 text-sm text-ivory hover:bg-white/10"
+                      className="rounded-md px-2 py-1 text-sm text-ivory hover:bg-chrome-hover"
                       onClick={() => {
                         if (viewMonth === 12) {
                           setViewMonth(1);
@@ -323,7 +334,7 @@ export function DateTimeInput({
                               ? "bg-burgundy text-white"
                               : disabled
                                 ? "cursor-not-allowed text-mist/40"
-                                : "text-ivory hover:bg-white/10"
+                                : "text-ivory hover:bg-chrome-hover"
                           }`}
                         >
                           {day}
@@ -333,7 +344,7 @@ export function DateTimeInput({
                   </div>
                 </div>
 
-                <div className="flex w-full shrink-0 flex-col border-t border-white/10 pt-2 sm:w-[7.25rem] sm:border-t-0 sm:border-l sm:pt-0 sm:pl-3">
+                <div className="flex w-full shrink-0 flex-col border-t border-chrome-line pt-2 sm:w-[7.25rem] sm:border-t-0 sm:border-l sm:pt-0 sm:pl-3">
                   <p className="mb-2 text-[11px] text-mist">
                     {draftDate
                       ? `${String(draftDate.day).padStart(2, "0")}-${String(draftDate.month).padStart(2, "0")}-${draftDate.year}`
@@ -342,17 +353,17 @@ export function DateTimeInput({
                   <div className="grid min-h-0 flex-1 grid-cols-2 gap-2">
                     <div className="min-h-0">
                       <p className="mb-1 text-[10px] tracking-wide text-mist uppercase">HH</p>
-                      <div className="max-h-[8.5rem] overflow-y-auto rounded-md border border-white/10 sm:max-h-[13.5rem]">
+                      <div className="max-h-[8.5rem] overflow-y-auto rounded-md border border-chrome-line sm:max-h-[13.5rem]">
                         {HOURS.map((hour) => (
                           <button
                             key={hour}
                             type="button"
-                            disabled={isDisabledTime(hour, "55")}
+                            disabled={isDisabledTime(hour, minuteOptions[minuteOptions.length - 1])}
                             onClick={() => setDraftHour(hour)}
                             className={`block w-full px-1.5 py-1 text-center text-xs ${
                               draftHour === hour
                                 ? "bg-burgundy text-white"
-                                : "text-ivory hover:bg-white/10"
+                                : "text-ivory hover:bg-chrome-hover"
                             } disabled:cursor-not-allowed disabled:opacity-40`}
                           >
                             {hour}
@@ -362,8 +373,8 @@ export function DateTimeInput({
                     </div>
                     <div className="min-h-0">
                       <p className="mb-1 text-[10px] tracking-wide text-mist uppercase">MM</p>
-                      <div className="max-h-[8.5rem] overflow-y-auto rounded-md border border-white/10 sm:max-h-[13.5rem]">
-                        {MINUTES.map((minute) => (
+                      <div className="max-h-[8.5rem] overflow-y-auto rounded-md border border-chrome-line sm:max-h-[13.5rem]">
+                        {minuteOptions.map((minute) => (
                           <button
                             key={minute}
                             type="button"
@@ -372,7 +383,7 @@ export function DateTimeInput({
                             className={`block w-full px-1.5 py-1 text-center text-xs ${
                               draftMinute === minute
                                 ? "bg-burgundy text-white"
-                                : "text-ivory hover:bg-white/10"
+                                : "text-ivory hover:bg-chrome-hover"
                             } disabled:cursor-not-allowed disabled:opacity-40`}
                           >
                             {minute}
@@ -383,6 +394,22 @@ export function DateTimeInput({
                   </div>
                 </div>
               </div>
+              {dateOnlyLabel && (
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    disabled={!draftDate}
+                    onClick={() => {
+                      if (!draftDate) return;
+                      onChange(toValue(draftDate.year, draftDate.month, draftDate.day, "00", "00").slice(0, 10));
+                      setOpen(false);
+                    }}
+                    className="rounded-md border border-chrome-control px-2.5 py-1 text-xs text-ivory hover:bg-chrome-hover disabled:opacity-40"
+                  >
+                    {dateOnlyLabel}
+                  </button>
+                </div>
+              )}
             </div>,
             portalRoot,
           )
@@ -410,7 +437,7 @@ export function DateTimeField({
 }: DateTimeFieldProps) {
   return (
     <div
-      className={`grid min-w-0 overflow-visible ${hideLabel ? "gap-0" : "gap-1.5"} ${invalid ? "relative z-40" : ""} ${labelClassName ?? (invalid ? "text-red-200" : "text-ivory/80")}`}
+      className={`grid min-w-0 overflow-visible ${hideLabel ? "gap-0" : "gap-1.5"} ${invalid ? "relative z-40" : ""} ${labelClassName ?? (invalid ? (inputProps.appearance === "dark" ? "text-staff-danger" : "text-red-200") : "text-ivory/80")}`}
     >
       {hideLabel ? (
         <span className="sr-only">{label}</span>
@@ -431,13 +458,13 @@ export function DateTimeField({
   );
 }
 
-function CalendarGlyph() {
+function CalendarGlyph({ light }: { light: boolean }) {
   return (
     <svg
       viewBox="0 0 24 24"
       width={14}
       height={14}
-      className="h-3.5 w-3.5 shrink-0 text-neutral-500 sm:h-4 sm:w-4"
+      className={light ? "size-5 shrink-0 text-ivory" : "h-3.5 w-3.5 shrink-0 text-neutral-500 sm:h-4 sm:w-4"}
       fill="none"
       aria-hidden="true"
     >

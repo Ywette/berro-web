@@ -5,6 +5,8 @@ export type OrderRow = {
   id: string;
   reference: string;
   request_locale?: string | null;
+  excursion_slug?: string | null;
+  excursion_title?: string | null;
   created_at: string;
   updated_at: string;
   price?: number | null;
@@ -52,6 +54,8 @@ export function staffOrderFromRow(row: OrderRow): StaffOrder {
     id: row.id,
     reference: row.reference,
     requestLocale: row.request_locale ?? null,
+    excursionSlug: row.excursion_slug ?? null,
+    excursionTitle: row.excursion_title ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     price: row.price ?? null,
