@@ -40,6 +40,8 @@ export type ExcursionDialogLabels = {
   priceHint: string;
   duration: string;
   durationHint: string;
+  registrationOpen: string;
+  plannedDate: string;
   region: string;
   regionHint: string;
   regionLatvia: string;
@@ -108,6 +110,8 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
   const [clientError, setClientError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [contentLocale, setContentLocale] = useState<Locale>("lv");
+  const [registrationOpen, setRegistrationOpen] = useState(excursion?.isActive ?? false);
+  const [plannedDate, setPlannedDate] = useState(excursion?.plannedDate ?? "");
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -339,6 +343,31 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
               className={inputClass}
             />
           </Field>
+
+          <label className="flex items-center gap-2 text-sm text-ivory">
+            <input
+              type="checkbox"
+              name="isActive"
+              checked={registrationOpen}
+              onChange={(event) => setRegistrationOpen(event.target.checked)}
+              className="size-4 accent-burgundy"
+            />
+            {labels.registrationOpen}
+          </label>
+
+          {registrationOpen ? (
+            <Field label={labels.plannedDate}>
+              <input
+                type="date"
+                name="plannedDate"
+                value={plannedDate}
+                onChange={(event) => setPlannedDate(event.target.value)}
+                className={inputClass}
+              />
+            </Field>
+          ) : (
+            <input type="hidden" name="plannedDate" value={plannedDate} />
+          )}
 
           <fieldset className="grid gap-1.5">
             <legend className="text-[11px] font-medium tracking-wide text-ivory/80">

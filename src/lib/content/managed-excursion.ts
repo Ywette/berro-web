@@ -44,8 +44,17 @@ export type ManagedExcursion = {
   price: number | null;
   /** Optional trip length in calendar days (return = departure + days − 1). */
   durationDays: number | null;
+  plannedDate?: string | null;
   isActive: boolean;
 };
+
+export function parseExcursionPlannedDate(value: unknown): string | null {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value) || value.startsWith("0000")) {
+    return null;
+  }
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value ? value : null;
+}
 
 export function parseExcursionPrice(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;
@@ -104,6 +113,7 @@ export function normalizeManagedExcursion(raw: unknown): ManagedExcursion | null
     })(),
     price: parseExcursionPrice(item.price),
     durationDays: parseExcursionDurationDays(item.durationDays ?? item.duration_days),
+    plannedDate: parseExcursionPlannedDate(item.plannedDate ?? item.planned_date),
     isActive: item.isActive !== false,
   };
 }

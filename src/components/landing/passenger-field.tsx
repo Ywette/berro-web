@@ -216,26 +216,37 @@ export function PassengerField({
         aria-expanded={open}
         aria-controls={listId}
         onClick={() => (open ? commitAndClose() : openPicker())}
-        className={`flex min-h-10 w-full flex-col justify-center rounded-full border bg-white/95 px-3 text-left outline-none ${
+        className={`flex min-h-10 w-full items-center gap-1 rounded-full border bg-white/95 px-1.5 text-left outline-none sm:gap-2 sm:px-3 ${
           otherLine ? "h-10 py-1" : "h-10"
         } ${invalid ? "field-error-blink" : "border-transparent"}`}
       >
-        {hasSelection ? (
-          <>
-            {adultLine ? (
-              <span className="truncate text-[12px] leading-tight text-neutral-900">
-                {adultLine}
-              </span>
-            ) : null}
-            {otherLine ? (
-              <span className="truncate text-[11px] leading-tight text-neutral-600">
-                {otherLine}
-              </span>
-            ) : null}
-          </>
-        ) : (
-          <span className="text-sm text-neutral-400">{copy.label}</span>
-        )}
+        <svg
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          className="block shrink-0 text-neutral-700"
+          aria-hidden="true"
+          fill="currentColor"
+        >
+          <circle cx="8" cy="7" r="3.5" />
+          <circle cx="17" cy="8" r="3" />
+          <path d="M8 12a7 7 0 0 0-7 7v1h14v-1a7 7 0 0 0-7-7Zm9 1c-.7 0-1.4.1-2 .4a9 9 0 0 1 2 5.6v1h6v-1a6 6 0 0 0-6-6Z" />
+        </svg>
+        <span className="flex min-w-0 flex-col">
+          {adultLine && (
+            <span className="truncate text-[12px] leading-tight text-neutral-900">
+              {adultLine}
+            </span>
+          )}
+          {otherLine && (
+            <span className="truncate text-[11px] leading-tight text-neutral-600">
+              {otherLine}
+            </span>
+          )}
+          {!hasSelection && (
+            <span className="truncate text-xs text-neutral-400 sm:text-sm">{copy.label}</span>
+          )}
+        </span>
       </button>
 
       {open && coords && portalRoot

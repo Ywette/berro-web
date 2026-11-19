@@ -221,6 +221,10 @@ input.datetime-input::-webkit-calendar-picker-indicator {
   min-height: 0;
 }
 
+.hero-route-reveal[data-open="true"] > .hero-route-reveal-inner:focus-within {
+  overflow: visible;
+}
+
 .hero-route-morph {
   transition:
     opacity 700ms ease,
@@ -255,6 +259,51 @@ input.datetime-input::-webkit-calendar-picker-indicator {
   border-color: transparent !important;
   outline: none;
   animation: field-error-blink 1s linear infinite;
+}
+
+.excursion-filter[open] > summary,
+.excursion-filter-steady > summary {
+  border-color: rgb(245 198 90 / 0.65);
+}
+
+.excursion-filter[open]:not(.excursion-filter-steady) > summary {
+  animation: field-error-blink 600ms linear infinite;
+}
+
+.excursion-filter-steady > summary {
+  box-shadow:
+    0 0 4px rgb(245 198 90 / 0.58),
+    0 0 12px rgb(245 198 90 / 0.3);
+}
+
+.excursion-filter::details-content {
+  transition: content-visibility 300ms allow-discrete;
+}
+
+.excursion-filter-options {
+  opacity: 0;
+  translate: 0 -0.375rem;
+  pointer-events: none;
+  transition:
+    opacity 300ms ease,
+    translate 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.excursion-filter[open] > .excursion-filter-options {
+  opacity: 1;
+  translate: 0;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .excursion-filter::details-content,
+  .excursion-filter-options {
+    transition: none;
+  }
+
+  .excursion-filter[open]:not(.excursion-filter-steady) > summary {
+    animation: none;
+  }
 }
 
 @keyframes field-ready-glow-in {

@@ -20,15 +20,25 @@ function ordersInbox() {
   return process.env.ORDERS_TO_EMAIL?.trim() || process.env.CONTACT_TO_EMAIL?.trim() || null;
 }
 
-function routeLine(order: StaffOrder) {
-  const parts = [order.origin, ...(order.stops ?? []).map((stop) => stop.name), order.destination];
-  if (order.returnTo) parts.push(order.returnTo);
-  return parts.map(formatRouteAddress).join(" → ");
-}
-
 function escapeHtml(value: string) {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+}
+
+function routeColumns(order: StaffOrder) {
+  const pickup = formatRouteAddress(order.origin);
+  const stops = (order.stops ?? []).map((stop) => formatRouteAddress(stop.name)).filter(Boolean);
+  const dropoffs = [formatRouteAddress(order.destination)];
+  if (order.returnTo) dropoffs.push(`Return to: ${formatRouteAddress(order.returnTo)}`);
+
+  return [
+    { label: "Pickup", addresses: [pickup] },
+    { label: "Stops", addresses: stops },
+    { label: "Drop-offs", addresses: dropoffs },
+  ].map(({ label, addresses }) => {
+    const places = addresses.filter(Boolean);
+    return { label, places: places.length ? places : ["—"] };
+  });
 }
 
 export async function sendNewOrderEmail(order: StaffOrder, input?: QuoteOrderInput) {
@@ -71,14 +81,16 @@ export async function sendNewOrderEmail(order: StaffOrder, input?: QuoteOrderInp
     }
   }
 
-  const lines = [
+  const introduction = [
     `New quote request ${order.reference}`,
     "",
     `Reference: ${order.reference}`,
     input?.locale ? `Request language: ${input.locale.toUpperCase()}` : null,
     excursion ? `Excursion: ${excursion}` : null,
     `Travel type: ${travelType}`,
-    `Route: ${routeLine(order)}`,
+  ].filter((line) => line !== null);
+
+  const details = [
     mapsLabel || "Route estimate needs review",
     `Departure: ${formatDate(order.departureOn || input?.departure)}`,
     `Return: ${formatDate(order.returnOn || input?.returnAt)}`,
@@ -93,7 +105,17 @@ export async function sendNewOrderEmail(order: StaffOrder, input?: QuoteOrderInp
     `Open order: ${staffOrdersUrl}`,
   ].filter((line) => line !== null);
 
-  const html = `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6;color:#242124">${lines.map((line) => {
+  const columns = routeColumns(order);
+  const routeHtml = `<table cellpadding="8" cellspacing="0" style="width:100%;table-layout:fixed;border-collapse:collapse;margin:12px 0;text-align:left">
+    <thead><tr>${columns.map(({ label }) =>
+      `<th scope="col" style="width:33%;border:1px solid #ded7db;background:#f6f2f4">${label}</th>`,
+    ).join("")}</tr></thead>
+    <tbody><tr>${columns.map(({ places }) =>
+      `<td style="border:1px solid #ded7db;vertical-align:top;overflow-wrap:anywhere">${places.map(escapeHtml).join("<br>")}</td>`,
+    ).join("")}</tr></tbody>
+  </table>`;
+  const routeText = columns.map(({ label, places }) => `${label}: ${places.join("\n  ")}`).join("\n");
+  const detailsHtml = details.map((line) => {
     if (mapsLabel && mapsUrl && line === mapsLabel) {
       return `<a href="${escapeHtml(mapsUrl)}">${escapeHtml(mapsLabel)}</a>`;
     }
@@ -101,9 +123,10 @@ export async function sendNewOrderEmail(order: StaffOrder, input?: QuoteOrderInp
       return `<a href="${escapeHtml(staffOrdersUrl)}">Open order</a>`;
     }
     return line ? escapeHtml(line) : "&nbsp;";
-  }).join("<br>")}</div>`;
-  const text = lines.map((line) => line === mapsLabel && mapsUrl
-    ? `${line}\n${mapsUrl}` : line).join("\n");
+  }).join("<br>");
+  const html = `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6;color:#242124">${introduction.map((line) => line ? escapeHtml(line) : "&nbsp;").join("<br>")}${routeHtml}${detailsHtml}</div>`;
+  const text = [...introduction, "", routeText, "", ...details.map((line) => line === mapsLabel && mapsUrl
+    ? `${line}\n${mapsUrl}` : line)].join("\n");
 
   const resend = new Resend(apiKey);
   const { error } = await resend.emails.send({

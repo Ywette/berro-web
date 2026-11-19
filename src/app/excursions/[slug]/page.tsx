@@ -7,13 +7,14 @@ import { AvailabilityButton } from "@/components/excursions/availability-button"
 import { ExcursionCollage } from "@/components/excursions/excursion-collage";
 import { bookingContact, getExcursionDetails } from "@/lib/content/excursions";
 import { formatEuro } from "@/lib/content/format-price";
+import { formatDate } from "@/lib/content/format-date";
 import {
   excursionCoverImage,
   excursionLogoPlateFromIndex,
 } from "@/lib/content/managed-excursion";
 import {
   getManagedExcursionBySlug,
-  listActiveManagedExcursions,
+  listManagedExcursions,
 } from "@/lib/data/managed-excursions";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { pickLocalized } from "@/lib/i18n/locale";
@@ -22,7 +23,7 @@ import { pickLocalizedText } from "@/lib/i18n/localized-content";
 export const instant = false;
 
 export async function generateStaticParams() {
-  const excursions = await listActiveManagedExcursions();
+  const excursions = await listManagedExcursions();
   return excursions.map((excursion) => ({ slug: excursion.slug }));
 }
 
@@ -60,8 +61,8 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
   const teaser = pickLocalizedText(excursion.teaser, locale);
   const detailsText = pickLocalizedText(excursion.details, locale);
   const coverImage = excursionCoverImage(excursion);
-  const activeExcursions = await listActiveManagedExcursions();
-  const listIndex = activeExcursions.findIndex((item) => item.slug === slug);
+  const excursions = await listManagedExcursions();
+  const listIndex = excursions.findIndex((item) => item.slug === slug);
   const logoVariant = excursionLogoPlateFromIndex(listIndex < 0 ? 0 : listIndex);
 
   return (
@@ -196,52 +197,62 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
         </ul>
       ) : null}
 
-      <section className="mt-10 rounded-2xl border border-white/10 bg-card p-6">
-        <h2 className="font-serif text-2xl tracking-wide">{text.bookingTitle}</h2>
-        <p className="mt-2 text-sm leading-6 text-mist">{text.bookingBody}</p>
-        <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-3">
-          <ContactItem label={text.email} href={`mailto:${bookingContact.email}`} value={bookingContact.email} />
-          <ContactItem
-            label={text.phone}
-            href={`tel:${bookingContact.phone.replace(/\s/g, "")}`}
-            value={bookingContact.phone}
+      {excursion.isActive ? (
+        <section id="booking" className="mt-10 scroll-mt-[calc(var(--site-header-height)+1rem)] rounded-2xl border border-white/10 bg-card p-6">
+          <h2 className="font-serif text-2xl tracking-wide">{text.bookingTitle}</h2>
+          {excursion.plannedDate && (
+            <p className="mt-2 text-sm font-medium text-champagne/90">
+              {text.plannedDate}{" "}
+              <time dateTime={excursion.plannedDate}>{formatDate(excursion.plannedDate)}</time>
+            </p>
+          )}
+          <p className="mt-2 text-sm leading-6 text-mist">{text.bookingBody}</p>
+          <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-3">
+            <ContactItem label={text.email} href={`mailto:${bookingContact.email}`} value={bookingContact.email} />
+            <ContactItem
+              label={text.phone}
+              href={`tel:${bookingContact.phone.replace(/\s/g, "")}`}
+              value={bookingContact.phone}
+            />
+            <ContactItem label={text.website} href={`https://${bookingContact.website}`} value={bookingContact.website} />
+          </dl>
+          <AvailabilityButton
+            slug={excursion.slug}
+            title={title}
+            route={route || undefined}
+            teaser={teaser || undefined}
+            durationDays={excursion.durationDays}
+            destination={
+              excursion.slug === "moulin-rouge"
+                ? "Moulin Rouge"
+                : excursion.slug === "disneyland"
+                  ? "Disneyland Paris"
+                  : excursion.slug === "paris"
+                    ? "Paris"
+                    : excursion.slug === "berlin"
+                      ? "Berlin"
+                      : excursion.slug === "luxembourg"
+                        ? "Luxembourg"
+                        : excursion.slug === "alps"
+                          ? "Alps"
+                          : undefined
+            }
+            image={coverImage}
+            excursions={excursions.filter((item) => item.isActive).map((item) => ({
+              slug: item.slug,
+              title: pickLocalizedText(item.title, locale),
+              route: pickLocalizedText(item.route, locale) || undefined,
+              teaser: pickLocalizedText(item.teaser, locale) || undefined,
+              durationDays: item.durationDays,
+            }))}
           />
-          <ContactItem label={text.website} href={`https://${bookingContact.website}`} value={bookingContact.website} />
-        </dl>
-        <AvailabilityButton
-          slug={excursion.slug}
-          title={title}
-          route={route || undefined}
-          teaser={teaser || undefined}
-          durationDays={excursion.durationDays}
-          destination={
-            excursion.slug === "moulin-rouge"
-              ? "Moulin Rouge"
-              : excursion.slug === "disneyland"
-                ? "Disneyland Paris"
-                : excursion.slug === "paris"
-                  ? "Paris"
-                  : excursion.slug === "berlin"
-                    ? "Berlin"
-                    : excursion.slug === "luxembourg"
-                      ? "Luxembourg"
-                      : excursion.slug === "alps"
-                        ? "Alps"
-                        : undefined
-          }
-          image={coverImage}
-          excursions={activeExcursions.map((item) => ({
-            slug: item.slug,
-            title: pickLocalizedText(item.title, locale),
-            route: pickLocalizedText(item.route, locale) || undefined,
-            teaser: pickLocalizedText(item.teaser, locale) || undefined,
-            durationDays: item.durationDays,
-          }))}
-        />
-        {details?.closing ? (
-          <p className="mt-4 text-sm text-ivory/90">{pickLocalized(details.closing, locale)}</p>
-        ) : null}
-      </section>
+          {details?.closing ? (
+            <p className="mt-4 text-sm text-ivory/90">{pickLocalized(details.closing, locale)}</p>
+          ) : null}
+        </section>
+      ) : (
+        <p className="mt-10 text-sm text-mist">{text.registrationClosed}</p>
+      )}
     </article>
   );
 }

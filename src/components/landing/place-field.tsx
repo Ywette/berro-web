@@ -12,7 +12,7 @@ type PlaceFieldProps = {
   className?: string;
   defaultText?: string;
   defaultPlaceId?: string;
-  inlineSuggestions?: boolean;
+  required?: boolean;
   invalid?: boolean;
   onTextChange?: (value: string) => void;
   onPlaceChange?: (value: string, placeId: string) => void;
@@ -26,7 +26,7 @@ export function PlaceField({
   className = "",
   defaultText = "",
   defaultPlaceId = "",
-  inlineSuggestions = false,
+  required = true,
   invalid = false,
   onTextChange,
   onPlaceChange,
@@ -117,7 +117,7 @@ export function PlaceField({
           value={text}
           aria-label={label}
           aria-invalid={invalid || undefined}
-          aria-required={inlineSuggestions ? undefined : true}
+          aria-required={required || undefined}
           onChange={(event) => onType(event.target.value)}
           onFocus={() => {
             if (!placeId) void load(text);
@@ -140,7 +140,7 @@ export function PlaceField({
           id={listId}
           role="listbox"
           aria-label={label}
-          className={`${inlineSuggestions ? "relative" : "absolute top-full right-0 left-0"} z-30 mt-1 max-h-64 overflow-y-auto rounded-md bg-white py-1 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)]`}
+          className="absolute inset-x-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-md bg-white py-1 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)]"
         >
           {suggestions.map((suggestion, index) => (
             <li

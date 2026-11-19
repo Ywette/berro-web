@@ -824,7 +824,7 @@ export function HeroBooking({
                     placeholder={dictionary.hero.route}
                     defaultText={draft.pickup}
                     defaultPlaceId={draft.pickupPlace}
-                    inlineSuggestions
+                    required={false}
                     inputClassName={fieldClass(invalid.has("pickup"))}
                     onPlaceChange={(value, placeId) => {
                       patchDraft({ pickup: value, pickupPlace: placeId, ...(showReturnFields ? { dropoff: value, dropoffPlace: placeId } : {}) });
@@ -876,7 +876,7 @@ export function HeroBooking({
                             placeholder={`${dictionary.hero.stopPlaceholder} ${index + 1}`}
                             defaultText={stop.place}
                             defaultPlaceId={stop.placeId}
-                            inlineSuggestions
+                            required={false}
                             inputClassName={fieldClass()}
                             onPlaceChange={(place, placeId) => {
                               patchDraft({
@@ -919,7 +919,7 @@ export function HeroBooking({
                     placeholder={showReturnFields ? dictionary.hero.returnPlace : dictionary.hero.destination}
                     defaultText={draft.dropoff}
                     defaultPlaceId={draft.dropoffPlace}
-                    inlineSuggestions
+                    required={false}
                     inputClassName={fieldClass(invalid.has("dropoff"))}
                     onPlaceChange={(value, placeId) => {
                       patchDraft({ dropoff: value, dropoffPlace: placeId });

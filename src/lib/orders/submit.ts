@@ -8,6 +8,8 @@ import type { QuoteOrderInput, QuoteTripMode } from "@/lib/orders/session-orders
 import type { StaffOrder } from "@/types/dashboard";
 import { getLocale } from "@/lib/i18n/get-dictionary";
 import { parseLocale } from "@/lib/i18n/locale";
+import { dictionaries } from "@/lib/i18n/dictionary";
+import { getManagedExcursionBySlug } from "@/lib/data/managed-excursions";
 
 export type SubmitQuoteOrderState =
   | { ok: true; order: StaffOrder }
@@ -25,9 +27,11 @@ export async function submitQuoteOrderFromFormData(
   const rawPhone = text(formData, "phone");
   const phone = sanitizeContactPhone(rawPhone ?? "").trim() || undefined;
   const email = text(formData, "email")?.trim() || undefined;
+  const requestedLocale = text(formData, "locale");
+  const locale = requestedLocale ? parseLocale(requestedLocale) : await getLocale();
 
   const input: QuoteOrderInput = {
-    locale: text(formData, "locale") ? parseLocale(text(formData, "locale")) : await getLocale(),
+    locale,
     trip: text(formData, "trip"),
     tripMode:
       tripMode === "oneWay" || tripMode === "roundTrip"
@@ -74,6 +78,13 @@ export async function submitQuoteOrderFromFormData(
   }
   if (rawPhone?.trim() && !isValidContactPhone(phone ?? "", { required: true })) {
     return { ok: false, error: "Enter a phone number using digits only." };
+  }
+
+  if (input.excursionSlug) {
+    const excursion = await getManagedExcursionBySlug(input.excursionSlug);
+    if (!excursion?.isActive) {
+      return { ok: false, error: dictionaries[locale].excursions.registrationClosed };
+    }
   }
 
   return insertOrder(input, planFile);

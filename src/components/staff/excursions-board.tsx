@@ -52,6 +52,8 @@ export async function ExcursionsBoard() {
           priceHint: labels.excursionFormPriceHint,
           duration: labels.excursionFormDuration,
           durationHint: labels.excursionFormDurationHint,
+          registrationOpen: dictionary.excursions.registrationOpen.replace(/\s*:\s*$/, ""),
+          plannedDate: dictionary.excursions.plannedDate,
           region: labels.excursionFormRegion,
           regionHint: labels.excursionFormRegionHint,
           regionLatvia: dictionary.excursions.filterLatvia,

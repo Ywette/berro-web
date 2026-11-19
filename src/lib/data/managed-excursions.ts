@@ -7,22 +7,16 @@ import {
   updateManagedExcursion,
 } from "@/lib/excursions/store";
 import type { Localized } from "@/lib/i18n/locale";
-import { pickLocalizedText } from "@/lib/i18n/localized-content";
 
 export async function listManagedExcursions(): Promise<ManagedExcursion[]> {
   return readExcursionStore();
-}
-
-export async function listActiveManagedExcursions(): Promise<ManagedExcursion[]> {
-  const items = await readExcursionStore();
-  return items.filter((item) => item.isActive);
 }
 
 export async function getManagedExcursionBySlug(
   slug: string,
 ): Promise<ManagedExcursion | null> {
   const items = await readExcursionStore();
-  return items.find((item) => item.slug === slug && item.isActive) ?? null;
+  return items.find((item) => item.slug === slug) ?? null;
 }
 
 function uniqueSlug(title: Localized | string, existing: ManagedExcursion[], excludeId?: string): string {
@@ -37,7 +31,7 @@ function uniqueSlug(title: Localized | string, existing: ManagedExcursion[], exc
 }
 
 export async function createManagedExcursion(
-  input: Omit<ManagedExcursion, "id" | "slug" | "isActive"> & { slug?: string },
+  input: Omit<ManagedExcursion, "id" | "slug"> & { slug?: string },
 ): Promise<ManagedExcursion> {
   const existing = await readExcursionStore();
   const excursion: ManagedExcursion = {
@@ -52,14 +46,15 @@ export async function createManagedExcursion(
     regions: input.regions,
     price: input.price,
     durationDays: input.durationDays,
-    isActive: true,
+    plannedDate: input.plannedDate,
+    isActive: input.isActive,
   };
   return insertManagedExcursion(excursion);
 }
 
 export async function updateManagedExcursionById(
   id: string,
-  input: Omit<ManagedExcursion, "id" | "slug" | "isActive">,
+  input: Omit<ManagedExcursion, "id" | "slug">,
 ): Promise<ManagedExcursion | null> {
   const existing = await readExcursionStore();
   const current = existing.find((item) => item.id === id);
@@ -75,6 +70,8 @@ export async function updateManagedExcursionById(
     regions: input.regions,
     price: input.price,
     durationDays: input.durationDays,
+    plannedDate: input.plannedDate,
+    isActive: input.isActive,
     slug: uniqueSlug(input.title, existing, id),
   };
   return updateManagedExcursion(next);

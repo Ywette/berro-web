@@ -7,6 +7,7 @@ import {
   EXCURSION_COLLAGE_PHOTO_COUNT,
   isExcursionLogoVariant,
   parseExcursionDurationDays,
+  parseExcursionPlannedDate,
   parseExcursionPrice,
   type ExcursionLogoVariant,
 } from "@/lib/content/managed-excursion";
@@ -47,6 +48,8 @@ async function parseExcursionForm(
       regions: ExcursionRegion[];
       price: number | null;
       durationDays: number | null;
+      plannedDate: string | null;
+      isActive: boolean;
       images: string[];
       logoVariant: ExcursionLogoVariant;
     }
@@ -59,6 +62,9 @@ async function parseExcursionForm(
   const regions = parseRegions(formData);
   const priceRaw = String(formData.get("price") ?? "").trim();
   const durationRaw = String(formData.get("durationDays") ?? "").trim();
+  const plannedDateRaw = String(formData.get("plannedDate") ?? "").trim();
+  const plannedDate = parseExcursionPlannedDate(plannedDateRaw);
+  if (plannedDateRaw && !plannedDate) return { error: labels.excursionFormPlannedDateInvalid };
   const logoRaw = String(formData.get("logoVariant") ?? "dark");
   const logoVariant: ExcursionLogoVariant = isExcursionLogoVariant(logoRaw) ? logoRaw : "dark";
   const existingPhotos = formData
@@ -124,6 +130,8 @@ async function parseExcursionForm(
     regions,
     price,
     durationDays,
+    plannedDate,
+    isActive: formData.get("isActive") === "on",
     images: orderedPaths,
     logoVariant,
   };
