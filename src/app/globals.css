@@ -261,16 +261,8 @@ input.datetime-input::-webkit-calendar-picker-indicator {
   animation: field-error-blink 1s linear infinite;
 }
 
-.excursion-filter[open] > summary,
 .excursion-filter-steady > summary {
   border-color: rgb(245 198 90 / 0.65);
-}
-
-.excursion-filter[open]:not(.excursion-filter-steady) > summary {
-  animation: field-error-blink 600ms linear infinite;
-}
-
-.excursion-filter-steady > summary {
   box-shadow:
     0 0 4px rgb(245 198 90 / 0.58),
     0 0 12px rgb(245 198 90 / 0.3);
@@ -299,10 +291,6 @@ input.datetime-input::-webkit-calendar-picker-indicator {
   .excursion-filter::details-content,
   .excursion-filter-options {
     transition: none;
-  }
-
-  .excursion-filter[open]:not(.excursion-filter-steady) > summary {
-    animation: none;
   }
 }
 
