@@ -1,31 +1,26 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useDictionary } from "@/components/i18n/locale-provider";
 
 const FADE_MS = 1100;
 const HOLD_MS = 6000;
 
 const SLIDES = [
-  { src: "/hero/luxembourg.jpg" },
-  { src: "/hero/airport.jpg" },
-  { src: "/hero/paris.jpg" },
-  { src: "/hero/mountains.jpg" },
-  { src: "/hero/berlin.jpg" },
+  { src: "/hero/Turaidas pils un tūrisma autobuss.png" },
+  { src: "/hero/Gaujas līkums ar ceļotāju minibusu.png" },
+  { src: "/hero/Luksusa transfērs pie Rīgas viesnīcas.png" },
+  { src: "/hero/Elegants tūrisma autobuss pie viesnīcas.png" },
+  { src: "/hero/Eleganta ierašanās pie Baltijas muižas.png" },
 ] as const;
 
 export function SloganHero({ children }: { children: ReactNode }) {
   const dictionary = useDictionary();
   const [index, setIndex] = useState(0);
-  const reducedMotion = useRef(false);
 
   useEffect(() => {
-    reducedMotion.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  }, []);
-
-  useEffect(() => {
-    if (reducedMotion.current) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const hold = window.setTimeout(() => {
       setIndex((current) => (current + 1) % SLIDES.length);
     }, HOLD_MS);
@@ -41,16 +36,16 @@ export function SloganHero({ children }: { children: ReactNode }) {
         {SLIDES.map((slide, slideIndex) => (
           <Image
             key={slide.src}
-            src={slide.src}
+            src={encodeURI(slide.src)}
             alt=""
             fill
             priority={slideIndex === 0}
             sizes="100vw"
-            className={`object-cover object-center transition-opacity ease-in-out ${
+            className={`object-cover object-center transition-opacity ease-in-out motion-reduce:transition-none ${
               slideIndex === index ? "opacity-100" : "opacity-0"
             }`}
             style={{
-              transitionDuration: reducedMotion.current ? "0ms" : `${FADE_MS}ms`,
+              transitionDuration: `${FADE_MS}ms`,
             }}
           />
         ))}
