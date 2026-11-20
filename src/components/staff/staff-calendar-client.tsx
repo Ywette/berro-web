@@ -102,7 +102,7 @@ export function StaffCalendarClient({
   const [orderModes, setOrderModes] = useState<ResourceMode[]>(["available", "scheduled"]);
   const [summaryOrderIds, setSummaryOrderIds] = useState<string[]>([]);
   const summaryRef = useRef<HTMLDialogElement>(null);
-  const [selectedFleetKinds, setSelectedFleetKinds] = useState<FleetFilterKind[]>([...fleetKinds]);
+  const [selectedFleetKinds, setSelectedFleetKinds] = useState<FleetFilterKind[]>([]);
   const [range, setRange] = useState({ from: "", to: "" });
   const [employeeId, setEmployeeId] = useState("all");
   const [vehicleId, setVehicleId] = useState("all");

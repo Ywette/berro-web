@@ -48,7 +48,7 @@ export function SocialRail() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={link.label}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-[rgba(18,18,20,0.82)] text-ivory shadow-[0_12px_30px_-18px_rgba(0,0,0,0.9)] backdrop-blur-md transition hover:border-champagne/60 hover:bg-burgundy hover:text-white"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-burgundy bg-[rgba(18,18,20,0.82)] text-ivory shadow-[0_12px_30px_-18px_rgba(0,0,0,0.9)] backdrop-blur-md transition hover:border-champagne/60 hover:bg-burgundy hover:text-white"
               >
                 <Icon />
               </a>
