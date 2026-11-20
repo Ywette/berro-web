@@ -99,7 +99,7 @@ export function StaffCalendarClient({
   const [assignedOrders] = useAssignedOrders(orders);
   const [fleetModes, setFleetModes] = useState<ResourceMode[]>([]);
   const [staffModes, setStaffModes] = useState<ResourceMode[]>([]);
-  const [orderModes, setOrderModes] = useState<ResourceMode[]>(["available", "scheduled"]);
+  const [orderModes, setOrderModes] = useState<ResourceMode[]>([]);
   const [summaryOrderIds, setSummaryOrderIds] = useState<string[]>([]);
   const summaryRef = useRef<HTMLDialogElement>(null);
   const [selectedFleetKinds, setSelectedFleetKinds] = useState<FleetFilterKind[]>([]);
@@ -169,8 +169,13 @@ export function StaffCalendarClient({
     [activeVehicles, assignedOrders, focusSpan, invalidRange],
   );
 
+  const resolvedEmployeeId =
+    employeeId === "all" || assignableEmployees.some((employee) => employee.id === employeeId)
+      ? employeeId
+      : "all";
+
   const listedEmployees = invalidRange ? [] : assignableEmployees.filter((employee) =>
-    staffModes.length === 0 ||
+    (staffModes.length === 0 && employee.id === resolvedEmployeeId) ||
     (staffModes.includes("available") && availableEmployees.includes(employee)) ||
     (staffModes.includes("scheduled") && scheduledEmployees.includes(employee)),
   );
@@ -180,10 +185,6 @@ export function StaffCalendarClient({
     (fleetModes.includes("scheduled") && scheduledVehicles.includes(vehicle)),
   );
 
-  const resolvedEmployeeId =
-    employeeId === "all" || assignableEmployees.some((employee) => employee.id === employeeId)
-      ? employeeId
-      : "all";
   const resolvedVehicleId =
     vehicleId === "all" || activeVehicles.some((vehicle) => vehicle.id === vehicleId)
       ? vehicleId
@@ -243,7 +244,8 @@ export function StaffCalendarClient({
       });
 
     const drivers = assignableEmployees
-      .filter((employee) => resolvedEmployeeId === "all" || employee.id === resolvedEmployeeId)
+      .filter((employee) => employee.id === resolvedEmployeeId ||
+        (resolvedEmployeeId === "all" && staffModes.length > 0))
       .map((employee): CalendarResource => {
         const bookings = assignedOrders.filter((order) => order.assignedDriverId === employee.id || order.assignedGuideId === employee.id);
         return {
