@@ -142,6 +142,7 @@ export function staffOrderToRow(order: StaffOrder, input: QuoteOrderInput) {
     assigned_guide_id: order.assignedGuideId,
     assigned_guide_name: order.assignedGuideName,
     assigned_vehicle_id: order.assignedVehicleId,
+    ...(order.assignments ? { assignments: order.assignments } : {}),
     updated_at: new Date().toISOString(),
   };
 }

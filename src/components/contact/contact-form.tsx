@@ -169,7 +169,7 @@ export function ContactForm({ defaultMessage = "" }: { defaultMessage?: string }
       <button
         type="submit"
         disabled={pending}
-        className="h-11 rounded-full bg-burgundy px-5 text-sm font-medium text-white hover:bg-burgundy-deep disabled:opacity-60"
+        className="order-button"
       >
         {pending ? dictionary.contact.sending : dictionary.contact.send}
       </button>

@@ -23,6 +23,7 @@ type DateTimeInputProps = {
   dateOnlyLabel?: string;
   minuteStep?: 1 | 5;
   appearance?: "light" | "dark";
+  squareCorners?: boolean;
   "aria-label"?: string;
 };
 
@@ -83,6 +84,7 @@ export function DateTimeInput({
   dateOnlyLabel,
   minuteStep = 5,
   appearance = "light",
+  squareCorners = false,
   "aria-label": ariaLabel,
 }: DateTimeInputProps) {
   const parsed = parseValue(value);
@@ -265,7 +267,7 @@ export function DateTimeInput({
               role="dialog"
               aria-label={ariaLabel}
               style={{ top: coords.top, left: coords.left }}
-              className="popup-enter-panel fixed z-[10000] w-[min(100vw-1rem,20rem)] rounded-xl border border-chrome-control bg-card p-2.5 shadow-2xl sm:w-[min(100vw-2rem,26.25rem)] sm:p-3"
+              className={`popup-enter-panel fixed z-[10000] w-[min(100vw-1rem,20rem)] border border-chrome-control bg-card p-2.5 shadow-2xl sm:w-[min(100vw-2rem,26.25rem)] sm:p-3 ${squareCorners ? "request-form" : "rounded-xl"}`}
               onMouseDown={(event) => event.stopPropagation()}
               onClick={(event) => event.stopPropagation()}
             >

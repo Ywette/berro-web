@@ -252,7 +252,7 @@ export function QuoteCard({
       id={formId}
       noValidate
       onSubmit={onSubmit}
-      className="rounded-2xl border border-white/20 bg-white/5 p-4 shadow-[0_30px_80px_-36px_rgba(0,0,0,0.85)] backdrop-blur-md sm:p-5"
+      className="request-form border border-white/20 bg-white/5 p-4 shadow-[0_30px_80px_-36px_rgba(0,0,0,0.85)] backdrop-blur-md sm:p-5"
     >
       {showDocument ? (
         <PlanDocumentAttach
@@ -420,7 +420,7 @@ export function QuoteCard({
         <button
           type="submit"
           disabled={reading}
-          className="h-10 rounded-md bg-burgundy px-3 text-sm font-medium text-white hover:bg-burgundy-deep disabled:opacity-60"
+          className="order-button"
         >
           {dictionary.quote.search}
         </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState } from "react";
 import { DateTimeField } from "@/components/landing/datetime-field";
 import { CalendarOrderSummary } from "@/components/staff/calendar-order-summary";
 import { useAssignedOrders } from "@/components/staff/use-assigned-orders";
@@ -9,6 +9,7 @@ import type { FleetVehicle } from "@/lib/content/fleet";
 import { normalizeFleetKind } from "@/lib/fleet/kind";
 import { intlLocales, type Locale } from "@/lib/i18n/locale";
 import { splitDateTime } from "@/lib/orders/route-points";
+import { orderAssignments } from "@/lib/staff/assignments";
 import {
   isEmployeeFree,
   isEmployeeScheduled,
@@ -43,18 +44,10 @@ type Labels = {
   clearRange: string;
   allEmployees: string;
   allTransports: string;
-  availableStaff: string;
-  scheduledStaff: string;
-  availableVehicles: string;
-  scheduledVehicles: string;
   viewStaffAvailable: string;
   viewStaffScheduled: string;
   viewFleetAvailable: string;
   viewFleetScheduled: string;
-  noStaffInRange: string;
-  noFleetInRange: string;
-  noStaffScheduled: string;
-  noFleetScheduled: string;
   monthPrev: string;
   monthNext: string;
   yearPrev: string;
@@ -67,6 +60,7 @@ type Labels = {
   fleetSection: string;
   fleetKinds: Record<FleetFilterKind, string>;
   orderSection: string;
+  departureDate: string;
   orderReserved: string;
   orderReady: string;
   roles: Record<Employee["role"], string>;
@@ -87,6 +81,13 @@ type CalendarResource = {
   modes: ResourceMode[];
   bookings: StaffOrder[];
   statusOn: (span: DateSpan) => ResourceStatus | null;
+};
+
+type OrderGroup = {
+  order: StaffOrder;
+  orderResource: CalendarResource;
+  vehicles: { resource: CalendarResource; drivers: CalendarResource[] }[];
+  directDrivers: CalendarResource[];
 };
 
 export function StaffCalendarClient({
@@ -137,7 +138,9 @@ export function StaffCalendarClient({
   const activeVehicles = useMemo(
     () =>
       vehicles
-        .filter((vehicle) => vehicle.isActive && selectedFleetKinds.includes(fleetFilterKind(vehicle)))
+        .filter((vehicle) => vehicle.isActive && (
+          selectedFleetKinds.length === 0 || selectedFleetKinds.includes(fleetFilterKind(vehicle))
+        ))
         .sort((left, right) => vehicleLabel(left).localeCompare(vehicleLabel(right), locale)),
     [vehicles, locale, selectedFleetKinds],
   );
@@ -174,17 +177,6 @@ export function StaffCalendarClient({
       ? employeeId
       : "all";
 
-  const listedEmployees = invalidRange ? [] : assignableEmployees.filter((employee) =>
-    (staffModes.length === 0 && employee.id === resolvedEmployeeId) ||
-    (staffModes.includes("available") && availableEmployees.includes(employee)) ||
-    (staffModes.includes("scheduled") && scheduledEmployees.includes(employee)),
-  );
-  const listedVehicles = invalidRange ? [] : activeVehicles.filter((vehicle) =>
-    fleetModes.length === 0 ||
-    (fleetModes.includes("available") && availableVehicles.includes(vehicle)) ||
-    (fleetModes.includes("scheduled") && scheduledVehicles.includes(vehicle)),
-  );
-
   const resolvedVehicleId =
     vehicleId === "all" || activeVehicles.some((vehicle) => vehicle.id === vehicleId)
       ? vehicleId
@@ -213,24 +205,66 @@ export function StaffCalendarClient({
     [assignedOrders],
   );
 
+  const orderGroups = useMemo<OrderGroup[]>(() => {
+    if (invalidRange) return [];
+
+    return calendarOrders.flatMap((order) => {
+      const mode = order.status === "paid" ? "scheduled" : "available";
+      if (!rangeOverlapsOrder(focusSpan, order)) return [];
+      if (orderModes.length && !orderModes.includes(mode)) return [];
+
+      const assignments = orderAssignments(order);
+      const assignedVehicles = fleetModes.includes("scheduled") ? activeVehicles.filter((vehicle) =>
+        assignments.vehicleIds.includes(vehicle.id) && (resolvedVehicleId === "all" || vehicle.id === resolvedVehicleId)) : [];
+      const assignedDrivers = staffModes.includes("scheduled") ? assignments.drivers.filter((driver) =>
+        resolvedEmployeeId === "all" || driver.id === resolvedEmployeeId) : [];
+      if (!orderModes.length && !assignedVehicles.length && !assignedDrivers.length) return [];
+
+      const orderResource: CalendarResource = {
+        id: order.id,
+        kind: "order",
+        name: `${order.reference} · ${order.destination !== "—" ? order.destination : order.origin}`,
+        modes: [mode],
+        bookings: [order],
+        statusOn: (span) => rangeOverlapsOrder(span, order) ? mode : null,
+      };
+      const scheduledResource = (id: string, kind: "bus" | "driver", name: string): CalendarResource => ({
+        id,
+        kind,
+        name,
+        modes: ["scheduled"],
+        bookings: [order],
+        statusOn: (span) => rangeOverlapsOrder(span, order) ? "scheduled" : null,
+      });
+      const drivers = assignedDrivers.map((driver) => ({
+        vehicleId: driver.vehicleId,
+        resource: scheduledResource(driver.id, "driver",
+          assignableEmployees.find((employee) => employee.id === driver.id)?.fullName || driver.name || driver.id),
+      }));
+
+      return [{
+        order,
+        orderResource,
+        vehicles: assignedVehicles.map((vehicle) => ({
+          resource: scheduledResource(vehicle.id, "bus", vehicleLabel(vehicle)),
+          drivers: drivers.filter((driver) => driver.vehicleId === vehicle.id).map((driver) => driver.resource),
+        })),
+        directDrivers: drivers.filter((driver) => !assignedVehicles.some((vehicle) => vehicle.id === driver.vehicleId))
+          .map((driver) => driver.resource),
+      }];
+    });
+  }, [activeVehicles, assignableEmployees, calendarOrders, fleetModes, focusSpan, invalidRange, orderModes, resolvedEmployeeId, resolvedVehicleId, staffModes]);
+
   const resources = useMemo<CalendarResource[]>(() => {
     if (invalidRange) return [];
 
-    const orderResources = orderModes.length ? calendarOrders.map((order): CalendarResource => ({
-      id: order.id,
-      kind: "order",
-      name: `${order.reference} · ${order.destination !== "—" ? order.destination : order.origin}`,
-      modes: orderModes,
-      bookings: [order],
-      statusOn: (span) => rangeOverlapsOrder(span, order)
-        ? (order.status === "paid" ? "scheduled" : "available")
-        : null,
-    })) : [];
-
-    const fleet = activeVehicles
+    const showFleet = fleetModes.includes("available") || (
+      fleetModes.length === 0 && (selectedFleetKinds.length > 0 || resolvedVehicleId !== "all")
+    );
+    const fleet = (showFleet ? activeVehicles : [])
       .filter((vehicle) => resolvedVehicleId === "all" || vehicle.id === resolvedVehicleId)
       .map((vehicle): CalendarResource => {
-        const bookings = assignedOrders.filter((order) => order.assignedVehicleId === vehicle.id);
+        const bookings = assignedOrders.filter((order) => orderAssignments(order).vehicleIds.includes(vehicle.id));
         return {
           id: vehicle.id,
           kind: "bus",
@@ -244,10 +278,12 @@ export function StaffCalendarClient({
       });
 
     const drivers = assignableEmployees
+      .filter(() => !staffModes.includes("scheduled") || staffModes.includes("available"))
       .filter((employee) => employee.id === resolvedEmployeeId ||
         (resolvedEmployeeId === "all" && staffModes.length > 0))
       .map((employee): CalendarResource => {
-        const bookings = assignedOrders.filter((order) => order.assignedDriverId === employee.id || order.assignedGuideId === employee.id);
+        const bookings = assignedOrders.filter((order) => order.assignedGuideId === employee.id ||
+          orderAssignments(order).drivers.some((driver) => driver.id === employee.id));
         return {
           id: employee.id,
           kind: "driver",
@@ -258,15 +294,22 @@ export function StaffCalendarClient({
         };
       });
 
-    return [...orderResources, ...fleet, ...drivers];
-  }, [activeVehicles, assignableEmployees, assignedOrders, calendarOrders, fleetModes, invalidRange, orderModes, resolvedEmployeeId, resolvedVehicleId, staffModes]);
+    return [...fleet, ...drivers].map((resource) => ({
+      ...resource,
+      modes: resource.modes.filter((mode) => mode !== "scheduled"),
+    }));
+  }, [activeVehicles, assignableEmployees, assignedOrders, fleetModes, invalidRange, resolvedEmployeeId, resolvedVehicleId, selectedFleetKinds.length, staffModes]);
+
+  const freeResources = resources.filter((resource) => resource.statusOn(focusSpan) === "available");
 
   const rangeStart = selectedSpan?.start ?? "";
   const rangeEnd = selectedSpan?.end ?? "";
 
   function changeFleetKind(kind: FleetFilterKind, checked: boolean) {
-    setSelectedFleetKinds((current) => checked ? [...current, kind] : current.filter((item) => item !== kind));
-    if (!checked && activeVehicles.some((vehicle) => vehicle.id === vehicleId && fleetFilterKind(vehicle) === kind)) {
+    const nextKinds = checked ? [...selectedFleetKinds, kind] : selectedFleetKinds.filter((item) => item !== kind);
+    setSelectedFleetKinds(nextKinds);
+    if (nextKinds.length > 0 && vehicles.some((vehicle) =>
+      vehicle.id === vehicleId && !nextKinds.includes(fleetFilterKind(vehicle)))) {
       setVehicleId("all");
     }
   }
@@ -515,6 +558,27 @@ export function StaffCalendarClient({
                     </div>
 
                     <div className="grid gap-y-1 pb-2">
+                      {orderGroups.map((group) => {
+                        if (!week.some((day) => {
+                          if (!day) return false;
+                          const key = toDayKey(day);
+                          return (!selectedSpan || isDayInRange(key, selectedSpan.start, selectedSpan.end)) &&
+                            rangeOverlapsOrder(daySpan(key, selectedSpan), group.order);
+                        })) return null;
+
+                        const rows = [
+                          group.orderResource,
+                          ...group.vehicles.flatMap(({ resource, drivers }) => [resource, ...drivers]),
+                          ...group.directDrivers,
+                        ];
+                        return (
+                          <div key={group.order.id} className="grid gap-y-1 rounded-lg border border-burgundy/40 bg-burgundy/5 py-1">
+                            {rows.map((resource) => (
+                              <ResourceWeek key={resource.kind + resource.id} resource={resource} week={week} selectedSpan={selectedSpan} labels={labels} onOpenOrders={openOrderSummary} />
+                            ))}
+                          </div>
+                        );
+                      })}
                       {resources.map((resource) => (
                         <ResourceWeek key={resource.kind + resource.id} resource={resource} week={week} selectedSpan={selectedSpan} labels={labels} onOpenOrders={openOrderSummary} />
                       ))}
@@ -533,57 +597,37 @@ export function StaffCalendarClient({
         vehicles={vehicles}
       />
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <ResourceList
-          title={labels.fleetSection}
-          count={listedVehicles.length}
-          countLabel={
-            fleetModes.length !== 1 ? "" : fleetModes.includes("available") ? labels.availableVehicles : labels.scheduledVehicles
-          }
-          emptyLabel={fleetModes.length === 1 && fleetModes.includes("scheduled") ? labels.noFleetScheduled : labels.noFleetInRange}
-        >
-          {listedVehicles.map((vehicle) => {
-            const scheduled = isVehicleScheduled(vehicle, focusSpan, assignedOrders);
-            const status = scheduled ? labels.busy
-              : isVehicleFree(vehicle, focusSpan, assignedOrders) ? labels.free : labels.unavailable;
-            return (
-              <li
-                key={vehicle.id}
-                className="flex items-center justify-between gap-2 rounded-xl border border-line bg-night/40 px-3 py-2.5"
-              >
-                <div>
-                  <p className="text-sm text-ivory">{vehicleLabel(vehicle)}</p>
-                  <p className="text-xs text-mist">{vehicle.passengers} pax</p>
+      {(orderGroups.length > 0 || freeResources.length > 0) && (
+        <section className="overflow-x-auto rounded-2xl border border-line bg-card p-4 sm:p-5">
+          <div className="min-w-[740px]">
+            <div className={`${flowGridClass} px-3 pb-3 text-sm font-semibold text-ivory`}>
+              <h2>{labels.departureDate}</h2>
+              <h2>{labels.orderSection}</h2>
+              <h2>{labels.fleetSection}</h2>
+              <h2>{labels.employeesSection}</h2>
+            </div>
+            <div className="divide-y divide-line border-t border-line">
+              {orderGroups.map((group) => (
+                <OrderFlow key={group.order.id} group={group} onOpen={() => openOrderSummary([group.order])} />
+              ))}
+              {freeResources.length > 0 && (
+                <div className={`${flowGridClass} px-3 py-3`}>
+                  <div className="col-start-3 grid content-start gap-2">
+                    {freeResources.filter((resource) => resource.kind === "bus").map((resource) => (
+                      <div key={resource.id} className={flowCardClass}>{resource.name} · {labels.free}</div>
+                    ))}
+                  </div>
+                  <div className="grid content-start gap-2">
+                    {freeResources.filter((resource) => resource.kind === "driver").map((resource) => (
+                      <div key={resource.id} className={flowCardClass}>{resource.name} · {labels.free}</div>
+                    ))}
+                  </div>
                 </div>
-                <span className="text-[11px] text-mist">{status}</span>
-              </li>
-            );
-          })}
-        </ResourceList>
-
-        <ResourceList
-          title={labels.employeesSection}
-          count={listedEmployees.length}
-          countLabel={staffModes.length !== 1 ? "" : staffModes.includes("available") ? labels.availableStaff : labels.scheduledStaff}
-          emptyLabel={staffModes.length === 1 && staffModes.includes("scheduled") ? labels.noStaffScheduled : labels.noStaffInRange}
-        >
-          {listedEmployees.map((employee) => {
-            const scheduled = isEmployeeScheduled(employee, focusSpan, assignedOrders);
-            return (
-              <li
-                key={employee.id}
-                className="flex items-center justify-between gap-2 rounded-xl border border-line bg-night/40 px-3 py-2.5"
-              >
-                <div>
-                  <p className="text-sm text-ivory">{employee.fullName}</p>
-                  <p className="text-xs text-mist">{labels.roles[employee.role]}</p>
-                </div>
-                <span className="text-[11px] text-mist">{scheduled ? labels.busy : labels.free}</span>
-              </li>
-            );
-          })}
-        </ResourceList>
-      </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
@@ -719,33 +763,53 @@ function ResourceWeek({
   );
 }
 
-function ResourceList({
-  title,
-  count,
-  countLabel,
-  emptyLabel,
-  children,
-}: {
-  title: string;
-  count: number;
-  countLabel: string;
-  emptyLabel: string;
-  children: ReactNode;
-}) {
+const flowGridClass = "grid grid-cols-[8rem_repeat(3,minmax(0,1fr))] gap-x-8";
+const flowCardClass = "relative min-w-0 rounded-lg border border-line bg-night px-3 py-2 text-sm break-words text-ivory";
+const flowLinkClass = "before:absolute before:top-5 before:right-full before:w-8 before:border-t before:border-burgundy after:absolute after:top-[17px] after:right-full after:border-y-[4px] after:border-l-[5px] after:border-y-transparent after:border-l-burgundy";
+const flowBranchClass = "relative before:absolute before:top-0 before:-left-4 before:h-full before:border-l before:border-burgundy first:before:top-5 first:before:h-[calc(100%-1.25rem)] last:before:h-5 only:before:hidden [&:not(:first-child)>div]:before:w-4";
+
+function OrderFlow({ group, onOpen }: { group: OrderGroup; onOpen: () => void }) {
   return (
-    <section className="rounded-2xl border border-line bg-card p-4 sm:p-5">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="text-sm font-medium text-ivory">{title}</h2>
-        <p className="text-xs text-mist">
-          {count} {countLabel}
-        </p>
-      </div>
-      {count === 0 ? (
-        <p className="text-sm text-mist">{emptyLabel}</p>
-      ) : (
-        <ul className="grid gap-2">{children}</ul>
+    <div className={`${flowGridClass} items-start px-3 py-3`}>
+      <time dateTime={group.order.departureOn ?? undefined} className="py-2 text-sm tabular-nums text-mist">
+        {formatDate(group.order.departureOn)}
+      </time>
+      <button type="button" onClick={onOpen} className="min-w-0 py-2 text-left text-sm break-words text-ivory underline-offset-4 hover:underline">
+        {group.orderResource.name}
+      </button>
+      {group.vehicles.length > 0 && (
+        <ul className="col-span-2 grid">
+          {group.vehicles.map(({ resource, drivers }) => (
+            <li key={resource.id} className={`${flowBranchClass} grid grid-cols-2 items-start gap-x-8 pb-2 last:pb-0`}>
+              <div className={`${flowCardClass} ${flowLinkClass}`}>{resource.name}</div>
+              <FlowDrivers drivers={drivers} />
+            </li>
+          ))}
+          {group.directDrivers.length > 0 && (
+            <li className={`${flowBranchClass} grid grid-cols-2 items-start gap-x-8`}>
+              <div aria-hidden="true" className="relative mt-5 border-t border-burgundy before:absolute before:right-full before:-top-px before:border-t before:border-burgundy" />
+              <FlowDrivers drivers={group.directDrivers} />
+            </li>
+          )}
+        </ul>
       )}
-    </section>
+      {group.vehicles.length === 0 && group.directDrivers.length > 0 && (
+        <FlowDrivers drivers={group.directDrivers} crossVehicleColumn />
+      )}
+    </div>
+  );
+}
+
+function FlowDrivers({ drivers, crossVehicleColumn = false }: { drivers: CalendarResource[]; crossVehicleColumn?: boolean }) {
+  if (!drivers.length) return null;
+  return (
+    <ul className={crossVehicleColumn ? "col-start-4 grid" : "grid"}>
+      {drivers.map((driver) => (
+        <li key={driver.id} className={`${flowBranchClass} pb-2 last:pb-0 ${crossVehicleColumn ? "first:[&>div]:before:w-[calc(100%+4rem)]" : ""}`}>
+          <div className={`${flowCardClass} ${flowLinkClass}`}>{driver.name}</div>
+        </li>
+      ))}
+    </ul>
   );
 }
 

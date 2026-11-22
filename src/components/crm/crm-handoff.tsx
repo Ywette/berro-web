@@ -101,7 +101,7 @@ export function CrmHandoff({
         <p className="mt-3 text-sm leading-6 text-mist">{dictionary.quote.incompleteBody}</p>
         <Link
           href="/#book"
-          className="mt-8 inline-flex rounded-full bg-burgundy px-5 py-2.5 text-sm font-medium text-white hover:bg-burgundy-deep"
+          className="order-button mt-8"
         >
           {dictionary.quote.backToQuote}
         </Link>
@@ -200,7 +200,7 @@ export function CrmHandoff({
       <div className="mt-8 flex flex-wrap gap-3">
         <Link
           href={contactHref}
-          className="rounded-full bg-burgundy px-5 py-2.5 text-sm font-medium text-white hover:bg-burgundy-deep"
+          className="order-button"
         >
           {dictionary.crmDemo.continueContact}
         </Link>

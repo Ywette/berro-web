@@ -28,7 +28,7 @@ export default async function AboutPage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/#book"
-              className="rounded-full bg-burgundy px-5 py-2.5 text-sm font-medium text-white hover:bg-burgundy-deep"
+              className="order-button text-base sm:text-xl"
             >
               {dictionary.nav.getOffer}
             </Link>

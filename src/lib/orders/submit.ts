@@ -83,8 +83,8 @@ export async function submitQuoteOrderFromFormData(
 
   if (input.excursionSlug) {
     const excursion = await getManagedExcursionBySlug(input.excursionSlug);
-    if (!excursion?.isActive) {
-      return { ok: false, error: dictionaries[locale].excursions.registrationClosed };
+    if (!excursion) {
+      return { ok: false, error: dictionaries[locale].excursions.excursionUnavailable };
     }
     input.excursionSlug = excursion.slug;
     input.excursionTitle = pickLocalizedText(excursion.title, locale);

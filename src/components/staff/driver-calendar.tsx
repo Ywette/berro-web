@@ -1,5 +1,7 @@
 "use client";
 
+import { orderAssignments } from "@/lib/staff/assignments";
+
 import { useMemo, useState } from "react";
 import { intlLocales, type Locale } from "@/lib/i18n/locale";
 import type { StaffOrder } from "@/types/dashboard";
@@ -53,18 +55,19 @@ export function DriverCalendar({ drivers, orders, locale, labels }: DriverCalend
 
     for (const order of orders) {
       if (order.status === "cancelled") continue;
-      if (!order.assignedDriverId || !order.departureOn) {
+      const { drivers } = orderAssignments(order);
+      if (!drivers.length || !order.departureOn) {
         continue;
       }
 
       const end = order.returnOn ?? order.departureOn;
       for (const day of eachDay(order.departureOn, end)) {
         const list = map.get(day) ?? [];
-        list.push({
-          driverId: order.assignedDriverId,
-          driverName: order.assignedDriverName ?? order.assignedDriverId,
+        list.push(...drivers.map((driver) => ({
+          driverId: driver.id,
+          driverName: driver.name ?? driver.id,
           reference: order.reference,
-        });
+        })));
         map.set(day, list);
       }
     }
@@ -156,7 +159,7 @@ export function DriverCalendar({ drivers, orders, locale, labels }: DriverCalend
         {drivers.map((driver) => {
           const busyThisMonth = orders.some(
             (order) =>
-              order.assignedDriverId === driver.id &&
+              orderAssignments(order).drivers.some((item) => item.id === driver.id) &&
               order.departureOn &&
               overlapsMonth(order.departureOn, order.returnOn ?? order.departureOn, year, month),
           );

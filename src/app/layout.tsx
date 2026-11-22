@@ -1,7 +1,7 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";
-import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
+import { Cormorant_Garamond, Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -20,9 +20,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
-  subsets: ["latin", "cyrillic"],
+const cormorantGaramond = Cormorant_Garamond({
+  variable: "--font-cormorant-garamond",
+  subsets: ["latin", "latin-ext", "cyrillic"],
+  display: "swap",
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -41,11 +42,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="lv"
-      className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${cormorantGaramond.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-night text-ivory">
         <ClerkProvider signInUrl="/sign-in" signUpUrl="/sign-up"
-          signInFallbackRedirectUrl="/staff" signUpFallbackRedirectUrl="/staff">
+          signInFallbackRedirectUrl="/staff" signUpFallbackRedirectUrl="/staff"
+          appearance={{
+            variables: { fontFamily: "var(--font-app)" },
+            elements: { headerTitle: { fontFamily: "var(--font-heading)" } },
+          }}>
           <Suspense fallback={<div className="min-h-full flex-1" />}>
             <LocalizedApp>{children}</LocalizedApp>
           </Suspense>

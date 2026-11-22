@@ -1,5 +1,7 @@
 "use client";
 
+import { orderAssignments } from "@/lib/staff/assignments";
+
 import Link from "next/link";
 import type { RefObject } from "react";
 import { useDictionary } from "@/components/i18n/locale-provider";
@@ -47,8 +49,13 @@ export function CalendarOrderSummary({
       </div>
       <ul className="mt-4 grid gap-3">
         {orders.map((order) => {
-          const vehicle = vehicles.find((item) => item.id === order.assignedVehicleId);
-          const driverName = order.assignedDriverName || employees.find((item) => item.id === order.assignedDriverId)?.fullName;
+          const assignments = orderAssignments(order);
+          const driverNames = assignments.drivers.map((driver) =>
+            employees.find((item) => item.id === driver.id)?.fullName || driver.name || driver.id);
+          const vehicleNames = assignments.vehicleIds.map((vehicleId) => {
+            const vehicle = vehicles.find((item) => item.id === vehicleId);
+            return vehicle ? vehicleLabel(vehicle) : vehicleId;
+          });
           const route = [order.origin, ...(order.stops ?? []).map((stop) => stop.name), order.destination, order.returnTo]
             .filter((place): place is string => Boolean(place && place !== "—"))
             .map(formatRouteAddress).join(" → ");
@@ -66,8 +73,8 @@ export function CalendarOrderSummary({
                   [staff.availableFrom, bookingDate(order.departureOn, order.departureAt)],
                   [staff.availableTo, bookingDate(order.returnOn, order.returnAt)],
                   [staff.passengers, order.passengerCount],
-                  [staff.assignedDriver, driverName || staff.unassigned],
-                  [staff.assignedVehicle, vehicle ? vehicleLabel(vehicle) : staff.unassigned],
+                  [staff.assignedDriver, driverNames.join(", ") || staff.unassigned],
+                  [staff.assignedVehicle, vehicleNames.join(", ") || staff.unassigned],
                 ].map(([label, value]) => (
                   <div className="min-w-0" key={label}>
                     <dt className="text-xs text-mist">{label}</dt>

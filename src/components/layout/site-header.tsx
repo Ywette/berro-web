@@ -61,7 +61,7 @@ export async function SiteHeader() {
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <Link
               href="/#book"
-              className="hidden rounded-full bg-burgundy px-3.5 py-1.5 text-xs font-medium text-white hover:bg-burgundy-deep sm:inline-flex"
+              className="order-button hidden sm:inline-flex sm:px-3.5 sm:py-1.5 sm:text-[0.5rem]/3"
             >
               {dictionary.nav.getOffer}
             </Link>

@@ -23,6 +23,8 @@
   --chrome-hover-text: #ffffff;
   /* Sticky header: main row + mobile secondary nav */
   --site-header-height: 7.25rem;
+  --font-app: Aptos, var(--font-geist-sans), system-ui, sans-serif;
+  --font-heading: var(--font-cormorant-garamond), Georgia, serif;
 }
 
 @media (min-width: 1024px) {
@@ -66,9 +68,43 @@
   --color-staff-danger-solid: var(--staff-danger-solid);
   --color-staff-danger-surface: var(--staff-danger-surface);
   --color-staff-danger-line: var(--staff-danger-line);
-  --font-sans: var(--font-geist-sans);
-  --font-serif: var(--font-playfair);
+  --font-sans: var(--font-app);
+  --font-serif: var(--font-heading);
   --font-mono: var(--font-geist-mono);
+}
+
+@layer base {
+  :where(h1, h2, h3, h4, h5, h6) {
+    font-family: var(--font-heading);
+  }
+}
+
+.request-form {
+  border-radius: 0;
+}
+
+@layer components {
+  .order-button {
+    @apply inline-flex max-w-full cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-2 text-center text-xl font-semibold text-night transition-colors sm:px-8 sm:text-2xl;
+    background-color: color-mix(in srgb, var(--champagne) 90%, var(--background));
+  }
+
+  .order-button:hover:not(:disabled) {
+    background-color: var(--champagne);
+  }
+
+  .order-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .order-button::after {
+    content: "";
+    width: 1.5em;
+    height: 1.5em;
+    flex: none;
+    background: url("/brand/berro-travel-mark.png") center / contain no-repeat;
+  }
 }
 
 /* The staff layout marks routes that use the light palette, including shared
@@ -432,26 +468,11 @@ input.datetime-input::-webkit-calendar-picker-indicator {
   }
 }
 
-@keyframes field-ready-mark-in {
-  from {
-    opacity: 0;
-    transform: scale(0.72);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
 .field-ready-glow {
   position: relative;
   z-index: 30;
   overflow: visible;
   animation: field-ready-glow-in 420ms ease 200ms both;
-}
-
-.field-ready-mark {
-  animation: field-ready-mark-in 360ms ease 200ms both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -472,12 +493,8 @@ input.datetime-input::-webkit-calendar-picker-indicator {
       drop-shadow(0 5px 10px rgba(245, 198, 90, 0.42));
   }
 
-  .field-ready-glow,
-  .field-ready-mark {
-    animation: none;
-  }
-
   .field-ready-glow {
+    animation: none;
     filter:
       drop-shadow(0 3px 4px rgba(63, 143, 58, 0.95))
       drop-shadow(0 6px 12px rgba(63, 143, 58, 0.72));

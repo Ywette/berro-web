@@ -195,7 +195,7 @@ export function ExcursionsCatalog({
                     )}
                   </div>
                   {excursion.route ? (
-                    <p className="mt-3 text-sm font-medium tracking-wide text-champagne/90">
+                    <p className="mt-3 text-sm font-medium tracking-wide text-champagne/90 uppercase">
                       {excursion.route}
                     </p>
                   ) : null}
@@ -216,10 +216,12 @@ export function ExcursionsCatalog({
                     {excursion.isActive && excursion.plannedDate && (
                       <Link
                         href={`${excursion.href}#booking`}
-                        className="ml-auto flex flex-col items-center rounded-2xl border border-white/25 bg-burgundy px-5 py-2 text-sm font-semibold text-white hover:bg-burgundy-deep"
+                        className="order-button ml-auto text-[0.625rem]/4 sm:px-5 sm:text-[0.625rem]/4"
                       >
-                        {applyForLabel}
-                        <time dateTime={excursion.plannedDate}>{formatDate(excursion.plannedDate)}</time>
+                        <span>
+                          {applyForLabel}
+                          <time className="block" dateTime={excursion.plannedDate}>{formatDate(excursion.plannedDate)}</time>
+                        </span>
                       </Link>
                     )}
                   </div>

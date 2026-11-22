@@ -3,6 +3,7 @@ import {
   type ExcursionRegion,
 } from "@/lib/content/excursions";
 import type { Localized } from "@/lib/i18n/locale";
+import type { UploadedCompanyFile } from "@/lib/documents/upload";
 import {
   localizedFromSeed,
   parseLocalizedText,
@@ -10,6 +11,8 @@ import {
 } from "@/lib/i18n/localized-content";
 
 export const EXCURSION_COLLAGE_PHOTO_COUNT = 4;
+export const excursionTextLimits = { title: 160, route: 200, teaser: 800, details: 8000 } as const;
+export const excursionTextFields = ["title", "route", "teaser", "details"] as const;
 
 export const excursionLogoVariants = ["dark", "white"] as const;
 export type ExcursionLogoVariant = (typeof excursionLogoVariants)[number];
@@ -31,13 +34,14 @@ export type ManagedExcursion = {
   id: string;
   slug: string;
   title: Localized;
-  /** Exactly four cover photos for the 2×2 collage. */
+  /** Up to four cover photos. */
   images: string[];
   logoVariant: ExcursionLogoVariant;
   route: Localized;
   teaser: Localized;
   /** Long-form description shown on the excursion detail page. */
   details: Localized;
+  descriptionDocument?: UploadedCompanyFile | null;
   /** One or more regions for catalog filters (e.g. Latvia + Estonia + Lithuania). */
   regions: ExcursionRegion[];
   /** Optional from-price in EUR. */

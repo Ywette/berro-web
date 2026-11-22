@@ -8,24 +8,19 @@ import { manageOrder, setOrderCancelled, updateOrderAssignments, updateOrderStat
 import { OrderEditor } from "./order-editor";
 import { OrderCalculationForm } from "./order-calculation";
 import { mergeOrdersWithSession, readSessionOrders, writeSessionOrders } from "@/lib/orders/session-orders";
-import { applyAssignmentPatches, assignEmployee, assignTransport, clearAssignmentPatch } from "@/lib/staff/assignments";
+import { applyAssignmentPatches, clearAssignmentPatch, orderAssignments, rememberOrderAssignments, withOrderAssignments } from "@/lib/staff/assignments";
 import { applyLocalCalculations, removeLocalCalculation } from "@/lib/orders/local-calculations";
 import type { FleetVehicle } from "@/lib/content/fleet";
 import type { Employee } from "@/types/staff";
 import { formatTravelTypeLabel } from "@/lib/quote-travel-types";
 import { formatHeardAboutLabel } from "@/lib/quote-heard-about";
 import { employeeChoices, vehicleChoices, vehicleLabel } from "@/lib/staff/availability";
-import type { OrderStatus, StaffOrder } from "@/types/dashboard";
+import type { OrderAssignments, OrderStatus, StaffOrder } from "@/types/dashboard";
 import { formatTripDuration, tripDurationDays } from "@/lib/orders/trip-duration";
 import { formatDate, formatRigaTimestamp } from "@/lib/content/format-date";
 import { formatDuration } from "@/lib/quote";
 import { formatRouteAddress } from "@/lib/orders/format-address";
 import { toggleOrderStatus } from "@/lib/orders/statuses";
-
-type Assignment = { driverId: string | null; driverName: string | null; vehicleId: string | null };
-function assignmentOf(order: StaffOrder): Assignment {
-  return { driverId: order.assignedDriverId, driverName: order.assignedDriverName, vehicleId: order.assignedVehicleId };
-}
 
 export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, orders, confirmDelete, backUrl }: {
   id: string;
@@ -52,20 +47,20 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
   const [error, setError] = useState("");
   const [statusBusy, setStatusBusy] = useState(false);
   const [statusError, setStatusError] = useState("");
-  const [assignment, setAssignment] = useState<Assignment | null>(null);
-  const [savedAssignment, setSavedAssignment] = useState<Assignment | null>(null);
+  const [assignment, setAssignment] = useState<OrderAssignments | null>(null);
+  const [savedAssignment, setSavedAssignment] = useState<OrderAssignments | null>(null);
   const [assignmentBusy, setAssignmentBusy] = useState(false);
   const [assignmentError, setAssignmentError] = useState("");
   const assignmentChanged = Boolean(assignment && savedAssignment &&
-    (assignment.driverId !== savedAssignment.driverId || assignment.vehicleId !== savedAssignment.vehicleId));
+    JSON.stringify(assignment) !== JSON.stringify(savedAssignment));
   const draftKey = `berro:order-draft:${userId}:${id}`;
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       const merged = mergeOrdersWithSession(initialOrder ? [initialOrder] : []);
       const current = applyLocalCalculations(applyAssignmentPatches(merged)).find((item) => item.id === id) ?? null;
       setOrder(current);
-      setAssignment(current ? assignmentOf(current) : null);
-      setSavedAssignment(current ? assignmentOf(current) : null);
+      setAssignment(current ? orderAssignments(current) : null);
+      setSavedAssignment(current ? orderAssignments(current) : null);
       setCalculationLocked(Boolean(current?.calculation));
       setLoaded(true);
     });
@@ -101,13 +96,13 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
     try {
       let updated: StaffOrder;
       if (next.updatedAt) {
-        const result = await updateOrderAssignments(next.id, next.updatedAt, assignment.driverId, assignment.driverName, assignment.vehicleId);
+        const result = await updateOrderAssignments(next.id, next.updatedAt, assignment);
         if (result.error) { setAssignmentError(staff.orderEdit[result.error]); return; }
         updated = result.order;
         try { clearAssignmentPatch(next.id); } catch { /* The database update has already succeeded. */ }
       } else {
-        const employee = employees.find((item) => item.id === assignment.driverId) ?? null;
-        updated = assignTransport(assignEmployee([next], next.id, "driver", employee), next.id, assignment.vehicleId)[0];
+        updated = withOrderAssignments(next, assignment);
+        rememberOrderAssignments(updated);
         writeSessionOrders([updated, ...readSessionOrders().filter((item) => item.id !== next.id)]);
       }
       setSavedAssignment(assignment);
@@ -212,13 +207,22 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
   }
   const back = <Link href={backUrl} className="text-sm underline">← {staff.ordersTitle}</Link>;
   if (!order) return <section>{back}<p className="mt-4">{loaded ? staff.orderMissing : dictionary.employees.loading}</p></section>;
-  const displayOrder = assignment ? { ...order, assignedDriverId: assignment.driverId, assignedDriverName: assignment.driverName, assignedVehicleId: assignment.vehicleId } : order;
-  const vehicle = vehicles.find((item) => item.id === displayOrder.assignedVehicleId);
+  const selectedAssignments = assignment ?? orderAssignments(order);
+  const displayOrder = withOrderAssignments(order, selectedAssignments);
   const estimate = order.routeEstimate;
   const duration = order.tripDurationDays ?? tripDurationDays(order.departureOn, order.returnOn);
   const assignedOrders = loaded ? applyAssignmentPatches(mergeOrdersWithSession(orders)) : orders;
   const drivers = employeeChoices("driver", displayOrder, employees, assignedOrders);
   const availableVehicles = vehicleChoices(displayOrder, vehicles, assignedOrders);
+  const driverOptions = [
+    ...drivers.map((driver) => ({ id: driver.id, name: driver.fullName })),
+    ...selectedAssignments.drivers.filter((driver) => !drivers.some((item) => item.id === driver.id)),
+  ];
+  const vehicleOptions = [...new Set([...availableVehicles.map((vehicle) => vehicle.id), ...selectedAssignments.vehicleIds])];
+  function vehicleName(vehicleId: string) {
+    const vehicle = vehicles.find((item) => item.id === vehicleId);
+    return vehicle ? `${vehicleLabel(vehicle)} · ${vehicle.passengers}` : vehicleId;
+  }
   const contactDetails = [
     [staff.requestor, order.requestorName],
     [dictionary.hero.companyName, order.requestorCompany],
@@ -274,35 +278,73 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
               {index === 1 && (
                 <>
                   <div>
-                    <dt><label htmlFor="order-driver" className="text-sm text-mist">{staff.orderDriver}</label></dt>
+                    <dt className="text-sm text-mist">{staff.assignedDriver}</dt>
                     <dd>
-                    <select id="order-driver" value={assignment?.driverId ?? ""} disabled={!loaded || assignmentBusy || statusBusy}
-                      onChange={(event) => {
-                        const employee = employees.find((item) => item.id === event.target.value) ?? null;
-                        setAssignment((current) => current && { ...current, driverId: employee?.id ?? null, driverName: employee?.fullName ?? null });
-                        setAssignmentError("");
-                      }}
-                      className="mt-1 block w-full rounded-lg border border-staff-control bg-night px-3 py-2 text-sm text-ivory [color-scheme:light]">
-                      <option value="">{staff.unassigned}</option>
-                      {assignment?.driverId && !drivers.some((item) => item.id === assignment.driverId) && (
-                        <option value={assignment.driverId}>{assignment.driverName || assignment.driverId}</option>
-                      )}
-                      {drivers.map((item) => <option key={item.id} value={item.id}>{item.fullName}</option>)}
-                    </select>
+                      <fieldset aria-label={staff.assignedDriver} disabled={!loaded || assignmentBusy || statusBusy}
+                        className="mt-1 grid max-h-52 gap-2 overflow-y-auto rounded-lg border border-staff-control bg-night p-3 text-sm">
+                        {driverOptions.length === 0 && <span className="text-mist">{staff.unassigned}</span>}
+                        {driverOptions.map((driver) => {
+                          const selected = selectedAssignments.drivers.find((item) => item.id === driver.id);
+                          return (
+                            <div key={driver.id} className="grid gap-1">
+                              <label className="flex items-center gap-2">
+                                <input type="checkbox" checked={Boolean(selected)} className="size-4 shrink-0 accent-burgundy"
+                                  onChange={(event) => {
+                                    const checked = event.target.checked;
+                                    setAssignment((current) => current && { ...current, drivers: checked
+                                      ? [...current.drivers, { ...driver, vehicleId: current.vehicleIds.length === 1 ? current.vehicleIds[0] : null }]
+                                      : current.drivers.filter((item) => item.id !== driver.id) });
+                                    setAssignmentError("");
+                                  }} />
+                                {driver.name ?? driver.id}
+                              </label>
+                              {selected && selectedAssignments.vehicleIds.length > 1 && (
+                                <select aria-label={`${driver.name ?? driver.id} · ${staff.orderTransport}`}
+                                  value={selected.vehicleId ?? ""} className="ml-6 rounded-md border border-staff-control bg-night px-2 py-1"
+                                  onChange={(event) => {
+                                    const vehicleId = event.target.value || null;
+                                    setAssignment((current) => current && { ...current, drivers: current.drivers.map((item) =>
+                                      item.id === driver.id ? { ...item, vehicleId } : item) });
+                                    setAssignmentError("");
+                                  }}>
+                                  <option value="">{staff.unassigned}</option>
+                                  {selectedAssignments.vehicleIds.map((vehicleId) => <option key={vehicleId} value={vehicleId}>{vehicleName(vehicleId)}</option>)}
+                                </select>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </fieldset>
                     </dd>
                   </div>
                   <div>
-                    <dt><label htmlFor="order-vehicle" className="text-sm text-mist">{staff.orderTransport}</label></dt>
+                    <dt className="text-sm text-mist">{staff.assignedVehicle}</dt>
                     <dd>
-                    <select id="order-vehicle" value={assignment?.vehicleId ?? ""} disabled={!loaded || assignmentBusy || statusBusy}
-                      onChange={(event) => { const value = event.target.value || null; setAssignment((current) => current && { ...current, vehicleId: value }); setAssignmentError(""); }}
-                      className="mt-1 block w-full rounded-lg border border-staff-control bg-night px-3 py-2 text-sm text-ivory [color-scheme:light]">
-                      <option value="">{staff.unassigned}</option>
-                      {assignment?.vehicleId && !availableVehicles.some((item) => item.id === assignment.vehicleId) && (
-                        <option value={assignment.vehicleId}>{vehicle ? vehicleLabel(vehicle) : assignment.vehicleId}</option>
-                      )}
-                      {availableVehicles.map((item) => <option key={item.id} value={item.id}>{vehicleLabel(item)} · {item.passengers}</option>)}
-                    </select>
+                      <fieldset aria-label={staff.assignedVehicle} disabled={!loaded || assignmentBusy || statusBusy}
+                        className="mt-1 grid max-h-52 gap-2 overflow-y-auto rounded-lg border border-staff-control bg-night p-3 text-sm">
+                        {vehicleOptions.length === 0 && <span className="text-mist">{staff.unassigned}</span>}
+                        {vehicleOptions.map((vehicleId) => (
+                          <label key={vehicleId} className="flex items-center gap-2">
+                            <input type="checkbox" checked={selectedAssignments.vehicleIds.includes(vehicleId)}
+                              className="size-4 shrink-0 accent-burgundy"
+                              onChange={(event) => {
+                                const checked = event.target.checked;
+                                setAssignment((current) => {
+                                  if (!current) return current;
+                                  const vehicleIds = checked ? [...current.vehicleIds, vehicleId] : current.vehicleIds.filter((item) => item !== vehicleId);
+                                  const drivers = current.drivers.map((driver) => ({
+                                    ...driver,
+                                    vehicleId: vehicleIds.length === 1 ? vehicleIds[0]
+                                      : driver.vehicleId && vehicleIds.includes(driver.vehicleId) ? driver.vehicleId : null,
+                                  }));
+                                  return { vehicleIds, drivers };
+                                });
+                                setAssignmentError("");
+                              }} />
+                            {vehicleName(vehicleId)}
+                          </label>
+                        ))}
+                      </fieldset>
                     </dd>
                   </div>
                 </>

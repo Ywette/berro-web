@@ -15,6 +15,11 @@ export type OrderCalculation = {
   extraExpenses: number;
 };
 
+export type OrderAssignments = {
+  vehicleIds: string[];
+  drivers: { id: string; name: string | null; vehicleId: string | null }[];
+};
+
 export type StaffOrder = {
   id: string;
   reference: string;
@@ -54,6 +59,7 @@ export type StaffOrder = {
   assignedGuideId: string | null;
   assignedGuideName: string | null;
   assignedVehicleId: string | null;
+  assignments?: OrderAssignments;
 };
 
 export function isOrderStatus(value: string): value is OrderStatus {

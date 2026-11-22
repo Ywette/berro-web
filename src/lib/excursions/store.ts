@@ -6,6 +6,7 @@ import { readJsonFile, writeJsonFile } from "@/lib/data/json-file-store";
 import { excursionSeed } from "@/lib/excursions/seed";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 import { pickLocalizedText } from "@/lib/i18n/localized-content";
+import { deleteCompanyDocumentFile } from "@/lib/documents/upload";
 import {
   excursionFromRow,
   excursionToRow,
@@ -85,23 +86,33 @@ export async function insertManagedExcursion(
 
 export async function updateManagedExcursion(
   excursion: ManagedExcursion,
+  previousDocumentPath?: string,
 ): Promise<ManagedExcursion | null> {
   const supabase = createServiceSupabaseClient();
   if (!supabase) {
     const excursions = await readExcursionFileFallback();
     const index = excursions.findIndex((item) => item.id === excursion.id);
     if (index < 0) return null;
-    excursions[index] = excursion;
+    excursions[index] = {
+      ...excursion,
+      descriptionDocument: excursion.descriptionDocument === undefined
+        ? excursions[index].descriptionDocument
+        : excursion.descriptionDocument,
+    };
     await writeJsonFile(STORE_FILE, `${JSON.stringify(excursions, null, 2)}\n`);
-    return excursion;
+    return excursions[index];
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from(TABLE)
     .update({ ...excursionToRow(excursion), updated_at: new Date().toISOString() })
-    .eq("id", excursion.id)
-    .select("*")
-    .maybeSingle();
+    .eq("id", excursion.id);
+  if (excursion.descriptionDocument !== undefined) {
+    query = previousDocumentPath
+      ? query.eq("description_document->>filePath", previousDocumentPath)
+      : query.is("description_document", null);
+  }
+  const { data, error } = await query.select("*").maybeSingle();
 
   if (error) throw new Error(error.message);
   if (!data) return null;
@@ -118,7 +129,9 @@ export async function deleteManagedExcursion(id: string): Promise<boolean> {
     return true;
   }
 
-  const { data, error } = await supabase.from(TABLE).delete().eq("id", id).select("id");
+  const { data, error } = await supabase.from(TABLE).delete().eq("id", id).select("*").maybeSingle();
   if (error) throw new Error(error.message);
-  return (data?.length ?? 0) > 0;
+  const file = (data as ExcursionRow | null)?.description_document;
+  if (file) await deleteCompanyDocumentFile(file.filePath);
+  return data !== null;
 }

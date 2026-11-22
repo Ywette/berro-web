@@ -63,7 +63,7 @@ export function PriceSimulator() {
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-      <form className="grid gap-5 rounded-2xl border border-white/10 bg-card p-5" onSubmit={(event) => event.preventDefault()}>
+      <form className="request-form grid gap-5 border border-white/10 bg-card p-5" onSubmit={(event) => event.preventDefault()}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex rounded-full border border-white/10 p-1">
             <ModeButton active={mode === "form"} onClick={() => setMode("form")}>

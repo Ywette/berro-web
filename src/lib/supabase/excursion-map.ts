@@ -22,6 +22,7 @@ export type ExcursionRow = {
   route: Localized | string;
   teaser: Localized | string;
   details: Localized | string;
+  description_document?: ManagedExcursion["descriptionDocument"];
   region: string | null;
   regions?: unknown;
   price?: number | string | null;
@@ -52,6 +53,7 @@ export function excursionFromRow(row: ExcursionRow): ManagedExcursion {
     route: parseLocalizedText(row.route),
     teaser: parseLocalizedText(row.teaser),
     details: parseLocalizedText(row.details),
+    descriptionDocument: row.description_document ?? null,
     regions,
     price: parseExcursionPrice(row.price),
     durationDays: parseExcursionDurationDays(row.duration_days),
@@ -70,6 +72,9 @@ export function excursionToRow(excursion: ManagedExcursion): ExcursionRow {
     route: excursion.route,
     teaser: excursion.teaser,
     details: excursion.details,
+    ...(excursion.descriptionDocument !== undefined && {
+      description_document: excursion.descriptionDocument,
+    }),
     // Keep legacy single column for older readers; prefer first selected region.
     region: excursion.regions[0] ?? null,
     regions: excursion.regions,

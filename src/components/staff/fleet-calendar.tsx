@@ -1,5 +1,7 @@
 "use client";
 
+import { orderAssignments } from "@/lib/staff/assignments";
+
 import { useMemo, useState } from "react";
 import type { FleetVehicle } from "@/lib/content/fleet";
 import { intlLocales, type Locale } from "@/lib/i18n/locale";
@@ -64,28 +66,26 @@ export function FleetCalendar({ vehicles, orders, locale, labels }: FleetCalenda
 
   const assignmentsByDay = useMemo(() => {
     const map = new Map<string, { vehicleId: string; vehicleName: string; reference: string }[]>();
-    const visibleIds = new Set(visibleVehicles.map((vehicle) => vehicle.id));
+    const visibleById = new Map(visibleVehicles.map((vehicle) => [vehicle.id, vehicle]));
 
     for (const order of orders) {
       if (order.status === "cancelled") continue;
-      if (!order.assignedVehicleId || !order.departureOn) continue;
-      if (!visibleIds.has(order.assignedVehicleId)) continue;
-
-      const vehicle = vehicles.find((item) => item.id === order.assignedVehicleId);
+      if (!order.departureOn) continue;
+      const assignments = orderAssignments(order).vehicleIds.flatMap((vehicleId) => {
+        const vehicle = visibleById.get(vehicleId);
+        return vehicle ? [{ vehicleId, vehicleName: vehicleLabel(vehicle), reference: order.reference }] : [];
+      });
+      if (!assignments.length) continue;
       const end = order.returnOn ?? order.departureOn;
       for (const day of eachDay(order.departureOn, end)) {
         const list = map.get(day) ?? [];
-        list.push({
-          vehicleId: order.assignedVehicleId,
-          vehicleName: vehicle ? vehicleLabel(vehicle) : order.assignedVehicleId,
-          reference: order.reference,
-        });
+        list.push(...assignments);
         map.set(day, list);
       }
     }
 
     return map;
-  }, [orders, vehicles, visibleVehicles]);
+  }, [orders, visibleVehicles]);
 
   if (activeVehicles.length === 0) {
     return (
@@ -212,7 +212,7 @@ export function FleetCalendar({ vehicles, orders, locale, labels }: FleetCalenda
             {visibleVehicles.map((vehicle) => {
               const busyThisMonth = orders.some(
                 (order) =>
-                  order.assignedVehicleId === vehicle.id &&
+                  orderAssignments(order).vehicleIds.includes(vehicle.id) &&
                   order.departureOn &&
                   overlapsMonth(order.departureOn, order.returnOn ?? order.departureOn, year, month),
               );

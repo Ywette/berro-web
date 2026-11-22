@@ -6,6 +6,7 @@ import type { CompanyDocument } from "@/lib/content/company-document";
 import { deleteCompanyDocument, insertCompanyDocument } from "@/lib/documents/store";
 import {
   CompanyDocumentUploadException,
+  deleteCompanyDocumentFile,
   uploadCompanyDocumentFile,
 } from "@/lib/documents/upload";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
@@ -34,14 +35,18 @@ export async function saveCompanyDocument(
 
   let uploaded;
   try {
-    uploaded = await uploadCompanyDocumentFile(fileEntry);
+    uploaded = await uploadCompanyDocumentFile(fileEntry, {
+      requirePrivateStorage: formData.get("travelLicence") === "on",
+    });
   } catch (error) {
     if (error instanceof CompanyDocumentUploadException) {
       if (error.code === "type") return { error: labels.documentFormFileType };
       if (error.code === "size") return { error: labels.documentFormFileSize };
+      if (error.code === "config") return { error: labels.documentStorageUnavailable };
       return { error: labels.documentFormFileInvalid };
     }
-    throw error;
+    console.error("[documents] upload failed", error);
+    return { error: labels.documentStorageUnavailable };
   }
 
   const document: CompanyDocument = {
@@ -55,7 +60,13 @@ export async function saveCompanyDocument(
     createdAt: new Date().toISOString(),
   };
 
-  await insertCompanyDocument(document);
+  try {
+    await insertCompanyDocument(document);
+  } catch (error) {
+    await deleteCompanyDocumentFile(document.filePath);
+    console.error("[documents] save failed", error);
+    return { error: labels.documentStorageUnavailable };
+  }
   revalidatePath("/staff/documents");
   return { success: labels.documentFormSaved };
 }

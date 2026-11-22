@@ -43,7 +43,7 @@ export default async function ContactPage({ searchParams }: ContactPageProps) {
             <Suspense fallback={null}>
               <QuotedRouteSummary searchParams={searchParams} />
             </Suspense>
-            <div className="rounded-2xl border border-white/10 bg-card p-5 sm:p-6">
+            <div className="request-form border border-white/10 bg-card p-5 sm:p-6">
               <h2 className="mb-4 font-serif text-2xl tracking-wide text-ivory">
                 {dictionary.contact.formTitle}
               </h2>

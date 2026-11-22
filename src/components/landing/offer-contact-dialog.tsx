@@ -125,7 +125,7 @@ export function OfferContactDialog({
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
-      className="popup-enter m-auto w-[min(26rem,calc(100vw-1.5rem))] rounded-2xl border border-white/10 bg-card p-0 text-ivory shadow-[0_30px_80px_-24px_rgba(0,0,0,0.9)] backdrop:bg-black/70 backdrop:backdrop-blur-sm"
+      className="request-form popup-enter m-auto w-[min(26rem,calc(100vw-1.5rem))] border border-white/10 bg-card p-0 text-ivory shadow-[0_30px_80px_-24px_rgba(0,0,0,0.9)] backdrop:bg-black/70 backdrop:backdrop-blur-sm"
     >
       <div className="p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3">
@@ -280,7 +280,7 @@ export function OfferContactDialog({
 
             <button
               type="submit"
-              className="mt-1 inline-flex h-11 w-full items-center justify-center rounded-lg bg-burgundy px-4 text-sm font-semibold text-white hover:bg-burgundy-deep"
+              className="order-button mt-1 w-full"
             >
               {dictionary.hero.contactSubmit}
             </button>

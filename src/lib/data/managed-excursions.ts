@@ -7,6 +7,7 @@ import {
   updateManagedExcursion,
 } from "@/lib/excursions/store";
 import type { Localized } from "@/lib/i18n/locale";
+import { deleteCompanyDocumentFile } from "@/lib/documents/upload";
 
 export async function listManagedExcursions(): Promise<ManagedExcursion[]> {
   return readExcursionStore();
@@ -43,6 +44,7 @@ export async function createManagedExcursion(
     route: input.route,
     teaser: input.teaser,
     details: input.details,
+    descriptionDocument: input.descriptionDocument,
     regions: input.regions,
     price: input.price,
     durationDays: input.durationDays,
@@ -67,6 +69,7 @@ export async function updateManagedExcursionById(
     route: input.route,
     teaser: input.teaser,
     details: input.details,
+    descriptionDocument: input.descriptionDocument,
     regions: input.regions,
     price: input.price,
     durationDays: input.durationDays,
@@ -74,7 +77,11 @@ export async function updateManagedExcursionById(
     isActive: input.isActive,
     slug: uniqueSlug(input.title, existing, id),
   };
-  return updateManagedExcursion(next);
+  const updated = await updateManagedExcursion(next, current.descriptionDocument?.filePath);
+  if (updated && input.descriptionDocument !== undefined && current.descriptionDocument) {
+    await deleteCompanyDocumentFile(current.descriptionDocument.filePath);
+  }
+  return updated;
 }
 
 export async function removeManagedExcursion(id: string): Promise<boolean> {

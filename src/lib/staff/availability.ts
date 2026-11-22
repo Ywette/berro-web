@@ -1,6 +1,7 @@
 import type { FleetVehicle } from "@/lib/content/fleet";
 import type { StaffOrder } from "@/types/dashboard";
 import type { Employee } from "@/types/staff";
+import { orderAssignments } from "@/lib/staff/assignments";
 
 export type DateSpan = { start: string; end: string; startTime?: string; endTime?: string };
 
@@ -96,12 +97,12 @@ export function employeeChoices(
     .filter((employee) => {
       if (employee.role !== role || !employee.isActive) return false;
       if (role === "driver" && order.assignedGuideId === employee.id) return false;
-      if (role === "guide" && order.assignedDriverId === employee.id) return false;
-      const assignedId = role === "driver" ? order.assignedDriverId : order.assignedGuideId;
-      if (assignedId === employee.id) return true;
+      const assignedAsDriver = orderAssignments(order).drivers.some((driver) => driver.id === employee.id);
+      if (role === "guide" && assignedAsDriver) return false;
+      if (role === "driver" ? assignedAsDriver : order.assignedGuideId === employee.id) return true;
       if (!span) return true;
       return !others.some((other) =>
-        (other.assignedDriverId === employee.id || other.assignedGuideId === employee.id) &&
+        (other.assignedGuideId === employee.id || orderAssignments(other).drivers.some((driver) => driver.id === employee.id)) &&
         ordersOverlap(order, other),
       );
     })
@@ -125,12 +126,12 @@ export function vehicleChoices(order: StaffOrder, vehicles: FleetVehicle[], orde
 
   return vehicles
     .filter((vehicle) => {
-      if (vehicle.id === order.assignedVehicleId) return true;
-      if (!vehicle.isActive || vehicle.passengers < order.passengerCount) return false;
+      if (orderAssignments(order).vehicleIds.includes(vehicle.id)) return true;
+      if (!vehicle.isActive) return false;
       if (!documentsCover(vehicle, coveredThrough)) return false;
       if (!span) return true;
       return !others.some((other) =>
-        other.assignedVehicleId === vehicle.id && ordersOverlap(order, other),
+        orderAssignments(other).vehicleIds.includes(vehicle.id) && ordersOverlap(order, other),
       );
     })
     .sort((left, right) => vehicleLabel(left).localeCompare(vehicleLabel(right), "lv"));
@@ -142,12 +143,12 @@ export function vehicleLabel(vehicle: FleetVehicle) {
 }
 
 function occupiesEmployee(order: StaffOrder, employeeId: string, span: DateSpan) {
-  if (order.assignedDriverId !== employeeId && order.assignedGuideId !== employeeId) return false;
+  if (order.assignedGuideId !== employeeId && !orderAssignments(order).drivers.some((driver) => driver.id === employeeId)) return false;
   return rangeOverlapsOrder(span, order);
 }
 
 function occupiesVehicle(order: StaffOrder, vehicleId: string, span: DateSpan) {
-  if (order.assignedVehicleId !== vehicleId) return false;
+  if (!orderAssignments(order).vehicleIds.includes(vehicleId)) return false;
   return rangeOverlapsOrder(span, order);
 }
 

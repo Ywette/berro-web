@@ -25,6 +25,8 @@ export async function DocumentsBoard() {
       labels={{
         empty: labels.documentsEmpty,
         add: labels.addDocument,
+        addTravelLicence: labels.addTravelLicence,
+        travelLicenceTitle: dictionary.excursions.tourOperatorLicence,
         formTitle: labels.documentFormTitle,
         formDescription: labels.documentFormDescription,
         formDescriptionHint: labels.documentFormDescriptionHint,

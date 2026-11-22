@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { getSupabaseServiceRoleKey } from "@/lib/supabase/env";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 
 export const COMPANY_DOCUMENTS_BUCKET = "company-documents";
@@ -95,7 +96,10 @@ async function saveLocalFallback(file: File): Promise<UploadedCompanyFile> {
   };
 }
 
-export async function uploadCompanyDocumentFile(file: File): Promise<UploadedCompanyFile> {
+export async function uploadCompanyDocumentFile(
+  file: File,
+  { requirePrivateStorage = false } = {},
+): Promise<UploadedCompanyFile> {
   if (!ALLOWED_TYPES.has(file.type)) {
     throw new CompanyDocumentUploadException("type");
   }
@@ -107,6 +111,9 @@ export async function uploadCompanyDocumentFile(file: File): Promise<UploadedCom
   }
 
   const supabase = createServiceSupabaseClient();
+  if (requirePrivateStorage && (!supabase || !getSupabaseServiceRoleKey())) {
+    throw new CompanyDocumentUploadException("config");
+  }
   if (!supabase) {
     return saveLocalFallback(file);
   }
@@ -174,8 +181,10 @@ export async function deleteCompanyDocumentFile(filePath: string): Promise<void>
   const supabase = createServiceSupabaseClient();
   if (!supabase) return;
 
-  const { error } = await supabase.storage.from(COMPANY_DOCUMENTS_BUCKET).remove([filePath]);
-  if (error) {
-    console.error("[documents] delete file failed", error.message);
+  try {
+    const { error } = await supabase.storage.from(COMPANY_DOCUMENTS_BUCKET).remove([filePath]);
+    if (error) console.error("[documents] delete file failed", error.message);
+  } catch (error) {
+    console.error("[documents] delete file failed", error);
   }
 }

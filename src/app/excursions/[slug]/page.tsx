@@ -7,7 +7,6 @@ import { AvailabilityButton } from "@/components/excursions/availability-button"
 import { ExcursionCollage } from "@/components/excursions/excursion-collage";
 import { bookingContact, getExcursionDetails } from "@/lib/content/excursions";
 import { formatEuro } from "@/lib/content/format-price";
-import { formatDate } from "@/lib/content/format-date";
 import {
   excursionCoverImage,
   excursionLogoPlateFromIndex,
@@ -17,7 +16,7 @@ import {
   listManagedExcursions,
 } from "@/lib/data/managed-excursions";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
-import { pickLocalized } from "@/lib/i18n/locale";
+import { intlLocales, pickLocalized, type Locale } from "@/lib/i18n/locale";
 import { pickLocalizedText } from "@/lib/i18n/localized-content";
 
 export const instant = false;
@@ -75,7 +74,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
       </h1>
 
       {route ? (
-        <p className="mt-3 text-sm font-medium tracking-wide text-champagne/90">{route}</p>
+        <p className="mt-3 text-sm font-medium tracking-wide text-champagne/90 uppercase">{route}</p>
       ) : null}
 
       {excursion.price != null ? (
@@ -85,20 +84,22 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
       ) : null}
 
       {teaser ? (
-        <p className="mt-4 text-base leading-7 text-ivory/90">{teaser}</p>
+        <p className="mt-4 text-base/7 text-ivory/90">{teaser}</p>
       ) : null}
 
-      <ExcursionCollage
-        images={excursion.images}
-        logoVariant={logoVariant}
-        alt={title}
-        priority
-        className="relative mt-8 h-72 overflow-hidden rounded-2xl sm:h-96"
-        sizes="(min-width: 896px) 896px, 100vw"
-      />
+      {excursion.images.length > 0 && (
+        <ExcursionCollage
+          images={excursion.images}
+          logoVariant={logoVariant}
+          alt={title}
+          priority
+          className="relative mt-8 h-72 overflow-hidden rounded-2xl sm:h-96"
+          sizes="(min-width: 896px) 896px, 100vw"
+        />
+      )}
 
       {detailsText ? (
-        <div className="mt-8 grid gap-4 text-base leading-8 text-ivory/90">
+        <div className="mt-8 grid gap-4 text-base/7 text-ivory/90">
           {detailsText
             .split(/\n\s*\n/)
             .map((paragraph) => paragraph.trim())
@@ -110,7 +111,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
             ))}
         </div>
       ) : details?.intro && details.intro.length > 0 ? (
-        <div className="mt-8 grid gap-4 text-base leading-8 text-ivory/90">
+        <div className="mt-8 grid gap-4 text-base/7 text-ivory/90">
           {details.intro.map((paragraph) => (
             <p key={paragraph.lv}>{pickLocalized(paragraph, locale)}</p>
           ))}
@@ -120,7 +121,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
       {details?.highlights ? (
         <ul className="mt-8 grid gap-3">
           {details.highlights.map((item) => (
-            <li key={item.lv} className="flex gap-3 text-base leading-7">
+            <li key={item.lv} className="flex gap-3 text-base/7">
               <CheckIcon />
               <span>{pickLocalized(item, locale)}</span>
             </li>
@@ -197,31 +198,21 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
         </ul>
       ) : null}
 
-      {excursion.isActive ? (
-        <section id="booking" className="mt-10 scroll-mt-[calc(var(--site-header-height)+1rem)] rounded-2xl border border-white/10 bg-card p-6">
-          <h2 className="font-serif text-2xl tracking-wide">{text.bookingTitle}</h2>
+      <section id="booking" aria-label={text.bookingTitle} className="mt-10 scroll-mt-[calc(var(--site-header-height)+1rem)] bg-panel px-4 py-5 sm:px-6">
+        <div className="mb-3 flex flex-col items-center gap-4 border-b border-champagne/75 pb-4 text-center">
           {excursion.plannedDate && (
-            <p className="mt-2 text-sm font-medium text-champagne/90">
-              {text.plannedDate}{" "}
-              <time dateTime={excursion.plannedDate}>{formatDate(excursion.plannedDate)}</time>
-            </p>
+            <time dateTime={excursion.plannedDate} className="text-2xl text-champagne sm:text-3xl">
+              {formatBookingDate(excursion.plannedDate, locale)}
+            </time>
           )}
-          <p className="mt-2 text-sm leading-6 text-mist">{text.bookingBody}</p>
-          <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-3">
-            <ContactItem label={text.email} href={`mailto:${bookingContact.email}`} value={bookingContact.email} />
-            <ContactItem
-              label={text.phone}
-              href={`tel:${bookingContact.phone.replace(/\s/g, "")}`}
-              value={bookingContact.phone}
-            />
-            <ContactItem label={text.website} href={`https://${bookingContact.website}`} value={bookingContact.website} />
-          </dl>
           <AvailabilityButton
             slug={excursion.slug}
             title={title}
             route={route || undefined}
             teaser={teaser || undefined}
             durationDays={excursion.durationDays}
+            plannedDate={excursion.plannedDate}
+            isRegistrationOpen={excursion.isActive}
             destination={
               excursion.slug === "moulin-rouge"
                 ? "Moulin Rouge"
@@ -238,35 +229,56 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
                           : undefined
             }
             image={coverImage}
-            excursions={excursions.filter((item) => item.isActive).map((item) => ({
+            excursions={excursions.map((item) => ({
               slug: item.slug,
               title: pickLocalizedText(item.title, locale),
               route: pickLocalizedText(item.route, locale) || undefined,
               teaser: pickLocalizedText(item.teaser, locale) || undefined,
               durationDays: item.durationDays,
+              plannedDate: item.plannedDate,
             }))}
           />
-          {details?.closing ? (
-            <p className="mt-4 text-sm text-ivory/90">{pickLocalized(details.closing, locale)}</p>
-          ) : null}
-        </section>
-      ) : (
-        <p className="mt-10 text-sm text-mist">{text.registrationClosed}</p>
-      )}
+        </div>
+        <ul className="flex flex-col items-center gap-2 text-lg sm:flex-row sm:justify-center sm:gap-0 sm:divide-x sm:divide-champagne/75 sm:[&>li]:px-5">
+          <ContactItem href={`tel:${bookingContact.phone.replace(/\s/g, "")}`}>
+            {bookingContact.phone}
+          </ContactItem>
+          <ContactItem href={`mailto:${bookingContact.email}`}>{bookingContact.email}</ContactItem>
+          <ContactItem href={bookingContact.licenceUrl}>
+            {text.tourOperatorLicence} <span aria-hidden="true">↗</span>
+          </ContactItem>
+        </ul>
+        {excursion.isActive && details?.closing && (
+          <p className="mt-4 text-sm text-ivory/90">{pickLocalized(details.closing, locale)}</p>
+        )}
+      </section>
     </article>
   );
 }
 
-function ContactItem({ label, href, value }: { label: string; href: string; value: string }) {
+function formatBookingDate(date: string, locale: Locale) {
+  const formatter = new Intl.DateTimeFormat(intlLocales[locale], {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  const value = new Date(date);
+
+  if (locale !== "lv") return formatter.format(value);
+
+  const parts = formatter.formatToParts(value);
+  const get = (type: "day" | "month" | "year") => parts.find((part) => part.type === type)?.value;
+  return `${get("day")}. ${get("month")} ${get("year")}`;
+}
+
+function ContactItem({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <div>
-      <dt className="text-xs text-mist">{label}</dt>
-      <dd>
-        <a href={href} className="text-ivory underline decoration-burgundy underline-offset-4 hover:text-white">
-          {value}
-        </a>
-      </dd>
-    </div>
+    <li>
+      <a href={href} className="text-ivory underline decoration-burgundy decoration-2 underline-offset-4 hover:text-white">
+        {children}
+      </a>
+    </li>
   );
 }
 

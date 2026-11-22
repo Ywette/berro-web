@@ -94,7 +94,7 @@ function ServiceCard({
               href={href}
               className={
                 variant === "primary"
-                  ? "inline-flex h-11 w-full items-center justify-center rounded-full bg-ivory px-5 text-sm font-semibold text-night transition hover:bg-white sm:w-auto"
+                  ? "order-button w-full sm:w-auto"
                   : "inline-flex h-11 w-full items-center justify-center rounded-full border border-white/35 px-5 text-sm font-semibold text-ivory transition hover:border-white/60 hover:bg-white/5 sm:w-auto"
               }
             >

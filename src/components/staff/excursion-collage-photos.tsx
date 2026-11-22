@@ -14,6 +14,7 @@ export type ExcursionCollagePhotoLabels = {
   photosHint: string;
   photoSize: string;
   upload: string;
+  removePhoto: string;
   moveUp: string;
   moveDown: string;
   moveLeft: string;
@@ -170,6 +171,12 @@ export function ExcursionCollagePhotos({
     onPhotosChange(next);
   }
 
+  function removePhoto(index: number) {
+    const photo = photos[index];
+    if (photo.file) URL.revokeObjectURL(photo.preview);
+    onPhotosChange(photos.filter((_, photoIndex) => photoIndex !== index));
+  }
+
   function openPicker(slotIndex: number | null) {
     const replacing = slotIndex !== null && Boolean(photos[slotIndex]);
     if (!replacing && !canUploadMore) return;
@@ -250,28 +257,37 @@ export function ExcursionCollagePhotos({
                           className="absolute inset-0 h-full w-full object-cover"
                         />
                       </button>
+                      <button
+                        type="button"
+                        disabled={processing}
+                        onClick={() => removePhoto(index)}
+                        aria-label={`${labels.removePhoto} · ${labels.slot} ${index + 1}`}
+                        className="absolute top-1.5 right-1.5 z-10 rounded-full bg-staff-danger-solid px-2.5 py-1 text-xs text-white hover:brightness-110 disabled:opacity-60"
+                      >
+                        {labels.removePhoto}
+                      </button>
                       <ArrowButton
                         label={labels.moveUp}
                         direction="up"
-                        disabled={!canUp}
+                        disabled={processing || !canUp}
                         onClick={() => swap(index, "up")}
                       />
                       <ArrowButton
                         label={labels.moveDown}
                         direction="down"
-                        disabled={!canDown}
+                        disabled={processing || !canDown}
                         onClick={() => swap(index, "down")}
                       />
                       <ArrowButton
                         label={labels.moveLeft}
                         direction="left"
-                        disabled={!canLeft}
+                        disabled={processing || !canLeft}
                         onClick={() => swap(index, "left")}
                       />
                       <ArrowButton
                         label={labels.moveRight}
                         direction="right"
-                        disabled={!canRight}
+                        disabled={processing || !canRight}
                         onClick={() => swap(index, "right")}
                       />
                     </>

@@ -15,6 +15,8 @@ type AvailabilityButtonProps = {
   teaser?: string;
   destination?: string;
   durationDays?: number | null;
+  plannedDate?: string | null;
+  isRegistrationOpen: boolean;
   image: string;
   excursions: ExcursionQuoteOption[];
 };
@@ -33,6 +35,7 @@ function toPrefill(option: ExcursionQuoteOption): HeroBookingPrefill {
     excursionSlug: built.excursionSlug,
     excursionTitle: built.excursionTitle,
     durationDays: built.durationDays,
+    plannedDate: built.plannedDate,
   };
 }
 
@@ -43,6 +46,8 @@ export function AvailabilityButton({
   teaser,
   destination,
   durationDays = null,
+  plannedDate = null,
+  isRegistrationOpen,
   image,
   excursions,
 }: AvailabilityButtonProps) {
@@ -50,8 +55,8 @@ export function AvailabilityButton({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const options = useMemo<ExcursionQuoteOption[]>(() => {
     if (excursions.some((item) => item.slug === slug)) return excursions;
-    return [{ slug, title, route, teaser, destination, durationDays }, ...excursions];
-  }, [destination, durationDays, excursions, route, slug, teaser, title]);
+    return [{ slug, title, route, teaser, destination, durationDays, plannedDate }, ...excursions];
+  }, [destination, durationDays, excursions, plannedDate, route, slug, teaser, title]);
 
   const [selectedSlug, setSelectedSlug] = useState(slug);
   const selected = useMemo(() => {
@@ -64,9 +69,10 @@ export function AvailabilityButton({
         teaser,
         destination,
         durationDays,
+        plannedDate,
       }
     );
-  }, [destination, durationDays, options, route, selectedSlug, slug, teaser, title]);
+  }, [destination, durationDays, options, plannedDate, route, selectedSlug, slug, teaser, title]);
   const prefill = useMemo(() => toPrefill(selected), [selected]);
 
   return (
@@ -74,9 +80,9 @@ export function AvailabilityButton({
       <button
         type="button"
         onClick={() => dialogRef.current?.showModal()}
-        className="mt-5 rounded-full bg-burgundy px-5 py-2.5 text-sm font-medium text-white hover:bg-burgundy-deep"
+        className="order-button text-base sm:text-xl"
       >
-        {dictionary.excursions.checkAvailability}
+        {isRegistrationOpen ? dictionary.excursions.reserveSeat : dictionary.excursions.checkAvailability}
       </button>
 
       <dialog
@@ -85,13 +91,13 @@ export function AvailabilityButton({
         onClick={(event) => {
           if (event.target === event.currentTarget) event.currentTarget.close();
         }}
-        className="popup-enter m-auto max-h-[calc(100dvh-1rem)] w-[min(44rem,calc(100vw-1rem))] overflow-visible rounded-2xl bg-transparent p-0 text-ivory backdrop:bg-black/75 backdrop:backdrop-blur-sm"
+        className="request-form popup-enter m-auto max-h-[calc(100dvh-1rem)] w-[min(44rem,calc(100vw-1rem))] overflow-visible bg-transparent p-0 text-ivory backdrop:bg-black/75 backdrop:backdrop-blur-sm"
       >
         <div
-          className="relative overflow-visible rounded-2xl bg-cover bg-center"
-          style={{ backgroundImage: `url('${image}')` }}
+          className="relative overflow-visible bg-cover bg-center"
+          style={image ? { backgroundImage: `url('${image}')` } : undefined}
         >
-          <div className="min-h-[min(36rem,calc(100dvh-3rem))] rounded-2xl bg-black/60 p-4 sm:min-h-[min(42rem,calc(100dvh-2.5rem))] sm:p-6">
+          <div className="min-h-[min(36rem,calc(100dvh-3rem))] bg-black/60 p-4 sm:min-h-[min(42rem,calc(100dvh-2.5rem))] sm:p-6">
             <div className="mb-4 flex items-start justify-between gap-3 px-1">
               <div className="min-w-0">
                 <h2 id="availability-title" className="font-serif text-2xl tracking-wide sm:text-3xl">
@@ -117,7 +123,7 @@ export function AvailabilityButton({
             </div>
             <Suspense
               fallback={
-                <div className="h-56 animate-pulse rounded-2xl bg-white/10" aria-hidden="true" />
+                <div className="h-56 animate-pulse bg-white/10" aria-hidden="true" />
               }
             >
               <HeroBooking

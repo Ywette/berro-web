@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import {
   useEffect,
@@ -151,13 +150,14 @@ export type HeroBookingPrefill = {
   excursionSlug?: string;
   excursionTitle?: string;
   durationDays?: number | null;
+  plannedDate?: string | null;
 };
 
 type HeroBookingProps = {
   prefill?: HeroBookingPrefill;
   /** Compact panel styling for dialogs (e.g. excursion availability). */
   variant?: "hero" | "panel";
-  /** Active catalog excursions — enables the (visually hidden) excursion selector. */
+  /** Catalog excursions available in the booking selector. */
   excursionOptions?: ExcursionQuoteOption[];
   onExcursionChange?: (slug: string) => void;
 };
@@ -188,6 +188,7 @@ export function HeroBooking({
       pickup: prefill.pickup ?? "",
       dropoff: prefill.dropoff ?? "",
       tripMode,
+      departureAt: prefill.plannedDate ?? "",
       stops: tripMode === "roundTrip" && stops.length === 0 ? [newStop()] : stops,
       planNote: prefill.planNote ?? "",
     };
@@ -212,6 +213,7 @@ export function HeroBooking({
     selectedExcursion?.title ?? prefill?.excursionTitle ?? "";
   const excursionDurationDays =
     selectedExcursion?.durationDays ?? prefill?.durationDays ?? null;
+  const excursionDate = selectedExcursion?.plannedDate ?? prefill?.plannedDate ?? null;
   const quoteStops = draft.stops.filter((stop) => stop.place.trim()).map((stop) => ({
     ...createStop(stop.place, stop.duration === "" ? undefined : Number(stop.duration), stop.id),
     placeId: stop.placeId,
@@ -438,9 +440,9 @@ export function HeroBooking({
       phone: contact.phone,
       heardAbout: contact.heardAbout,
       heardAboutDetail: contact.heardAboutDetail,
-      travelType: travelType || undefined,
+      travelType: isExcursionOrder ? "agencyTourism" : travelType || undefined,
       travelTypeDetail:
-        travelType === "other" ? travelTypeDetail.trim() || undefined : undefined,
+        !isExcursionOrder && travelType === "other" ? travelTypeDetail.trim() || undefined : undefined,
       pickup: resolvedPickup,
       pickupPlace: draft.pickupPlace,
       dropoffPlace: draft.dropoffPlace,
@@ -466,15 +468,13 @@ export function HeroBooking({
     if (count < 1 || count > BUS_MAX_PASSENGERS) {
       errors.add("passengers");
     }
-    if (!travelType) errors.add("travelType");
-    if (travelType === "other" && travelTypeDetail.trim().length < 2) {
-      errors.add("travelTypeOther");
-    }
     if (!draft.departureAt) errors.add("departureAt");
 
-    // Excursion availability form hides route / end-time fields — those come from the
-    // catalog trip (+ duration). Only travellers, trip type, and departure are required.
     if (!isExcursionOrder) {
+      if (!travelType) errors.add("travelType");
+      if (travelType === "other" && travelTypeDetail.trim().length < 2) {
+        errors.add("travelTypeOther");
+      }
       if (!draft.pickup.trim() && !draft.dropoff.trim()) {
         errors.add("pickup");
         errors.add("dropoff");
@@ -545,10 +545,10 @@ export function HeroBooking({
 
   return (
     <div className="hero-booking-enter w-full">
-      <form noValidate onSubmit={onSubmit} className={shellClass}>
+      <form noValidate onSubmit={onSubmit} className={`request-form ${shellClass}`}>
         {readingPlan ? (
           <div
-            className="absolute inset-0 z-50 flex items-center justify-center rounded-2xl bg-night/70 px-5 backdrop-blur-[2px]"
+            className="absolute inset-0 z-50 flex items-center justify-center bg-night/70 px-5 backdrop-blur-[2px]"
             role="status"
             aria-live="polite"
           >
@@ -592,7 +592,7 @@ export function HeroBooking({
           ) : null}
 
           {isExcursionOrder ? (
-            <div className="grid grid-cols-2 items-stretch gap-1.5 sm:gap-2.5">
+            <div>
               <PassengerField
                 className="min-w-0 w-full"
                 value={draft.passengers}
@@ -605,28 +605,6 @@ export function HeroBooking({
                 onChange={(passengers) => {
                   patchDraft({ passengers });
                   clearFieldError(setInvalid, "passengers");
-                }}
-              />
-              <TravelTypeField
-                className="min-w-0"
-                value={travelType}
-                detail={travelTypeDetail}
-                invalid={invalid.has("travelType")}
-                detailInvalid={invalid.has("travelTypeOther")}
-                copy={{
-                  label: dictionary.hero.travelTypeLabel,
-                  placeholder: dictionary.hero.travelTypePlaceholder,
-                  otherPlaceholder: dictionary.hero.travelTypeOtherPlaceholder,
-                  options: dictionary.hero.travelTypeOptions,
-                }}
-                onChange={(value) => {
-                  setTravelType(value);
-                  if (value !== "other") setTravelTypeDetail("");
-                  clearFieldError(setInvalid, "travelType", "travelTypeOther");
-                }}
-                onDetailChange={(value) => {
-                  setTravelTypeDetail(value);
-                  clearFieldError(setInvalid, "travelTypeOther");
                 }}
               />
             </div>
@@ -820,24 +798,34 @@ export function HeroBooking({
           <div
             className={`relative z-20 mt-2.5 grid grid-cols-1 gap-2 overflow-visible px-0 py-1.5 sm:grid-cols-2 sm:px-2.5 sm:py-2.5 ${readingPlan ? "pointer-events-none select-none" : ""}`}
           >
-            <div className={invalid.has("departureAt") ? "relative z-40 overflow-visible" : ""}>
-              <DateTimeField
-                label={dictionary.hero.departureAt}
-                value={draft.departureAt}
-                hideLabel
-                invalid={invalid.has("departureAt")}
-                className="h-9 rounded-full sm:h-10"
-                onChange={(value) => {
-                  const endAt = returnAtFromDeparture(value, excursionDurationDays);
-                  patchDraft({
-                    departureAt: value,
-                    returnAt: draft.tripMode === "roundTrip" ? endAt : "",
-                    arrivalAt: draft.tripMode === "oneWay" ? endAt : "",
-                  });
-                  clearFieldError(setInvalid, "departureAt", "returnAt", "arrivalAt");
-                }}
-              />
-            </div>
+            {excursionDate ? (
+              <div className="flex min-h-9 items-center rounded-full border border-white/18 bg-white/10 px-3.5 text-xs text-ivory/90 sm:min-h-10 sm:text-sm">
+                <span>
+                  {dictionary.hero.departureAt}:{" "}
+                  <time dateTime={excursionDate}>{formatDateTimeDisplay(excursionDate)}</time>
+                </span>
+              </div>
+            ) : (
+              <div className={invalid.has("departureAt") ? "relative z-40 overflow-visible" : ""}>
+                <DateTimeField
+                  squareCorners
+                  label={dictionary.hero.departureAt}
+                  value={draft.departureAt}
+                  hideLabel
+                  invalid={invalid.has("departureAt")}
+                  className="h-9 rounded-full sm:h-10"
+                  onChange={(value) => {
+                    const endAt = returnAtFromDeparture(value, excursionDurationDays);
+                    patchDraft({
+                      departureAt: value,
+                      returnAt: draft.tripMode === "roundTrip" ? endAt : "",
+                      arrivalAt: draft.tripMode === "oneWay" ? endAt : "",
+                    });
+                    clearFieldError(setInvalid, "departureAt", "returnAt", "arrivalAt");
+                  }}
+                />
+              </div>
+            )}
             <div
               className="flex h-9 items-center rounded-full border border-white/18 bg-white/10 px-3.5 text-xs text-ivory/90 sm:h-10 sm:text-sm"
               aria-label={dictionary.excursions.durationLabel}
@@ -855,14 +843,10 @@ export function HeroBooking({
             className={`relative z-20 mt-2.5 space-y-2 overflow-visible px-0 py-1.5 transition-[padding,margin] duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] sm:px-2.5 sm:py-2.5 ${readingPlan ? "pointer-events-none select-none" : ""}`}
           >
             <div className="relative space-y-2 overflow-visible">
-              {draft.stops.length > 0 || showDestinationFields || showReturnFields ? (
-                <span
-                  aria-hidden="true"
-                  className={`pointer-events-none absolute top-5 left-[0.875rem] w-px -translate-x-1/2 bg-champagne/50 transition-[bottom,opacity] duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                    stopsExpanded ? "bottom-5 opacity-100" : "bottom-14 opacity-80"
-                  }`}
-                />
-              ) : null}
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute top-5 bottom-5 left-[0.875rem] w-px -translate-x-1/2 bg-champagne/50"
+              />
 
               <div className="relative grid grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-2">
                 <RouteMarker kind="start" />
@@ -881,6 +865,7 @@ export function HeroBooking({
                   />
                 <div className={invalid.has("departureAt") ? "relative z-40 overflow-visible" : ""}>
                   <DateTimeField
+                    squareCorners
                     label={dictionary.hero.departureAt}
                     value={draft.departureAt}
                     hideLabel
@@ -992,6 +977,7 @@ export function HeroBooking({
                 {showDestinationFields ? (
                   <div className={invalid.has("arrivalAt") ? "relative z-40 overflow-visible" : ""}>
                     <DateTimeField
+                      squareCorners
                       label={dictionary.hero.arrivalAt}
                       value={draft.arrivalAt}
                       min={minimumEnd}
@@ -1013,6 +999,7 @@ export function HeroBooking({
                 ) : (
                   <div className={invalid.has("returnAt") ? "relative z-40 overflow-visible" : ""}>
                     <DateTimeField
+                      squareCorners
                       label={dictionary.hero.returnAt}
                       value={draft.returnAt}
                       min={minimumEnd}
@@ -1062,23 +1049,9 @@ export function HeroBooking({
         <button
           type="submit"
           disabled={readingPlan}
-          className={`mt-3 inline-flex h-11 w-full shrink-0 items-center justify-center gap-2.5 rounded-full px-5 text-sm font-semibold transition-[background-color,color] duration-300 disabled:opacity-50 ${
-            formReady
-              ? "field-ready-glow bg-leaf text-white hover:bg-leaf-deep"
-              : "bg-burgundy text-white hover:bg-burgundy-deep"
-          }`}
+          className={`order-button mt-3 w-full shrink-0 text-base sm:text-xl ${formReady ? "field-ready-glow" : ""}`}
         >
-          <span>{dictionary.hero.getOffer}</span>
-          {formReady ? (
-            <Image
-              src="/brand/berro-travel-mark.png"
-              alt=""
-              width={36}
-              height={36}
-              className="field-ready-mark h-8 w-8 object-contain"
-              aria-hidden="true"
-            />
-          ) : null}
+          {dictionary.hero.getOffer}
         </button>
       </form>
 
@@ -1159,9 +1132,7 @@ function RouteMarker({ kind }: { kind: "start" | "stop" | "end" }) {
       aria-hidden="true"
       className="relative z-10 mx-auto flex h-10 w-7 items-center justify-center"
     >
-      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-burgundy text-white shadow-[0_0_0_3px_rgba(12,12,14,0.65)]">
-        <FlagMarkerIcon />
-      </span>
+      <FlagMarkerIcon />
     </span>
   );
 }
@@ -1176,8 +1147,9 @@ function LocationPinIcon({ className = "h-7 w-7" }: { className?: string }) {
 
 function FlagMarkerIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden="true">
-      <path d="M6.5 3.5a.75.75 0 011.5 0V5h9.1c.7 0 1.1.8.7 1.4l-1.4 2.1 1.4 2.1c.4.6 0 1.4-.7 1.4H8v8.25a.75.75 0 01-1.5 0V3.5z" />
+    <svg viewBox="0 0 48 48" className="size-7 shrink-0 overflow-visible text-white" fill="currentColor" aria-hidden="true">
+      <circle cx="24" cy="24" r="24" className="fill-burgundy stroke-[#0c0c0e]/65" strokeWidth="10" paintOrder="stroke" />
+      <path transform="translate(12 12)" d="M6.5 3.5a.75.75 0 011.5 0V5h9.1c.7 0 1.1.8.7 1.4l-1.4 2.1 1.4 2.1c.4.6 0 1.4-.7 1.4H8v8.25a.75.75 0 01-1.5 0V3.5z" />
     </svg>
   );
 }

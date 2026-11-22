@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { readOrderEdit } from "@/lib/orders/edit";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 import { staffOrderFromRow, type OrderRow } from "@/lib/supabase/order-map";
-import { isOrderStatus, type OrderStatus } from "@/types/dashboard";
+import { isOrderStatus, type OrderAssignments, type OrderStatus } from "@/types/dashboard";
 import { setOrderStatus, toggleOrderStatus } from "@/lib/orders/statuses";
 
 export async function setOrderCancelled(id: string, version: string, cancel: boolean) {
@@ -36,22 +36,38 @@ export async function setOrderCancelled(id: string, version: string, cancel: boo
   return { order: staffOrderFromRow(data as OrderRow) } as const;
 }
 
-export async function updateOrderAssignments(id: string, version: string, driverId: string | null, driverName: string | null, vehicleId: string | null) {
+export async function updateOrderAssignments(id: string, version: string, assignments: OrderAssignments) {
   const user = await currentUser();
   if (!user) return { error: "signedOut" } as const;
   if (user.publicMetadata.role !== "staff" && user.publicMetadata.role !== "admin") return { error: "access" } as const;
-  if (!id || !version || [driverId, driverName, vehicleId].some((value) => value !== null && (typeof value !== "string" || value.length > 300))) return { error: "invalid" } as const;
+  if (!id || !version || !validAssignments(assignments)) return { error: "invalid" } as const;
   const db = createServiceSupabaseClient();
   if (!db) return { error: "failed" } as const;
   const { data, error } = await db.from("orders").update({
-    assigned_driver_id: driverId, assigned_driver_name: driverId ? driverName : null,
-    assigned_vehicle_id: vehicleId, updated_at: new Date().toISOString(),
+    assignments,
+    assigned_driver_id: assignments.drivers[0]?.id ?? null,
+    assigned_driver_name: assignments.drivers[0]?.name ?? null,
+    assigned_vehicle_id: assignments.vehicleIds[0] ?? null,
+    updated_at: new Date().toISOString(),
   }).eq("id", id).eq("updated_at", version).select("*").maybeSingle();
   if (error) console.error("[orders] assignment update failed", error.code, error.message);
   if (error || !data) return { error: error ? "failed" : "changed" } as const;
   revalidatePath("/staff/orders");
   revalidatePath("/staff/calendar");
   return { order: staffOrderFromRow(data as OrderRow) } as const;
+}
+
+function validAssignments(assignments: OrderAssignments) {
+  const validText = (value: unknown) => typeof value === "string" && value.trim().length > 0 && value.length <= 300;
+  if (!Array.isArray(assignments?.vehicleIds) || !Array.isArray(assignments.drivers)) return false;
+  const { vehicleIds, drivers } = assignments;
+  const vehicles = new Set(vehicleIds);
+  return vehicles.size === vehicleIds.length &&
+    vehicleIds.every(validText) &&
+    drivers.every((driver) => driver && validText(driver.id) &&
+      (driver.name === null || validText(driver.name)) &&
+      (driver.vehicleId === null || vehicles.has(driver.vehicleId))) &&
+    new Set(drivers.map((driver) => driver.id)).size === drivers.length;
 }
 
 export async function updateOrderStatus(id: string, version: string, status: OrderStatus) {

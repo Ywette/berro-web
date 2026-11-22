@@ -149,7 +149,7 @@ export function OfferRequestDialog({
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
-      className="popup-enter m-auto w-[min(32rem,calc(100vw-1.5rem))] overflow-visible rounded-2xl border border-white/10 bg-card p-0 text-ivory shadow-[0_30px_80px_-24px_rgba(0,0,0,0.9)] backdrop:bg-black/70 backdrop:backdrop-blur-sm"
+      className="request-form popup-enter m-auto w-[min(32rem,calc(100vw-1.5rem))] overflow-visible border border-white/10 bg-card p-0 text-ivory shadow-[0_30px_80px_-24px_rgba(0,0,0,0.9)] backdrop:bg-black/70 backdrop:backdrop-blur-sm"
     >
       <div className="max-h-[calc(100dvh-2rem)] overflow-y-auto p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3">
@@ -325,7 +325,7 @@ export function OfferRequestDialog({
             <button
               type="submit"
               disabled={submitting}
-              className="mt-1 inline-flex h-11 w-full items-center justify-center rounded-full bg-burgundy px-4 text-sm font-semibold text-white hover:bg-burgundy-deep disabled:opacity-60"
+              className="order-button mt-1 w-full"
             >
               {submitting
                 ? submittingLabel || dictionary.hero.contactSubmitting

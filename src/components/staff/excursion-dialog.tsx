@@ -8,7 +8,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { saveManagedExcursion, type ExcursionActionState } from "@/actions/excursions";
+import { saveManagedExcursion, translateManagedExcursion, type ExcursionActionState } from "@/actions/excursions";
 import {
   ExcursionCollagePhotos,
   type ExcursionCollagePhotoLabels,
@@ -16,7 +16,8 @@ import {
 import type { FleetPhotoDraft } from "@/components/staff/fleet-photo-manager";
 import { excursionRegions, type ExcursionRegion } from "@/lib/content/excursions";
 import {
-  EXCURSION_COLLAGE_PHOTO_COUNT,
+  excursionTextFields,
+  excursionTextLimits,
   type ExcursionLogoVariant,
   type ManagedExcursion,
 } from "@/lib/content/managed-excursion";
@@ -36,6 +37,14 @@ export type ExcursionDialogLabels = {
   teaserHint: string;
   details: string;
   detailsHint: string;
+  translate: string;
+  translating: string;
+  translationFailed: string;
+  translationDone: string;
+  translationNoFields: string;
+  descriptionDocument: string;
+  descriptionDocumentHint: string;
+  removeDescriptionDocument: string;
   price: string;
   priceHint: string;
   duration: string;
@@ -79,6 +88,11 @@ function fieldLocaleValue(value: Localized | string | null | undefined, locale: 
   return typeof text === "string" ? text : "";
 }
 
+function textControl(form: HTMLFormElement, name: string) {
+  const control = form.elements.namedItem(name);
+  return control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement ? control : null;
+}
+
 function Field({
   label,
   children,
@@ -109,6 +123,8 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
   const [state, formAction, pending] = useActionState(saveManagedExcursion, initialState);
   const [clientError, setClientError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [translating, setTranslating] = useState(false);
+  const [translationFeedback, setTranslationFeedback] = useState<{ message: string; error: boolean } | null>(null);
   const [contentLocale, setContentLocale] = useState<Locale>("lv");
   const [registrationOpen, setRegistrationOpen] = useState(excursion?.isActive ?? false);
   const [plannedDate, setPlannedDate] = useState(excursion?.plannedDate ?? "");
@@ -131,14 +147,63 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
     onClose();
   }, [state.success, onClose]);
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setClientError(null);
+  async function translate(form: HTMLFormElement | null) {
+    if (!form || translating || uploading || pending) return;
+    const input = new FormData();
+    const targets = new Map<string, { sourceName: string; sourceValue: string; previous: string }>();
 
-    if (photos.length !== EXCURSION_COLLAGE_PHOTO_COUNT) {
-      setClientError(labels.photosHint);
+    for (const field of excursionTextFields) {
+      const sourceName = `${field}_lv`;
+      const sourceValue = textControl(form, sourceName)?.value.trim();
+      if (!sourceValue) continue;
+      input.set(sourceName, sourceValue);
+      for (const locale of locales) {
+        if (locale === "lv") continue;
+        const name = `${field}_${locale}`;
+        const previous = textControl(form, name)?.value.trim() ?? "";
+        // Older saves may contain copies of the Latvian text in untranslated fields.
+        if (previous && previous !== sourceValue) continue;
+        targets.set(name, { sourceName, sourceValue, previous });
+        input.append("target", name);
+      }
+    }
+    if (!targets.size) {
+      setTranslationFeedback({ message: labels.translationNoFields, error: false });
       return;
     }
+
+    setTranslating(true);
+    setTranslationFeedback(null);
+    try {
+      const result = await translateManagedExcursion(input);
+      if (!form.isConnected) return;
+      if ("error" in result) {
+        setTranslationFeedback({ message: result.error, error: true });
+        return;
+      }
+      let applied = 0;
+      for (const [name, target] of targets) {
+        const control = textControl(form, name);
+        if (!control || control.value.trim() !== target.previous ||
+          textControl(form, target.sourceName)?.value.trim() !== target.sourceValue) continue;
+        control.value = result.translations[name];
+        applied++;
+      }
+      setTranslationFeedback({
+        message: applied ? labels.translationDone : labels.translationNoFields,
+        error: false,
+      });
+    } catch {
+      if (form.isConnected) setTranslationFeedback({ message: labels.translationFailed, error: true });
+    } finally {
+      if (form.isConnected) setTranslating(false);
+    }
+  }
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (translating || uploading || pending) return;
+    setClientError(null);
 
     const form = event.currentTarget;
     const formData = new FormData(form);
@@ -171,7 +236,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
       );
 
       const resolvedUrls = uploadResults.filter((url): url is string => Boolean(url));
-      if (resolvedUrls.length !== EXCURSION_COLLAGE_PHOTO_COUNT) {
+      if (resolvedUrls.length !== photos.length) {
         setClientError(labels.photosHint);
         return;
       }
@@ -232,6 +297,21 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
           {excursion ? <input type="hidden" name="id" value={excursion.id} /> : null}
 
           <div className="grid gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={(event) => void translate(event.currentTarget.form)}
+                disabled={translating || uploading || pending}
+                className="rounded-full border border-staff-control px-4 py-2 text-sm font-medium text-ivory hover:border-staff-focus disabled:opacity-60"
+              >
+                {translating ? labels.translating : labels.translate}
+              </button>
+              {translationFeedback && (
+                <p role={translationFeedback.error ? "alert" : "status"} className={translationFeedback.error ? "text-sm text-staff-danger" : "text-sm text-mist"}>
+                  {translationFeedback.message}
+                </p>
+              )}
+            </div>
             <div
               role="tablist"
               aria-label="Content language"
@@ -273,7 +353,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
                     <input
                       name={`title_${locale}`}
                       required={requireTitle}
-                      maxLength={160}
+                      maxLength={excursionTextLimits.title}
                       defaultValue={fieldLocaleValue(excursion?.title, locale)}
                       placeholder={
                         locale === "lv"
@@ -287,7 +367,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
                   <Field label={labels.route} hint={labels.routeHint}>
                     <input
                       name={`route_${locale}`}
-                      maxLength={200}
+                      maxLength={excursionTextLimits.route}
                       defaultValue={fieldLocaleValue(excursion?.route, locale)}
                       placeholder={locale === "en" ? "Riga → Paris → Riga" : undefined}
                       className={inputClass}
@@ -298,7 +378,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
                     <textarea
                       name={`teaser_${locale}`}
                       rows={4}
-                      maxLength={800}
+                      maxLength={excursionTextLimits.teaser}
                       defaultValue={fieldLocaleValue(excursion?.teaser, locale)}
                       className={textareaClass}
                     />
@@ -308,7 +388,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
                     <textarea
                       name={`details_${locale}`}
                       rows={10}
-                      maxLength={8000}
+                      maxLength={excursionTextLimits.details}
                       defaultValue={fieldLocaleValue(excursion?.details, locale)}
                       className={textareaClass}
                     />
@@ -316,6 +396,33 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
                 </div>
               );
             })}
+          </div>
+
+          <div className="grid gap-2">
+            <Field label={labels.descriptionDocument} hint={labels.descriptionDocumentHint}>
+              <input
+                name="descriptionDocument"
+                type="file"
+                accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp"
+                className="w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-ivory"
+              />
+            </Field>
+            {excursion?.descriptionDocument && (
+              <>
+                <a
+                  href={`/api/staff/document?excursionId=${encodeURIComponent(excursion.id)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="break-all text-sm text-ivory underline"
+                >
+                  {excursion.descriptionDocument.fileName}
+                </a>
+                <label className="flex items-center gap-2 text-sm text-ivory">
+                  <input name="removeDescriptionDocument" type="checkbox" />
+                  {labels.removeDescriptionDocument}
+                </label>
+              </>
+            )}
           </div>
 
           <Field label={labels.price} hint={labels.priceHint}>
@@ -397,18 +504,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
             photos={photos}
             logoVariant={logoVariant}
             onPhotosChange={setPhotos}
-            labels={{
-              photos: labels.photos,
-              photosHint: labels.photosHint,
-              photoSize: labels.photoSize,
-              upload: labels.upload,
-              moveUp: labels.moveUp,
-              moveDown: labels.moveDown,
-              moveLeft: labels.moveLeft,
-              moveRight: labels.moveRight,
-              preview: labels.preview,
-              slot: labels.slot,
-            }}
+            labels={labels}
           />
 
           {clientError || state.error ? (
@@ -419,7 +515,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
 
           <button
             type="submit"
-            disabled={pending || uploading}
+            disabled={pending || uploading || translating}
             className="mt-1 inline-flex h-11 w-full items-center justify-center rounded-lg bg-burgundy px-4 text-sm font-semibold text-staff-on-accent hover:bg-burgundy-deep disabled:opacity-60"
           >
             {pending || uploading ? labels.saving : labels.save}

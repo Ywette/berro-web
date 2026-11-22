@@ -1,4 +1,4 @@
-import type { StaffOrder } from "@/types/dashboard";
+import type { OrderAssignments, StaffOrder } from "@/types/dashboard";
 
 const STORAGE_KEY = "berro-staff-assignments";
 
@@ -8,6 +8,7 @@ type AssignmentPatch = {
   guideId: string | null;
   guideName: string | null;
   vehicleId: string | null;
+  assignments?: OrderAssignments;
 };
 
 export function applyAssignmentPatches(orders: StaffOrder[]): StaffOrder[] {
@@ -24,50 +25,33 @@ export function applyAssignmentPatches(orders: StaffOrder[]): StaffOrder[] {
       assignedGuideId: patch.guideId,
       assignedGuideName: patch.guideName,
       assignedVehicleId: patch.vehicleId,
+      assignments: patch.assignments ?? order.assignments,
     };
   });
 }
 
-export function assignEmployee(
-  orders: StaffOrder[],
-  orderId: string,
-  role: "driver" | "guide",
-  employee: { id: string; fullName: string } | null,
-): StaffOrder[] {
-  const next = orders.map((order) => {
-    if (order.id !== orderId) return order;
-    if (role === "driver") {
-      return {
-        ...order,
-        assignedDriverId: employee?.id ?? null,
-        assignedDriverName: employee?.fullName ?? null,
-      };
-    }
-    return {
-      ...order,
-      assignedGuideId: employee?.id ?? null,
-      assignedGuideName: employee?.fullName ?? null,
-    };
-  });
-  const updated = next.find((order) => order.id === orderId);
-  if (updated) remember(updated);
-  return next;
+export function orderAssignments(order: StaffOrder): OrderAssignments {
+  return order.assignments ?? {
+    vehicleIds: order.assignedVehicleId ? [order.assignedVehicleId] : [],
+    drivers: order.assignedDriverId ? [{
+      id: order.assignedDriverId,
+      name: order.assignedDriverName,
+      vehicleId: order.assignedVehicleId,
+    }] : [],
+  };
 }
 
-export function assignTransport(
-  orders: StaffOrder[],
-  orderId: string,
-  vehicleId: string | null,
-): StaffOrder[] {
-  const next = orders.map((order) =>
-    order.id === orderId ? { ...order, assignedVehicleId: vehicleId } : order,
-  );
-  const updated = next.find((order) => order.id === orderId);
-  if (updated) remember(updated);
-  return next;
+export function withOrderAssignments(order: StaffOrder, assignments: OrderAssignments): StaffOrder {
+  return {
+    ...order,
+    assignments,
+    assignedDriverId: assignments.drivers[0]?.id ?? null,
+    assignedDriverName: assignments.drivers[0]?.name ?? null,
+    assignedVehicleId: assignments.vehicleIds[0] ?? null,
+  };
 }
 
-function remember(order: StaffOrder) {
+export function rememberOrderAssignments(order: StaffOrder) {
   const patches = readPatches();
   patches[order.id] = {
     driverId: order.assignedDriverId,
@@ -75,6 +59,7 @@ function remember(order: StaffOrder) {
     guideId: order.assignedGuideId,
     guideName: order.assignedGuideName,
     vehicleId: order.assignedVehicleId,
+    assignments: order.assignments,
   };
   writePatches(patches);
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useState } from "react";
 import {
   deleteCompanyDocumentAction,
   saveCompanyDocument,
@@ -11,6 +11,8 @@ import type { CompanyDocument } from "@/lib/content/company-document";
 type Labels = {
   empty: string;
   add: string;
+  addTravelLicence: string;
+  travelLicenceTitle: string;
   formTitle: string;
   formDescription: string;
   formDescriptionHint: string;
@@ -38,26 +40,29 @@ export function DocumentsBoardClient({
   documents: CompanyDocument[];
   labels: Labels;
 }) {
-  const [open, setOpen] = useState(false);
-  const [state, formAction, pending] = useActionState(saveCompanyDocument, initialState);
-  const formRef = useRef<HTMLFormElement>(null);
-
-  useEffect(() => {
-    if (state.success) {
-      setOpen(false);
-      formRef.current?.reset();
-    }
-  }, [state.success]);
+  const [mode, setMode] = useState<"document" | "licence" | null>(null);
+  const [state, formAction, pending] = useActionState(async (previous: DocumentActionState, formData: FormData) => {
+    const result = await saveCompanyDocument(previous, formData);
+    if (result.success) setMode(null);
+    return result;
+  }, initialState);
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={() => setMode("document")}
           className="rounded-full bg-burgundy px-4 py-2 text-sm font-medium text-staff-on-accent hover:bg-burgundy-deep"
         >
           {labels.add}
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("licence")}
+          className="rounded-full border border-staff-control px-4 py-2 text-sm font-medium text-ivory hover:border-staff-focus"
+        >
+          {labels.addTravelLicence}
         </button>
       </div>
 
@@ -117,10 +122,10 @@ export function DocumentsBoardClient({
         </div>
       )}
 
-      {open ? (
+      {mode ? (
         <div
           className="popup-enter-overlay fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-night/85 p-4 sm:p-8"
-          onClick={() => setOpen(false)}
+          onClick={() => setMode(null)}
         >
           <div
             role="dialog"
@@ -131,11 +136,11 @@ export function DocumentsBoardClient({
           >
             <div className="flex items-start justify-between gap-3">
               <h2 id="document-dialog-title" className="font-serif text-2xl tracking-wide">
-                {labels.add}
+                {mode === "licence" ? labels.addTravelLicence : labels.add}
               </h2>
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={() => setMode(null)}
                 aria-label={labels.close}
                 className="grid h-8 w-8 place-items-center rounded-full text-ivory hover:bg-staff-hover hover:text-ivory"
               >
@@ -143,14 +148,15 @@ export function DocumentsBoardClient({
               </button>
             </div>
 
-            <form ref={formRef} action={formAction} className="mt-5 grid gap-4">
+            <form action={formAction} className="mt-5 grid gap-4">
+              {mode === "licence" && <input type="hidden" name="travelLicence" value="on" />}
               <label className="grid gap-1.5 text-[11px] font-medium tracking-wide text-ivory">
                 {labels.formTitle}
                 <input
                   name="title"
                   required
                   maxLength={160}
-                  placeholder="Berro Travel licence"
+                  defaultValue={mode === "licence" ? labels.travelLicenceTitle : ""}
                   className="w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-ivory outline-none"
                 />
               </label>

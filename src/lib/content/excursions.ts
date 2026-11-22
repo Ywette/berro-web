@@ -65,7 +65,7 @@ export function parseExcursionRegions(value: unknown): ExcursionRegion[] {
 export const bookingContact = {
   email: "berro@berro.lv",
   phone: "+371 26406179",
-  website: "www.berro.lv",
+  licenceUrl: "https://registri.ptac.gov.lv/register/tourism-service-provider-licences/details/498/t-2024-60",
 };
 
 /** Rich detail pages for selected seeded excursions (listing data lives in data/excursions.json). */

@@ -1,4 +1,4 @@
-import { isOrderStatus, type StaffOrder } from "@/types/dashboard";
+import { isOrderStatus, type OrderAssignments, type StaffOrder } from "@/types/dashboard";
 import { tripDurationDays } from "@/lib/orders/trip-duration";
 
 export type OrderRow = {
@@ -40,6 +40,7 @@ export type OrderRow = {
   assigned_guide_id: string | null;
   assigned_guide_name: string | null;
   assigned_vehicle_id: string | null;
+  assignments?: OrderAssignments | null;
 };
 
 export function staffOrderFromRow(row: OrderRow): StaffOrder {
@@ -93,5 +94,6 @@ export function staffOrderFromRow(row: OrderRow): StaffOrder {
     assignedGuideId: row.assigned_guide_id,
     assignedGuideName: row.assigned_guide_name,
     assignedVehicleId: row.assigned_vehicle_id,
+    assignments: row.assignments ?? undefined,
   };
 }
