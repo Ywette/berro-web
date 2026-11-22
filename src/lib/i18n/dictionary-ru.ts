@@ -435,6 +435,7 @@ export const ru: Dictionary = {
     plannedDate: "Планируемая дата отправления",
     filterRegistrationOpen: "Запись открыта",
     filterAllRegistrations: "Все открытые записи",
+    filterDateHint: "Выберите одну дату или укажите вторую дату для выбора периода.",
     excursionUnavailable: "Эта экскурсия больше недоступна.",
     filterLabel: "Страна или регион",
     filterAll: "Все",

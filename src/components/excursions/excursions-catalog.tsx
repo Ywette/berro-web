@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { ExcursionCollage } from "@/components/excursions/excursion-collage";
+import { CalendarMonth, calendarDate, type CalendarMonthValue } from "@/components/ui/calendar-month";
 import { RevealList } from "@/components/ui/reveal-list";
 import { formatDate } from "@/lib/content/format-date";
 import {
@@ -13,6 +14,7 @@ import {
   excursionLogoPlateFromIndex,
   type ExcursionLogoVariant,
 } from "@/lib/content/managed-excursion";
+import { intlLocales, type Locale } from "@/lib/i18n/locale";
 
 export type ExcursionCardData = {
   slug: string;
@@ -37,6 +39,8 @@ type ExcursionsCatalogProps = {
   filterEmpty: string;
   filterRegistrationOpen: string;
   filterAllRegistrations: string;
+  filterDateHint: string;
+  locale: Locale;
   applyForLabel: string;
   regionLabels: Record<ExcursionRegion, string>;
 };
@@ -48,12 +52,16 @@ type CatalogFilterProps = {
   options: { value: string; label: string }[];
   selected: string[];
   onChange: (values: string[]) => void;
-  steadyGlow?: boolean;
 };
 
-function CatalogFilter({ group, label, allLabel, options, selected, onChange, steadyGlow }: CatalogFilterProps) {
+function FilterDropdown({ group, label, calendar, selection, children }: {
+  group: string;
+  label: string;
+  calendar?: boolean;
+  selection?: ReactNode;
+  children: ReactNode;
+}) {
   const dropdownRef = useRef<HTMLDetailsElement>(null);
-  const selectedOptions = options.filter(({ value }) => selected.includes(value));
 
   useEffect(() => {
     function closeOnOutsideClick(event: PointerEvent) {
@@ -69,14 +77,49 @@ function CatalogFilter({ group, label, allLabel, options, selected, onChange, st
 
   return (
     <div className="relative z-10 min-w-0 max-w-xs flex-1 basis-44 has-[details[open]]:z-20">
-      <details ref={dropdownRef} name={group} className={`excursion-filter group ${steadyGlow ? "excursion-filter-steady" : ""}`}>
+      <details
+        ref={dropdownRef}
+        name={group}
+        className={`excursion-filter group ${calendar ? "excursion-filter-steady" : ""}`}
+        onKeyDown={(event) => {
+          if (event.key === "Escape" && event.currentTarget.open) {
+            event.currentTarget.open = false;
+            event.currentTarget.querySelector("summary")?.focus();
+          }
+        }}
+      >
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl border border-white/20 bg-[#141418] px-4 py-3 text-sm font-semibold text-ivory hover:border-white/40 [&::-webkit-details-marker]:hidden">
           {label}
           <svg viewBox="0 0 16 16" className="size-4 shrink-0 group-open:rotate-180" aria-hidden="true">
             <path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </summary>
-        <fieldset aria-label={label} className="excursion-filter-options absolute inset-x-0 top-full mt-1 grid min-w-0 max-h-64 gap-1 overflow-y-auto rounded-xl border border-white/20 bg-[#141418] p-2 shadow-xl">
+        <fieldset
+          aria-label={label}
+          className={`excursion-filter-options absolute top-full mt-1 grid min-w-0 border ${calendar
+            ? "left-0 w-[min(100%,20rem)] gap-2 border-chrome-control bg-card p-2.5 shadow-2xl sm:p-3"
+            : "inset-x-0 max-h-64 gap-1 overflow-y-auto rounded-xl border-white/20 bg-[#141418] p-2 shadow-xl"}`}
+        >
+          {children}
+        </fieldset>
+      </details>
+      {selection}
+    </div>
+  );
+}
+
+function CatalogFilter({ group, label, allLabel, options, selected, onChange }: CatalogFilterProps) {
+  const selectedOptions = options.filter(({ value }) => selected.includes(value));
+  return (
+    <FilterDropdown
+      group={group}
+      label={label}
+      selection={selectedOptions.length > 0 && (
+        <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 px-1 text-sm font-semibold text-ivory">
+          {selectedOptions.map((option) => <li key={option.value}>{option.label}</li>)}
+        </ul>
+      )}
+    >
           {allLabel && (
             <button
               type="button"
@@ -99,18 +142,11 @@ function CatalogFilter({ group, label, allLabel, options, selected, onChange, st
               {optionLabel}
             </label>
           ))}
-        </fieldset>
-      </details>
-      {selectedOptions.length > 0 && (
-        <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 px-1 text-sm font-semibold text-ivory">
-          {selectedOptions.map((option) => <li key={option.value}>{option.label}</li>)}
-        </ul>
-      )}
-    </div>
+    </FilterDropdown>
   );
 }
 
-const allRegistrations = "all";
+type RegistrationSelection = "all" | { start: string; end?: string } | null;
 
 export function ExcursionsCatalog({
   items,
@@ -119,28 +155,46 @@ export function ExcursionsCatalog({
   filterEmpty,
   filterRegistrationOpen,
   filterAllRegistrations,
+  filterDateHint,
+  locale,
   applyForLabel,
   regionLabels,
 }: ExcursionsCatalogProps) {
   const filterGroup = useId();
   const [regions, setRegions] = useState<string[]>([]);
-  const [registrationSelection, setRegistrationSelection] = useState<string[]>([]);
+  const [registrationSelection, setRegistrationSelection] = useState<RegistrationSelection>(null);
   const hasOpenRegistrations = items.some((item) => item.isActive);
   const dates = [...new Set(items.flatMap((item) =>
     item.isActive && item.plannedDate ? [item.plannedDate] : [],
   ))].sort();
-  const allOpenSelected = registrationSelection.includes(allRegistrations);
-  const selectedDates = dates.filter((date) => registrationSelection.includes(date));
+  const [calendarView, setCalendarView] = useState<CalendarMonthValue>(() => {
+    const [year, month] = dates[0]?.split("-").map(Number) ?? [];
+    const today = new Date();
+    return { year: year ?? today.getFullYear(), month: month ?? today.getMonth() + 1 };
+  });
+  const selectedRange = registrationSelection === "all" ? null : registrationSelection;
+  const selectionLabel = registrationSelection === "all" ? filterAllRegistrations
+    : selectedRange ? selectedRange.end && selectedRange.end !== selectedRange.start
+      ? `${formatDate(selectedRange.start)} – ${formatDate(selectedRange.end)}`
+      : formatDate(selectedRange.start)
+    : "";
   const visible = items.filter((item) =>
     (!regions.length || item.regions?.some((value) => regions.includes(value))) &&
-    (!hasOpenRegistrations || (!allOpenSelected && !selectedDates.length) ||
-      (item.isActive && (allOpenSelected || (item.plannedDate && selectedDates.includes(item.plannedDate))))),
+    (!registrationSelection || (item.isActive && (
+      registrationSelection === "all" || (item.plannedDate &&
+        item.plannedDate >= registrationSelection.start &&
+        item.plannedDate <= (registrationSelection.end ?? registrationSelection.start))
+    ))),
   );
 
-  function changeRegistrationSelection(values: string[]) {
-    setRegistrationSelection(values.at(-1) === allRegistrations
-      ? [allRegistrations]
-      : values.filter((value) => value !== allRegistrations));
+  function selectRegistrationDay(day: number) {
+    const date = calendarDate(calendarView, day);
+    setRegistrationSelection((current) => {
+      if (!current || current === "all" || current.end) return { start: date };
+      return date < current.start
+        ? { start: date, end: current.start }
+        : { start: current.start, end: date };
+    });
   }
 
   return (
@@ -155,17 +209,36 @@ export function ExcursionsCatalog({
           onChange={setRegions}
         />
         {hasOpenRegistrations && (
-          <CatalogFilter
+          <FilterDropdown
             group={filterGroup}
             label={filterRegistrationOpen}
-            options={[
-              { value: allRegistrations, label: filterAllRegistrations },
-              ...dates.map((value) => ({ value, label: formatDate(value) })),
-            ]}
-            selected={registrationSelection}
-            onChange={changeRegistrationSelection}
-            steadyGlow
-          />
+            calendar
+            selection={<p className="mt-2 empty:hidden px-1 text-sm font-semibold text-ivory" aria-live="polite">{selectionLabel}</p>}
+          >
+            <p className="text-xs text-mist">{filterDateHint}</p>
+            <CalendarMonth
+              locale={intlLocales[locale]}
+              view={calendarView}
+              onViewChange={setCalendarView}
+              onDaySelect={selectRegistrationDay}
+              selected={selectedRange?.start}
+              rangeEnd={selectedRange?.end}
+              markedDates={new Set(dates)}
+            />
+            <div className="flex flex-wrap justify-between gap-1 border-t border-chrome-line pt-2">
+              <button type="button" onClick={() => setRegistrationSelection(null)} className="rounded-md px-2 py-1 text-xs text-mist hover:bg-chrome-hover">
+                {filterAll}
+              </button>
+              <button
+                type="button"
+                aria-pressed={registrationSelection === "all"}
+                onClick={() => setRegistrationSelection("all")}
+                className="rounded-md px-2 py-1 text-xs text-ivory hover:bg-chrome-hover aria-pressed:bg-burgundy aria-pressed:text-white"
+              >
+                {filterAllRegistrations}
+              </button>
+            </div>
+          </FilterDropdown>
         )}
       </div>
 

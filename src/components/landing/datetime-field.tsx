@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { CalendarMonth, calendarDate } from "@/components/ui/calendar-month";
 
 type DateTimeInputProps = {
   value: string;
@@ -27,7 +28,6 @@ type DateTimeInputProps = {
   "aria-label"?: string;
 };
 
-const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 const HOURS = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, "0"));
 const MINUTES = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, "0"));
 const FIVE_MINUTE_OPTIONS = MINUTES.filter((_, index) => index % 5 === 0);
@@ -55,15 +55,6 @@ export function formatDateTimeDisplay(value: string) {
   const month = String(parsed.month).padStart(2, "0");
   const date = `${day}-${month}-${parsed.year}`;
   return parsed.hour ? `${date} ${parsed.hour}:${parsed.minute}` : date;
-}
-
-function daysInMonth(year: number, month: number) {
-  return new Date(year, month, 0).getDate();
-}
-
-function startWeekday(year: number, month: number) {
-  const day = new Date(year, month - 1, 1).getDay();
-  return day === 0 ? 6 : day - 1;
 }
 
 function parseMin(min?: string) {
@@ -212,8 +203,6 @@ export function DateTimeInput({
     setOpen(false);
   }
 
-  const blanks = startWeekday(viewYear, viewMonth);
-  const totalDays = daysInMonth(viewYear, viewMonth);
   const display = formatDateTimeDisplay(value);
   const canConfirmSuggestion = suggestion && (!value || value < suggestion.value);
   const minuteOptions = minuteStep === 1 ? MINUTES : FIVE_MINUTE_OPTIONS;
@@ -272,79 +261,16 @@ export function DateTimeInput({
               onClick={(event) => event.stopPropagation()}
             >
               <div className="flex flex-col gap-2.5 sm:flex-row sm:gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="mb-2 flex items-center justify-between gap-2 sm:mb-3">
-                    <button
-                      type="button"
-                      className="rounded-md px-2 py-1 text-sm text-ivory hover:bg-chrome-hover"
-                      onClick={() => {
-                        if (viewMonth === 1) {
-                          setViewMonth(12);
-                          setViewYear((year) => year - 1);
-                        } else {
-                          setViewMonth((month) => month - 1);
-                        }
-                      }}
-                    >
-                      ‹
-                    </button>
-                    <p className="text-sm font-medium text-ivory">
-                      {String(viewMonth).padStart(2, "0")}.{viewYear}
-                    </p>
-                    <button
-                      type="button"
-                      className="rounded-md px-2 py-1 text-sm text-ivory hover:bg-chrome-hover"
-                      onClick={() => {
-                        if (viewMonth === 12) {
-                          setViewMonth(1);
-                          setViewYear((year) => year + 1);
-                        } else {
-                          setViewMonth((month) => month + 1);
-                        }
-                      }}
-                    >
-                      ›
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] text-mist sm:gap-1">
-                    {WEEKDAYS.map((day) => (
-                      <span key={day} className="py-1">
-                        {day}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="mt-1 grid grid-cols-7 gap-0.5 sm:gap-1">
-                    {Array.from({ length: blanks }).map((_, index) => (
-                      <span key={`blank-${index}`} />
-                    ))}
-                    {Array.from({ length: totalDays }, (_, index) => {
-                      const day = index + 1;
-                      const selected =
-                        draftDate?.year === viewYear &&
-                        draftDate?.month === viewMonth &&
-                        draftDate?.day === day;
-                      const disabled = isDisabledDay(viewYear, viewMonth, day);
-                      return (
-                        <button
-                          key={day}
-                          type="button"
-                          disabled={disabled}
-                          onClick={() => chooseDay(viewYear, viewMonth, day)}
-                          className={`h-7 rounded-md text-[11px] transition sm:h-8 sm:text-xs ${
-                            selected
-                              ? "bg-burgundy text-white"
-                              : disabled
-                                ? "cursor-not-allowed text-mist/40"
-                                : "text-ivory hover:bg-chrome-hover"
-                          }`}
-                        >
-                          {day}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                <CalendarMonth
+                  view={{ year: viewYear, month: viewMonth }}
+                  onViewChange={({ year, month }) => {
+                    setViewYear(year);
+                    setViewMonth(month);
+                  }}
+                  onDaySelect={(day) => chooseDay(viewYear, viewMonth, day)}
+                  selected={draftDate ? calendarDate(draftDate, draftDate.day) : undefined}
+                  isDayDisabled={(day) => isDisabledDay(viewYear, viewMonth, day)}
+                />
 
                 <div className="flex w-full shrink-0 flex-col border-t border-chrome-line pt-2 sm:w-[7.25rem] sm:border-t-0 sm:border-l sm:pt-0 sm:pl-3">
                   <p className="mb-2 text-[11px] text-mist">

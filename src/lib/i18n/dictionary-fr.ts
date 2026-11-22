@@ -435,6 +435,7 @@ export const fr: Dictionary = {
     plannedDate: "Date de départ prévue",
     filterRegistrationOpen: "Inscriptions ouvertes",
     filterAllRegistrations: "Toutes les inscriptions ouvertes",
+    filterDateHint: "Choisissez une date, ou une deuxième pour sélectionner une période.",
     excursionUnavailable: "Cette excursion n’est plus disponible.",
     filterLabel: "Pays ou région",
     filterAll: "Toutes",
