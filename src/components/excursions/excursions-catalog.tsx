@@ -120,28 +120,28 @@ function CatalogFilter({ group, label, allLabel, options, selected, onChange }: 
         </ul>
       )}
     >
-          {allLabel && (
-            <button
-              type="button"
-              onClick={() => onChange([])}
-              className="rounded-lg px-2 py-1.5 text-left text-sm text-mist hover:bg-white/10"
-            >
-              {allLabel}
-            </button>
-          )}
-          {options.map(({ value, label: optionLabel }) => (
-            <label key={value} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-ivory hover:bg-white/10">
-              <input
-                type="checkbox"
-                className="size-4 shrink-0 accent-burgundy"
-                checked={selected.includes(value)}
-                onChange={(event) => onChange(event.target.checked
-                  ? [...selected, value]
-                  : selected.filter((choice) => choice !== value))}
-              />
-              {optionLabel}
-            </label>
-          ))}
+      {allLabel && (
+        <button
+          type="button"
+          onClick={() => onChange([])}
+          className="rounded-lg px-2 py-1.5 text-left text-sm text-mist hover:bg-white/10"
+        >
+          {allLabel}
+        </button>
+      )}
+      {options.map(({ value, label: optionLabel }) => (
+        <label key={value} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-ivory hover:bg-white/10">
+          <input
+            type="checkbox"
+            className="size-4 shrink-0 accent-burgundy"
+            checked={selected.includes(value)}
+            onChange={(event) => onChange(event.target.checked
+              ? [...selected, value]
+              : selected.filter((choice) => choice !== value))}
+          />
+          {optionLabel}
+        </label>
+      ))}
     </FilterDropdown>
   );
 }
@@ -169,8 +169,11 @@ export function ExcursionsCatalog({
   ))].sort();
   const [calendarView, setCalendarView] = useState<CalendarMonthValue>(() => {
     const [year, month] = dates[0]?.split("-").map(Number) ?? [];
-    const today = new Date();
-    return { year: year ?? today.getFullYear(), month: month ?? today.getMonth() + 1 };
+    if (year && month) return { year, month };
+    const [currentMonth, currentYear] = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Europe/Riga", month: "numeric", year: "numeric",
+    }).format(new Date()).split("/").map(Number);
+    return { year: currentYear, month: currentMonth };
   });
   const selectedRange = registrationSelection === "all" ? null : registrationSelection;
   const selectionLabel = registrationSelection === "all" ? filterAllRegistrations

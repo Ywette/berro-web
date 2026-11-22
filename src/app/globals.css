@@ -391,10 +391,7 @@ input.datetime-input::-webkit-calendar-picker-indicator {
 @keyframes field-error-blink {
   0%,
   49.999% {
-    filter:
-      drop-shadow(0 2px 3px rgba(245, 198, 90, 0.58))
-      drop-shadow(0 5px 10px rgba(245, 198, 90, 0.42))
-      drop-shadow(0 0 14px rgba(245, 198, 90, 0.3));
+    filter: var(--field-error-glow);
   }
   50%,
   100% {
@@ -415,6 +412,10 @@ input.datetime-input::-webkit-calendar-picker-indicator {
 }
 
 .field-error-blink {
+  --field-error-glow:
+    drop-shadow(0 0 4px rgb(255 220 125 / 0.95))
+    drop-shadow(0 0 10px rgb(255 205 91 / 0.75))
+    drop-shadow(0 0 20px rgb(245 177 59 / 0.5));
   position: relative;
   z-index: 40;
   overflow: visible;
@@ -488,9 +489,7 @@ input.datetime-input::-webkit-calendar-picker-indicator {
 
   .field-error-blink {
     animation: none;
-    filter:
-      drop-shadow(0 2px 3px rgba(245, 198, 90, 0.58))
-      drop-shadow(0 5px 10px rgba(245, 198, 90, 0.42));
+    filter: var(--field-error-glow);
   }
 
   .field-ready-glow {
