@@ -248,15 +248,15 @@ export async function saveManagedExcursion(
   let uploaded: UploadedCompanyFile | undefined;
   try {
     const id = String(formData.get("id") ?? "").trim();
+    const removalPath = id ? String(formData.get("removeDescriptionDocument") ?? "").trim() : "";
     const file = formData.get("descriptionDocument");
-    if (file instanceof File && (file.name || file.size)) {
+    if (file instanceof File && file.size > 0) {
       uploaded = await uploadCompanyDocumentFile(file, { requirePrivateStorage: true });
     }
-    const descriptionDocument = uploaded ??
-      (id && formData.get("removeDescriptionDocument") === "on" ? null : undefined);
+    const descriptionDocument = uploaded ?? (removalPath ? null : undefined);
     const input = { ...parsed, descriptionDocument };
     if (id) {
-      const updated = await updateManagedExcursionById(id, input);
+      const updated = await updateManagedExcursionById(id, input, descriptionDocument === null ? removalPath : undefined);
       if (!updated) {
         if (uploaded) await deleteCompanyDocumentFile(uploaded.filePath);
         return { error: descriptionDocument === undefined

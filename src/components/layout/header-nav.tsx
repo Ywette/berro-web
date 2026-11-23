@@ -1,6 +1,7 @@
 "use client";
 
 import { UserButton } from "@clerk/nextjs";
+import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 import { usePathname } from "next/navigation";
 import { NavLinks } from "@/components/layout/nav-links";
@@ -13,6 +14,17 @@ export function isStaffPath(pathname: string) {
     pathname.startsWith("/staff") ||
     pathname.startsWith("/employees") ||
     pathname.startsWith("/drivers")
+  );
+}
+
+export function HeaderQuoteLink({ label }: { label: string }) {
+  const pathname = usePathname();
+  if (isStaffPath(pathname)) return null;
+
+  return (
+    <Link href="/#book" className="order-button hidden sm:inline-flex sm:px-3.5 sm:py-1.5 sm:text-sm">
+      {label}
+    </Link>
   );
 }
 

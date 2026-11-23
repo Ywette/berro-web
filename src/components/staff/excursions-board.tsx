@@ -51,6 +51,8 @@ export async function ExcursionsBoard() {
         descriptionDocument: labels.excursionDescriptionDocument,
         descriptionDocumentHint: labels.documentFormFileHint,
         removeDescriptionDocument: labels.removeExcursionDescriptionDocument,
+        undoDescriptionDocumentRemoval: labels.undoExcursionDescriptionDocumentRemoval,
+        descriptionDocumentRemovalPending: labels.excursionDescriptionDocumentRemovalPending,
         price: labels.excursionFormPrice,
         priceHint: labels.excursionFormPriceHint,
         duration: labels.excursionFormDuration,

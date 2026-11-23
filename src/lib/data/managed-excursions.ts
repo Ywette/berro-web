@@ -57,10 +57,11 @@ export async function createManagedExcursion(
 export async function updateManagedExcursionById(
   id: string,
   input: Omit<ManagedExcursion, "id" | "slug">,
+  removalPath?: string,
 ): Promise<ManagedExcursion | null> {
   const existing = await readExcursionStore();
   const current = existing.find((item) => item.id === id);
-  if (!current) return null;
+  if (!current || (removalPath && current.descriptionDocument?.filePath !== removalPath)) return null;
   const next: ManagedExcursion = {
     ...current,
     title: input.title,

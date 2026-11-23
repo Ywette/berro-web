@@ -118,6 +118,18 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
         </div>
       ) : null}
 
+      {excursion.descriptionDocument && (
+        <p className="mt-6 text-base/7 text-ivory">
+          {text.planAvailable}{" "}
+          <a
+            href={`/excursions/${encodeURIComponent(excursion.slug)}/plan`}
+            className="text-champagne underline underline-offset-4 hover:text-ivory"
+          >
+            {text.openPlan}
+          </a>
+        </p>
+      )}
+
       {details?.highlights ? (
         <ul className="mt-8 grid gap-3">
           {details.highlights.map((item) => (

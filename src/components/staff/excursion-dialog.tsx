@@ -45,6 +45,8 @@ export type ExcursionDialogLabels = {
   descriptionDocument: string;
   descriptionDocumentHint: string;
   removeDescriptionDocument: string;
+  undoDescriptionDocumentRemoval: string;
+  descriptionDocumentRemovalPending: string;
   price: string;
   priceHint: string;
   duration: string;
@@ -124,6 +126,7 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
   const [clientError, setClientError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [translating, setTranslating] = useState(false);
+  const [removeDocument, setRemoveDocument] = useState(false);
   const [translationFeedback, setTranslationFeedback] = useState<{ message: string; error: boolean } | null>(null);
   const [contentLocale, setContentLocale] = useState<Locale>("lv");
   const [registrationOpen, setRegistrationOpen] = useState(excursion?.isActive ?? false);
@@ -403,12 +406,13 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
               <input
                 name="descriptionDocument"
                 type="file"
+                disabled={removeDocument}
                 accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp"
-                className="w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-ivory"
+                className="w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-ivory disabled:opacity-60"
               />
             </Field>
             {excursion?.descriptionDocument && (
-              <>
+              <div className="flex flex-wrap items-center gap-3">
                 <a
                   href={`/api/staff/document?excursionId=${encodeURIComponent(excursion.id)}`}
                   target="_blank"
@@ -417,11 +421,21 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
                 >
                   {excursion.descriptionDocument.fileName}
                 </a>
-                <label className="flex items-center gap-2 text-sm text-ivory">
-                  <input name="removeDescriptionDocument" type="checkbox" />
-                  {labels.removeDescriptionDocument}
-                </label>
-              </>
+                <button
+                  type="button"
+                  disabled={pending || uploading}
+                  onClick={() => setRemoveDocument((remove) => !remove)}
+                  className="rounded-full border border-staff-danger-line px-3 py-1.5 text-xs font-medium text-staff-danger disabled:opacity-60"
+                >
+                  {removeDocument ? labels.undoDescriptionDocumentRemoval : labels.removeDescriptionDocument}
+                </button>
+                {removeDocument && (
+                  <>
+                    <input type="hidden" name="removeDescriptionDocument" value={excursion.descriptionDocument.filePath} />
+                    <p role="status" className="w-full text-sm text-mist">{labels.descriptionDocumentRemovalPending}</p>
+                  </>
+                )}
+              </div>
             )}
           </div>
 

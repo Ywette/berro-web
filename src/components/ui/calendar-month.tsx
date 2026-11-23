@@ -66,10 +66,13 @@ export function CalendarMonth({
           const endpoint = date === selected || date === rangeEnd;
           const inRange = Boolean(selected && rangeEnd && date > selected && date < rangeEnd);
           const disabled = isDayDisabled?.(day);
+          const marked = markedDates?.has(date);
           const color = endpoint ? "bg-burgundy text-white"
             : disabled ? "cursor-not-allowed text-mist/40"
               : inRange ? "bg-burgundy/25 text-ivory hover:bg-burgundy/40"
-                : "text-ivory hover:bg-chrome-hover";
+                : marked ? "bg-champagne text-night hover:bg-champagne/85"
+                  : "text-ivory hover:bg-chrome-hover";
+          const marker = marked ? (endpoint || inRange ? "font-semibold inset-ring inset-ring-champagne" : "font-semibold") : "";
 
           return (
             <button
@@ -79,7 +82,7 @@ export function CalendarMonth({
               aria-label={dayFormat.format(new Date(Date.UTC(year, month - 1, day)))}
               aria-pressed={endpoint || inRange}
               onClick={() => onDaySelect(day)}
-              className={`h-7 rounded-md text-[11px] transition sm:h-8 sm:text-xs ${color} ${markedDates?.has(date) ? "font-semibold underline underline-offset-2" : ""}`}
+              className={`h-7 rounded-md text-[11px] transition sm:h-8 sm:text-xs ${color} ${marker}`}
             >
               {day}
             </button>

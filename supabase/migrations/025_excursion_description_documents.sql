@@ -1,2 +1,2 @@
 alter table public.excursions
-  add column if not exists description_document jsonb;
+  add column if not exists excoursion_plan jsonb;

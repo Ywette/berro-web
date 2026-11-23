@@ -109,8 +109,8 @@ export async function updateManagedExcursion(
     .eq("id", excursion.id);
   if (excursion.descriptionDocument !== undefined) {
     query = previousDocumentPath
-      ? query.eq("description_document->>filePath", previousDocumentPath)
-      : query.is("description_document", null);
+      ? query.eq("excoursion_plan->>filePath", previousDocumentPath)
+      : query.is("excoursion_plan", null);
   }
   const { data, error } = await query.select("*").maybeSingle();
 
@@ -131,7 +131,7 @@ export async function deleteManagedExcursion(id: string): Promise<boolean> {
 
   const { data, error } = await supabase.from(TABLE).delete().eq("id", id).select("*").maybeSingle();
   if (error) throw new Error(error.message);
-  const file = (data as ExcursionRow | null)?.description_document;
+  const file = (data as ExcursionRow | null)?.excoursion_plan;
   if (file) await deleteCompanyDocumentFile(file.filePath);
   return data !== null;
 }

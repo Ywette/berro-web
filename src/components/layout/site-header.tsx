@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Show } from "@clerk/nextjs";
-import { AccountMenu, HeaderNav, MobileMenu } from "@/components/layout/header-nav";
+import { AccountMenu, HeaderNav, HeaderQuoteLink, MobileMenu } from "@/components/layout/header-nav";
 import { LanguageSwitch } from "@/components/layout/language-switch";
 import { getDictionary, getLocale } from "@/lib/i18n/get-dictionary";
 
@@ -59,12 +59,7 @@ export async function SiteHeader() {
             <HeaderNav publicLinks={publicLinks} staffLinks={staffLinks} />
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <Link
-              href="/#book"
-              className="order-button hidden sm:inline-flex sm:px-3.5 sm:py-1.5 sm:text-[0.5rem]/3"
-            >
-              {dictionary.nav.getOffer}
-            </Link>
+            <HeaderQuoteLink label={dictionary.nav.getOffer} />
             <LanguageSwitch locale={locale} label={dictionary.nav.language} />
             <Suspense fallback={signInLink}>
               <Show when="signed-in" fallback={signInLink}>
