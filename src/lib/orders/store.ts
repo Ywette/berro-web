@@ -123,6 +123,8 @@ export function staffOrderToRow(order: StaffOrder, input: QuoteOrderInput) {
     requestor_phone: order.requestorPhone,
     heard_about: order.heardAbout,
     heard_about_detail: order.heardAboutDetail,
+    ...(order.waterRequested ? { water_requested: true } : {}),
+    ...(order.requestNotes ? { request_notes: order.requestNotes } : {}),
     travel_type: order.travelType,
     travel_type_detail: order.travelTypeDetail,
     trip: input.trip?.trim() || null,

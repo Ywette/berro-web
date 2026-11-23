@@ -1,7 +1,7 @@
-﻿import { Resend } from "resend";
+import { Resend } from "resend";
 import { formatDate } from "@/lib/content/format-date";
 import { parseLocale } from "@/lib/i18n/locale";
-import { formatRouteAddress } from "@/lib/orders/format-address";
+import { escapeHtml, orderEmailRoutePoints, orderEmailRouteTimeline } from "@/lib/email/order-route";
 import type { QuoteOrderInput } from "@/lib/orders/session-orders";
 import type { StaffOrder } from "@/types/dashboard";
 
@@ -48,11 +48,6 @@ const copy = {
   },
 } as const;
 
-function escapeHtml(value: string) {
-  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
-}
-
 function siteUrl() {
   const configured = process.env.APP_URL?.trim();
   const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
@@ -77,9 +72,7 @@ export async function sendOrderThankYouEmail(order: StaffOrder, input?: QuoteOrd
   const excursionUrl = excursionSlug ? `${siteUrl()}/excursions/${encodeURIComponent(excursionSlug)}` : null;
   const name = order.requestorName?.trim();
   const greeting = name ? `${t.hello} ${name},` : t.greeting;
-  const routePoints = [order.origin, ...(order.stops ?? []).map((stop) => stop.name),
-    order.destination, order.returnTo].filter((place): place is string => Boolean(place && place !== "—"))
-    .map(formatRouteAddress);
+  const routePoints = orderEmailRoutePoints(order);
   const rows = [
     [t.departure, order.departureOn && formatDate(order.departureOn)],
     [t.returning, order.returnOn && formatDate(order.returnOn)],
@@ -95,23 +88,7 @@ export async function sendOrderThankYouEmail(order: StaffOrder, input?: QuoteOrd
   const rowsHtml = rows.map(([label, value]) =>
     `<tr><td style="padding:7px 8px 7px 0;color:#777;font-size:13px;line-height:1.4;vertical-align:top">${escapeHtml(label)}</td><td style="padding:7px 0;color:#242124;font-size:14px;font-weight:bold;line-height:1.4;vertical-align:top;white-space:nowrap">${escapeHtml(value)}</td></tr>`
   ).join("");
-  const routeHtml = routePoints.map((point, index) => {
-    const last = index === routePoints.length - 1;
-    const first = index === 0;
-    const color = first ? "#8bcdae" : last ? "#922b48" : "#bd9c68";
-    const marker = first
-      ? '<span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:#8bcdae;color:#18382e;font-size:12px;line-height:22px;text-align:center">●</span>'
-      : last
-        ? '<span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:#922b48;color:#ffffff;font-size:14px;line-height:22px;text-align:center">&#9873;</span>'
-        : `<span style="color:${color};font-size:19px;line-height:24px">●</span>`;
-    return `<tr><td width="30" align="center" valign="top" style="width:30px;padding:0;vertical-align:top">
-      <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:30px"><tr>
-        <td align="center" style="height:24px;line-height:24px">${marker}</td>
-      </tr><tr><td align="center" style="height:${last ? "0" : "20"}px;line-height:0;font-size:0">
-        ${last ? "" : '<div style="width:1px;height:20px;background:#c7b7a2;font-size:0;line-height:0">&nbsp;</div>'}
-      </td></tr></table></td>
-      <td valign="top" style="padding:3px 8px 16px 7px;color:#242124;font-size:14px;line-height:1.4;overflow-wrap:anywhere">${escapeHtml(point)}</td></tr>`;
-  }).join("");
+  const routeHtml = orderEmailRouteTimeline(routePoints);
   const logo = escapeHtml(`${siteUrl()}/brand/berro-travel-logo-dark.png`);
   const html = `<!doctype html><html lang="${language}"><body style="margin:0;padding:0;background:#f3f1ef;font-family:Arial,sans-serif;color:#242124">
 <table role="presentation" style="width:100%;border-collapse:collapse;background:#f3f1ef"><tr><td align="center" style="padding:28px 12px">

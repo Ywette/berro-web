@@ -4,7 +4,7 @@ import {
   sanitizeContactPhone,
 } from "@/lib/contact/validation";
 import { insertOrder } from "@/lib/orders/store";
-import type { QuoteOrderInput, QuoteTripMode } from "@/lib/orders/session-orders";
+import { ORDER_REQUEST_NOTES_MAX_LENGTH, type QuoteOrderInput, type QuoteTripMode } from "@/lib/orders/session-orders";
 import type { StaffOrder } from "@/types/dashboard";
 import { getLocale } from "@/lib/i18n/get-dictionary";
 import { parseLocale } from "@/lib/i18n/locale";
@@ -30,6 +30,10 @@ export async function submitQuoteOrderFromFormData(
   const email = text(formData, "email")?.trim() || undefined;
   const requestedLocale = text(formData, "locale");
   const locale = requestedLocale ? parseLocale(requestedLocale) : await getLocale();
+  const requestNotes = text(formData, "requestNotes")?.trim();
+  if (requestNotes && requestNotes.length > ORDER_REQUEST_NOTES_MAX_LENGTH) {
+    return { ok: false, error: dictionaries[locale].hero.requestNotesTooLong };
+  }
 
   const input: QuoteOrderInput = {
     locale,
@@ -44,6 +48,8 @@ export async function submitQuoteOrderFromFormData(
     phone,
     heardAbout: text(formData, "heardAbout"),
     heardAboutDetail: text(formData, "heardAboutDetail"),
+    waterRequested: text(formData, "waterRequested"),
+    requestNotes,
     travelType: text(formData, "travelType"),
     travelTypeDetail: text(formData, "travelTypeDetail"),
     pickupPlace: text(formData, "pickupPlace"),

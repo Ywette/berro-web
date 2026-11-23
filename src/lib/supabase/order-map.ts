@@ -22,6 +22,8 @@ export type OrderRow = {
   requestor_phone: string | null;
   heard_about: string | null;
   heard_about_detail: string | null;
+  water_requested?: boolean | null;
+  request_notes?: string | null;
   travel_type: string | null;
   travel_type_detail: string | null;
   plan_document: string | null;
@@ -72,6 +74,8 @@ export function staffOrderFromRow(row: OrderRow): StaffOrder {
     requestorPhone: row.requestor_phone,
     heardAbout: row.heard_about,
     heardAboutDetail: row.heard_about_detail,
+    waterRequested: row.water_requested === true,
+    requestNotes: row.request_notes ?? null,
     travelType: row.travel_type,
     travelTypeDetail: row.travel_type_detail,
     planDocument: row.plan_document,

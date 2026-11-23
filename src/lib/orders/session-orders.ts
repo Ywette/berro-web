@@ -4,6 +4,7 @@ import { decodeStops, totalWaitingMinutes } from "@/lib/orders/stops";
 import { isOrderStatus, type StaffOrder } from "@/types/dashboard";
 
 export const SESSION_ORDERS_KEY = "berro-crm-demo-orders";
+export const ORDER_REQUEST_NOTES_MAX_LENGTH = 2000;
 
 export type QuoteTripMode = "oneWay" | "roundTrip";
 
@@ -17,6 +18,8 @@ export type QuoteOrderInput = {
   phone?: string;
   heardAbout?: string;
   heardAboutDetail?: string;
+  waterRequested?: string;
+  requestNotes?: string;
   travelType?: string;
   travelTypeDetail?: string;
   pickupPlace?: string;
@@ -174,6 +177,8 @@ export function orderFromQuoteInput(input: QuoteOrderInput): StaffOrder {
     requestorPhone: input.phone?.trim() || null,
     heardAbout: input.heardAbout?.trim() || null,
     heardAboutDetail: input.heardAboutDetail?.trim() || null,
+    waterRequested: input.waterRequested === "true",
+    requestNotes: input.requestNotes?.trim() || null,
     travelType: input.travelType?.trim() || null,
     travelTypeDetail: input.travelTypeDetail?.trim() || null,
     planDocument: input.planDocument?.trim() || null,

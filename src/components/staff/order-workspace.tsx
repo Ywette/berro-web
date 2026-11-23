@@ -18,6 +18,7 @@ import { employeeChoices, vehicleChoices, vehicleLabel } from "@/lib/staff/avail
 import type { OrderAssignments, OrderStatus, StaffOrder } from "@/types/dashboard";
 import { formatTripDuration, tripDurationDays } from "@/lib/orders/trip-duration";
 import { formatDate, formatRigaTimestamp } from "@/lib/content/format-date";
+import { formatWaterPrice } from "@/lib/content/format-price";
 import { formatDuration } from "@/lib/quote";
 import { formatRouteAddress } from "@/lib/orders/format-address";
 import { toggleOrderStatus } from "@/lib/orders/statuses";
@@ -352,6 +353,17 @@ export function OrderWorkspace({ id, initialOrder, userId, vehicles, employees, 
             </dl>
           ))}
         </div>
+        {order.waterRequested && (
+          <p className="text-sm">
+            {dictionary.hero.waterPriceLabel}: {formatWaterPrice(order.passengerCount, dictionary.locale)}
+          </p>
+        )}
+        {order.requestNotes && (
+          <div>
+            <p className="text-sm text-mist">{dictionary.hero.requestNotes}</p>
+            <p className="whitespace-pre-wrap break-words">{order.requestNotes}</p>
+          </div>
+        )}
         {order.planDocument && (
           <div>
             <p className="text-sm text-mist">{dictionary.pricing.planDocument}</p>

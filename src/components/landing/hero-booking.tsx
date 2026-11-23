@@ -440,6 +440,8 @@ export function HeroBooking({
       phone: contact.phone,
       heardAbout: contact.heardAbout,
       heardAboutDetail: contact.heardAboutDetail,
+      waterRequested: contact.waterRequested ? "true" : undefined,
+      requestNotes: contact.requestNotes,
       travelType: isExcursionOrder ? "agencyTourism" : travelType || undefined,
       travelTypeDetail:
         !isExcursionOrder && travelType === "other" ? travelTypeDetail.trim() || undefined : undefined,
@@ -1056,6 +1058,7 @@ export function HeroBooking({
       </form>
 
       <OfferRequestDialog
+        passengerCount={totalPassengers(draft.passengers)}
         open={dialogOpen}
         phase={phase}
         onClose={closeDialog}

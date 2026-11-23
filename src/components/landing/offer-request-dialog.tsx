@@ -2,6 +2,8 @@
 
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { useDictionary } from "@/components/i18n/locale-provider";
+import { formatWaterPrice } from "@/lib/content/format-price";
+import { ORDER_REQUEST_NOTES_MAX_LENGTH } from "@/lib/orders/session-orders";
 import {
   isValidContactEmail,
   isValidContactName,
@@ -22,9 +24,12 @@ export type OfferContactSubmit = {
   phone: string;
   heardAbout?: QuoteHeardAboutSource;
   heardAboutDetail?: string;
+  waterRequested: boolean;
+  requestNotes?: string;
 };
 
 type OfferRequestDialogProps = {
+  passengerCount: number;
   open: boolean;
   phase: "contact" | "sent";
   onClose: () => void;
@@ -37,10 +42,10 @@ type ContactFieldError =
   | "email"
   | "phone"
   | "contact"
-  | "heardAbout"
   | "heardAboutOther";
 
 export function OfferRequestDialog({
+  passengerCount,
   open,
   phase,
   onClose,
@@ -56,6 +61,8 @@ export function OfferRequestDialog({
   const [phone, setPhone] = useState("");
   const [heardAbout, setHeardAbout] = useState<QuoteHeardAboutSource | "">("");
   const [heardAboutDetail, setHeardAboutDetail] = useState("");
+  const [waterRequested, setWaterRequested] = useState(false);
+  const [requestNotes, setRequestNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [contactInvalid, setContactInvalid] = useState<Set<ContactFieldError>>(new Set());
@@ -79,6 +86,8 @@ export function OfferRequestDialog({
       setPhone("");
       setHeardAbout("");
       setHeardAboutDetail("");
+      setWaterRequested(false);
+      setRequestNotes("");
     }
   }, [open, phase]);
 
@@ -121,6 +130,8 @@ export function OfferRequestDialog({
         heardAbout: isQuoteHeardAboutSource(heardAbout) ? heardAbout : undefined,
         heardAboutDetail:
           heardAbout === "other" && nextDetail.length >= 2 ? nextDetail : undefined,
+        waterRequested,
+        requestNotes: requestNotes.trim() || undefined,
       });
     } catch (caught) {
       setSubmitError(
@@ -247,73 +258,76 @@ export function OfferRequestDialog({
               </label>
             </div>
 
-            <fieldset className="grid gap-2">
-              <legend className="text-[11px] font-medium tracking-wide text-ivory/80">
-                {dictionary.hero.heardAboutLabel}
-              </legend>
-              <div
-                className={`grid grid-cols-1 gap-1.5 sm:grid-cols-2 ${
-                  contactInvalid.has("heardAbout") ? "field-error-blink rounded-lg p-1" : ""
-                }`}
+            <label className="grid gap-1.5 text-[11px] font-medium tracking-wide text-ivory/80">
+              {dictionary.hero.heardAboutLabel}
+              <select
+                name="heardAbout"
+                value={heardAbout}
+                onChange={(event) => {
+                  const value = event.currentTarget.value;
+                  setHeardAbout(isQuoteHeardAboutSource(value) ? value : "");
+                  if (value !== "other") setHeardAboutDetail("");
+                  clearContactError("heardAboutOther");
+                }}
+                className={inputClass()}
               >
+                <option value="">{dictionary.hero.heardAboutPlaceholder}</option>
                 {quoteHeardAboutSources.map((source) => (
-                  <label
-                    key={source}
-                    className="flex cursor-pointer items-center gap-2.5 py-1 text-sm text-ivory/90 hover:text-white"
-                  >
-                    <input
-                      type="radio"
-                      name="heardAbout"
-                      value={source}
-                      checked={heardAbout === source}
-                      aria-invalid={contactInvalid.has("heardAbout") || undefined}
-                      onChange={() => {
-                        setHeardAbout(source);
-                        setContactInvalid((current) => {
-                          const next = new Set(current);
-                          next.delete("heardAbout");
-                          next.delete("heardAboutOther");
-                          return next;
-                        });
-                      }}
-                      className="h-4 w-4 border-white/30 bg-transparent text-burgundy focus:ring-burgundy/40"
-                    />
-                    <span className="leading-snug">{dictionary.hero.heardAboutOptions[source]}</span>
-                  </label>
+                  <option key={source} value={source}>{dictionary.hero.heardAboutOptions[source]}</option>
                 ))}
-              </div>
-              {heardAbout === "other" ? (
-                <input
-                  value={heardAboutDetail}
-                  placeholder={dictionary.hero.heardAboutOtherPlaceholder}
-                  aria-label={dictionary.hero.heardAboutOptions.other}
-                  aria-invalid={contactInvalid.has("heardAboutOther") || undefined}
-                  onChange={(event) => {
-                    setHeardAboutDetail(event.target.value);
-                    setContactInvalid((current) => {
-                      const next = new Set(current);
-                      next.delete("heardAboutOther");
-                      return next;
-                    });
-                  }}
-                  className={inputClass(contactInvalid.has("heardAboutOther"))}
-                />
-              ) : null}
-            </fieldset>
+              </select>
+            </label>
+            {heardAbout === "other" && (
+              <input
+                value={heardAboutDetail}
+                placeholder={dictionary.hero.heardAboutOtherPlaceholder}
+                aria-label={dictionary.hero.heardAboutOptions.other}
+                aria-invalid={contactInvalid.has("heardAboutOther") || undefined}
+                onChange={(event) => {
+                  setHeardAboutDetail(event.target.value);
+                  clearContactError("heardAboutOther");
+                }}
+                className={inputClass(contactInvalid.has("heardAboutOther"))}
+              />
+            )}
+
+            <label className="flex cursor-pointer items-center gap-2.5 text-sm text-ivory">
+              <input
+                type="checkbox"
+                checked={waterRequested}
+                onChange={(event) => setWaterRequested(event.currentTarget.checked)}
+                className="size-4 shrink-0 accent-burgundy"
+              />
+              {dictionary.hero.requestWater}
+            </label>
+            {waterRequested && (
+              <p role="status" className="text-sm font-medium text-ivory">
+                {dictionary.hero.waterPriceLabel}: {formatWaterPrice(passengerCount, dictionary.locale)}
+              </p>
+            )}
+
+            <label className="grid gap-1.5 text-[11px] font-medium tracking-wide text-ivory/80">
+              {dictionary.hero.requestNotes}
+              <textarea
+                value={requestNotes}
+                onChange={(event) => setRequestNotes(event.currentTarget.value)}
+                rows={3}
+                maxLength={ORDER_REQUEST_NOTES_MAX_LENGTH}
+                className="w-full resize-y rounded-xl border border-transparent bg-white/95 px-3.5 py-2.5 text-sm text-neutral-900 outline-none focus:ring-2 focus:ring-burgundy/30"
+              />
+            </label>
 
             {contactInvalid.size > 0 ? (
               <p role="alert" className="text-xs text-red-300">
                 {contactInvalid.has("heardAboutOther")
                   ? dictionary.hero.heardAboutOtherError
-                  : contactInvalid.has("heardAbout")
-                    ? dictionary.hero.heardAboutError
-                    : contactInvalid.has("name")
-                      ? dictionary.contact.nameError
-                      : contactInvalid.has("phone")
-                        ? dictionary.contact.phoneError
-                        : contactInvalid.has("email")
-                          ? dictionary.contact.emailError
-                          : dictionary.hero.contactEmailOrPhone}
+                  : contactInvalid.has("name")
+                    ? dictionary.contact.nameError
+                    : contactInvalid.has("phone")
+                      ? dictionary.contact.phoneError
+                      : contactInvalid.has("email")
+                        ? dictionary.contact.emailError
+                        : dictionary.hero.contactEmailOrPhone}
               </p>
             ) : null}
             {submitError ? (

@@ -41,6 +41,8 @@ export type StaffOrder = {
   requestorPhone: string | null;
   heardAbout: string | null;
   heardAboutDetail: string | null;
+  waterRequested?: boolean;
+  requestNotes?: string | null;
   travelType: string | null;
   travelTypeDetail: string | null;
   planDocument: string | null;
