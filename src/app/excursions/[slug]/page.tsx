@@ -59,6 +59,7 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
   const route = pickLocalizedText(excursion.route, locale);
   const teaser = pickLocalizedText(excursion.teaser, locale);
   const detailsText = pickLocalizedText(excursion.details, locale);
+  const days = excursion.durationDays;
   const coverImage = excursionCoverImage(excursion);
   const excursions = await listManagedExcursions();
   const listIndex = excursions.findIndex((item) => item.slug === slug);
@@ -83,9 +84,9 @@ async function ExcursionDetails({ params }: { params: PageProps<"/excursions/[sl
         </p>
       ) : null}
 
-      {teaser ? (
-        <p className="mt-4 text-base/7 text-ivory/90">{teaser}</p>
-      ) : null}
+      <p className="mt-4 text-base/7 text-ivory/90">
+        {text.durationLabel}: {days == null ? text.durationUnset : text.days(days)}
+      </p>
 
       {excursion.images.length > 0 && (
         <ExcursionCollage

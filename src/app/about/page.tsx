@@ -28,7 +28,7 @@ export default async function AboutPage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/#book"
-              className="order-button text-base sm:text-xl"
+              className="order-button text-xs sm:text-sm"
             >
               {dictionary.nav.getOffer}
             </Link>

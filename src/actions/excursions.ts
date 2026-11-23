@@ -138,7 +138,6 @@ async function parseExcursionForm(
   | {
       title: Localized;
       route: Localized;
-      teaser: Localized;
       details: Localized;
       regions: ExcursionRegion[];
       price: number | null;
@@ -152,7 +151,6 @@ async function parseExcursionForm(
 > {
   const title = localizedTextFromForm(formData, "title");
   const route = localizedTextFromForm(formData, "route");
-  const teaser = localizedTextFromForm(formData, "teaser");
   const details = localizedTextFromForm(formData, "details");
   const regions = parseRegions(formData);
   const priceRaw = String(formData.get("price") ?? "").trim();
@@ -223,7 +221,6 @@ async function parseExcursionForm(
   return {
     title,
     route,
-    teaser,
     details,
     regions,
     price,

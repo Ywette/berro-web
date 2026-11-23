@@ -21,7 +21,7 @@ export type ExcursionCardData = {
   href: string;
   title: string;
   route: string;
-  description: string;
+  duration: string;
   cta: string;
   images: string[];
   logoVariant: ExcursionLogoVariant;
@@ -39,9 +39,9 @@ type ExcursionsCatalogProps = {
   filterEmpty: string;
   filterRegistrationOpen: string;
   filterAllRegistrations: string;
-  filterDateHint: string;
   locale: Locale;
   applyForLabel: string;
+  durationLabel: string;
   regionLabels: Record<ExcursionRegion, string>;
 };
 
@@ -155,9 +155,9 @@ export function ExcursionsCatalog({
   filterEmpty,
   filterRegistrationOpen,
   filterAllRegistrations,
-  filterDateHint,
   locale,
   applyForLabel,
+  durationLabel,
   regionLabels,
 }: ExcursionsCatalogProps) {
   const filterGroup = useId();
@@ -218,7 +218,6 @@ export function ExcursionsCatalog({
             calendar
             selection={<p className="mt-2 empty:hidden px-1 text-sm font-semibold text-ivory" aria-live="polite">{selectionLabel}</p>}
           >
-            <p className="text-xs text-mist">{filterDateHint}</p>
             <CalendarMonth
               locale={intlLocales[locale]}
               view={calendarView}
@@ -254,15 +253,13 @@ export function ExcursionsCatalog({
           {visible.map((excursion, index) => (
             <article
               key={excursion.slug}
-              className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#141418]"
+              className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#141418] transition-colors hover:border-champagne/60"
             >
               <div className="grid h-full flex-1 sm:grid-cols-[minmax(0,1.15fr)_minmax(9rem,0.85fr)]">
                 <div className="flex h-full min-h-0 flex-col px-6 py-7 sm:px-7 sm:py-8">
                   <div className="flex items-start justify-between gap-3">
                     <h2 className="min-w-0 text-lg font-medium tracking-wide text-ivory sm:text-xl">
-                      <Link href={excursion.href} className="hover:text-white">
-                        {excursion.title}
-                      </Link>
+                      {excursion.title}
                     </h2>
                     {excursion.priceLabel && (
                       <p className="shrink-0 rounded-full bg-night/90 px-3 py-1.5 text-sm font-semibold text-ivory">
@@ -275,24 +272,23 @@ export function ExcursionsCatalog({
                       {excursion.route}
                     </p>
                   ) : null}
-                  {excursion.description ? (
-                    <p className="mt-3 text-sm leading-6 text-mist">{excursion.description}</p>
-                  ) : null}
+                  <p className="mt-3 text-sm leading-6 text-mist">{durationLabel}: {excursion.duration}</p>
                   <div className="mt-auto flex flex-wrap items-end gap-x-3 gap-y-2 pt-7">
                     <Link
                       href={excursion.href}
-                      className={
+                      aria-label={`${excursion.cta}: ${excursion.title}`}
+                      className={`after:absolute after:inset-0 after:z-10 after:content-[''] focus-visible:after:rounded-2xl focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-champagne ${
                         index % 2 === 0
                           ? "inline-flex h-11 items-center justify-center rounded-full bg-ivory px-5 text-sm font-semibold text-night transition hover:bg-white"
                           : "inline-flex h-11 items-center justify-center rounded-full border border-white/35 px-5 text-sm font-semibold text-ivory transition hover:border-white/60 hover:bg-white/5"
-                      }
+                      }`}
                     >
                       {excursion.cta}
                     </Link>
                     {excursion.isActive && excursion.plannedDate && (
                       <Link
                         href={`${excursion.href}#booking`}
-                        className="order-button ml-auto text-[0.625rem]/4 sm:px-5 sm:text-[0.625rem]/4"
+                        className="order-button relative z-20 ml-auto text-[0.625rem]/4 sm:px-5 sm:text-[0.625rem]/4"
                       >
                         <span>
                           {applyForLabel}
@@ -303,9 +299,7 @@ export function ExcursionsCatalog({
                   </div>
                 </div>
 
-                <Link
-                  href={excursion.href}
-                  tabIndex={-1}
+                <div
                   aria-hidden="true"
                   className="relative min-h-44 overflow-hidden sm:h-full sm:min-h-0"
                 >
@@ -316,7 +310,7 @@ export function ExcursionsCatalog({
                     className="absolute inset-0 h-full w-full"
                     sizes="(min-width: 1024px) 28vw, (min-width: 640px) 35vw, 90vw"
                   />
-                </Link>
+                </div>
               </div>
             </article>
           ))}

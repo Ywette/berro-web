@@ -29,23 +29,26 @@ async function ExcursionsCatalogSection() {
   const managed = await listManagedExcursions();
 
   const locale = dictionary.locale;
-  const items: ExcursionCardData[] = managed.map((excursion) => ({
-    slug: excursion.slug,
-    href: `/excursions/${excursion.slug}`,
-    title: pickLocalizedText(excursion.title, locale),
-    route: pickLocalizedText(excursion.route, locale),
-    description: pickLocalizedText(excursion.teaser, locale),
-    cta: dictionary.excursions.more,
-    images: excursion.images,
-    logoVariant: excursion.logoVariant,
-    regions: excursion.regions,
-    isActive: excursion.isActive,
-    plannedDate: excursion.plannedDate || undefined,
-    priceLabel:
-      excursion.price != null
-        ? dictionary.excursions.fromPrice(formatEuro(excursion.price, locale))
-        : undefined,
-  }));
+  const items: ExcursionCardData[] = managed.map((excursion) => {
+    const days = excursion.durationDays;
+    return {
+      slug: excursion.slug,
+      href: `/excursions/${excursion.slug}`,
+      title: pickLocalizedText(excursion.title, locale),
+      route: pickLocalizedText(excursion.route, locale),
+      duration: days == null ? dictionary.excursions.durationUnset : dictionary.excursions.days(days),
+      cta: dictionary.excursions.more,
+      images: excursion.images,
+      logoVariant: excursion.logoVariant,
+      regions: excursion.regions,
+      isActive: excursion.isActive,
+      plannedDate: excursion.plannedDate || undefined,
+      priceLabel:
+        excursion.price != null
+          ? dictionary.excursions.fromPrice(formatEuro(excursion.price, locale))
+          : undefined,
+    };
+  });
 
   return (
     <section className="mx-auto max-w-7xl px-5 py-12 md:py-14">
@@ -56,9 +59,9 @@ async function ExcursionsCatalogSection() {
         filterEmpty={dictionary.excursions.filterEmpty}
         filterRegistrationOpen={dictionary.excursions.filterRegistrationOpen}
         filterAllRegistrations={dictionary.excursions.filterAllRegistrations}
-        filterDateHint={dictionary.excursions.filterDateHint}
         locale={locale}
         applyForLabel={dictionary.excursions.applyFor}
+        durationLabel={dictionary.excursions.durationLabel}
         regionLabels={{
           latvia: dictionary.excursions.filterLatvia,
           estonia: dictionary.excursions.filterEstonia,

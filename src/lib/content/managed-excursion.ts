@@ -11,8 +11,8 @@ import {
 } from "@/lib/i18n/localized-content";
 
 export const EXCURSION_COLLAGE_PHOTO_COUNT = 4;
-export const excursionTextLimits = { title: 160, route: 200, teaser: 800, details: 8000 } as const;
-export const excursionTextFields = ["title", "route", "teaser", "details"] as const;
+export const excursionTextLimits = { title: 160, route: 200, details: 8000 } as const;
+export const excursionTextFields = ["title", "route", "details"] as const;
 
 export const excursionLogoVariants = ["dark", "white"] as const;
 export type ExcursionLogoVariant = (typeof excursionLogoVariants)[number];

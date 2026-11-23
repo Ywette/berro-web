@@ -39,8 +39,6 @@ export async function ExcursionsBoard() {
         title: labels.excursionFormTitle,
         route: labels.excursionFormRoute,
         routeHint: labels.excursionFormRouteHint,
-        teaser: labels.excursionFormTeaser,
-        teaserHint: labels.excursionFormTeaserHint,
         details: labels.excursionFormDetails,
         detailsHint: labels.excursionFormDetailsHint,
         translate: labels.excursionTranslate,

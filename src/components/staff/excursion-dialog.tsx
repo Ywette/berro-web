@@ -33,8 +33,6 @@ export type ExcursionDialogLabels = {
   title: string;
   route: string;
   routeHint: string;
-  teaser: string;
-  teaserHint: string;
   details: string;
   detailsHint: string;
   translate: string;
@@ -374,16 +372,6 @@ export function ExcursionDialog({ excursion, mode, labels, onClose }: ExcursionD
                       defaultValue={fieldLocaleValue(excursion?.route, locale)}
                       placeholder={locale === "en" ? "Riga → Paris → Riga" : undefined}
                       className={inputClass}
-                    />
-                  </Field>
-
-                  <Field label={labels.teaser} hint={labels.teaserHint}>
-                    <textarea
-                      name={`teaser_${locale}`}
-                      rows={4}
-                      maxLength={excursionTextLimits.teaser}
-                      defaultValue={fieldLocaleValue(excursion?.teaser, locale)}
-                      className={textareaClass}
                     />
                   </Field>
 

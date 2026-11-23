@@ -1,5 +1,5 @@
 import type { ManagedExcursion } from "@/lib/content/managed-excursion";
-import { slugifyExcursionTitle } from "@/lib/content/managed-excursion";
+import { localizedFromSeed, slugifyExcursionTitle } from "@/lib/content/managed-excursion";
 import {
   deleteManagedExcursion,
   insertManagedExcursion,
@@ -32,7 +32,7 @@ function uniqueSlug(title: Localized | string, existing: ManagedExcursion[], exc
 }
 
 export async function createManagedExcursion(
-  input: Omit<ManagedExcursion, "id" | "slug"> & { slug?: string },
+  input: Omit<ManagedExcursion, "id" | "slug" | "teaser"> & { slug?: string },
 ): Promise<ManagedExcursion> {
   const existing = await readExcursionStore();
   const excursion: ManagedExcursion = {
@@ -42,7 +42,7 @@ export async function createManagedExcursion(
     images: input.images,
     logoVariant: input.logoVariant,
     route: input.route,
-    teaser: input.teaser,
+    teaser: localizedFromSeed(),
     details: input.details,
     descriptionDocument: input.descriptionDocument,
     regions: input.regions,
@@ -56,7 +56,7 @@ export async function createManagedExcursion(
 
 export async function updateManagedExcursionById(
   id: string,
-  input: Omit<ManagedExcursion, "id" | "slug">,
+  input: Omit<ManagedExcursion, "id" | "slug" | "teaser">,
   removalPath?: string,
 ): Promise<ManagedExcursion | null> {
   const existing = await readExcursionStore();
@@ -68,7 +68,6 @@ export async function updateManagedExcursionById(
     images: input.images,
     logoVariant: input.logoVariant,
     route: input.route,
-    teaser: input.teaser,
     details: input.details,
     descriptionDocument: input.descriptionDocument,
     regions: input.regions,

@@ -1049,7 +1049,7 @@ export function HeroBooking({
         <button
           type="submit"
           disabled={readingPlan}
-          className={`order-button mt-3 w-full shrink-0 text-base sm:text-xl ${formReady ? "field-ready-glow" : ""}`}
+          className={`order-button mt-3 w-full shrink-0 text-xs sm:text-sm ${formReady ? "field-ready-glow" : ""}`}
         >
           {dictionary.hero.getOffer}
         </button>

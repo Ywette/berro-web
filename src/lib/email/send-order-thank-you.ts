@@ -11,6 +11,7 @@ const copy = {
     thanks: "Paldies par Jūsu pieteikumu!",
     message: "Esam saņēmuši Jūsu pieprasījumu. Mūsu komanda izskatīs informāciju un sazināsies ar Jums, lai sagatavotu piedāvājumu.",
     reference: "Pieteikuma numurs", summary: "Pieteikuma informācija", route: "Maršruts",
+    excursionLink: "Skatīt ekskursijas aprakstu",
     departure: "Izbraukšanas datums", returning: "Atgriešanās datums", passengers: "Pasažieri",
     contact: "Ja vēlaties precizēt informāciju, atbildiet uz šo e-pastu vai rakstiet mums.",
     regards: "Ar cieņu", team: "Berro Travel komanda",
@@ -20,6 +21,7 @@ const copy = {
     thanks: "Thank you for your request.",
     message: "We have received your request. Our team will review the details and contact you to prepare an offer.",
     reference: "Request reference", summary: "Request details", route: "Route",
+    excursionLink: "View the excursion details",
     departure: "Departure date", returning: "Return date", passengers: "Passengers",
     contact: "If you would like to add or clarify any details, reply to this email or contact us.",
     regards: "Kind regards", team: "The Berro Travel team",
@@ -29,6 +31,7 @@ const copy = {
     thanks: "Nous vous remercions pour votre demande.",
     message: "Nous avons bien reçu votre demande. Notre équipe examinera les informations et vous contactera pour préparer une offre.",
     reference: "Référence de la demande", summary: "Détails de la demande", route: "Itinéraire",
+    excursionLink: "Voir le descriptif de l’excursion",
     departure: "Date de départ", returning: "Date de retour", passengers: "Passagers",
     contact: "Pour ajouter ou préciser des informations, répondez à cet e-mail ou contactez-nous.",
     regards: "Cordialement", team: "L’équipe Berro Travel",
@@ -38,6 +41,7 @@ const copy = {
     thanks: "Благодарим Вас за заявку.",
     message: "Мы получили Ваш запрос. Наша команда рассмотрит информацию и свяжется с Вами для подготовки предложения.",
     reference: "Номер заявки", summary: "Информация о заявке", route: "Маршрут",
+    excursionLink: "Посмотреть описание экскурсии",
     departure: "Дата отправления", returning: "Дата возвращения", passengers: "Пассажиры",
     contact: "Если Вы хотите дополнить или уточнить информацию, ответьте на это письмо или свяжитесь с нами.",
     regards: "С уважением", team: "Команда Berro Travel",
@@ -69,6 +73,8 @@ export async function sendOrderThankYouEmail(order: StaffOrder, input?: QuoteOrd
 
   const language = parseLocale(input?.locale ?? order.requestLocale);
   const t = copy[language];
+  const excursionSlug = order.excursionSlug?.trim() || input?.excursionSlug?.trim();
+  const excursionUrl = excursionSlug ? `${siteUrl()}/excursions/${encodeURIComponent(excursionSlug)}` : null;
   const name = order.requestorName?.trim();
   const greeting = name ? `${t.hello} ${name},` : t.greeting;
   const routePoints = [order.origin, ...(order.stops ?? []).map((stop) => stop.name),
@@ -83,6 +89,7 @@ export async function sendOrderThankYouEmail(order: StaffOrder, input?: QuoteOrd
     greeting, "", t.thanks, t.message, `${t.reference}: ${order.reference}`, "",
     t.summary, ...(routePoints.length ? [`${t.route}: ${routePoints.join(" → ")}`] : []),
     ...rows.map(([label, value]) => `${label}: ${value}`), "",
+    ...(excursionUrl ? [`${t.excursionLink}: ${excursionUrl}`, ""] : []),
     t.contact, "", t.regards, t.team, "berro@berro.lv",
   ].join("\n");
   const rowsHtml = rows.map(([label, value]) =>
@@ -128,6 +135,7 @@ export async function sendOrderThankYouEmail(order: StaffOrder, input?: QuoteOrd
 </div>
 <!--[if mso]></td></tr></table><![endif]-->
 </td></tr></table>
+${excursionUrl ? `<p style="margin:24px 0 0;line-height:1.6"><a href="${escapeHtml(excursionUrl)}" style="color:#84263f;text-decoration:underline">${escapeHtml(t.excursionLink)}</a></p>` : ""}
 <p style="margin:24px 0;line-height:1.6">${escapeHtml(t.contact)}</p>
 <p style="margin:0;line-height:1.6">${escapeHtml(t.regards)},<br><strong>${escapeHtml(t.team)}</strong><br><a href="mailto:berro@berro.lv" style="color:#84263f">berro@berro.lv</a></p>
 </td></tr></table></td></tr></table></body></html>`;
